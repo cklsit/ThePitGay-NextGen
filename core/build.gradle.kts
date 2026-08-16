@@ -26,9 +26,9 @@ group = "cn.klee"
 version = rootProject.extra["gitVersionString"].toString()
 repositories {
 
+    mavenCentral()
     maven("https://maven.cleanroommc.com")
     maven("https://maven.aliyun.com/repository/public/")
-    mavenCentral()
     maven("https://repo.crazycrew.us/releases")
     maven("https://repo.codemc.io/repository/nms/")
     maven("https://repo.codemc.io/repository/maven-public/")

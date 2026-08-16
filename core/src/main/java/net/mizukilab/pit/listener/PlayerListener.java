@@ -294,7 +294,6 @@ public class PlayerListener implements Listener {
             return;
         }
         event.setCancelled(true);
-        event.getItem().remove();
         Player player = event.getPlayer();
 
         ItemStack stack = event.getItem().getItemStack();
@@ -313,8 +312,16 @@ public class PlayerListener implements Listener {
                 itemStack = new ItemBuilder(stack.getType()).canDrop(false).canSaveToEnderChest(true).deathDrop(true).internalName(internalName).buildWithUnbreakable();
             }
 
+            final boolean ironArmor = itemStack.getType().name().contains("IRON");
+            final boolean chainmailArmor = itemStack.getType().name().contains("CHAINMAIL");
+            final boolean diamondArmor = itemStack.getType().name().contains("DIAMOND");
+            if (!ironArmor && !chainmailArmor && !diamondArmor) {
+                return;
+            }
+
             for (ItemStack item : player.getInventory().getArmorContents()) {
-                if (item != null && item.getType() != Material.AIR && itemStack.getType().name().contains("IRON") && item.getType() == itemStack.getType()) {
+                if (item != null && item.getType() != Material.AIR
+                        && ironArmor && item.getType() == itemStack.getType()) {
                     return;
                 }
             }
@@ -329,42 +336,45 @@ public class PlayerListener implements Listener {
                 }
             }
             ItemStack[] armorContents = player.getInventory().getArmorContents();
-            if (itemStack.getType().name().contains("IRON")) {
-                if (armorContents[slot].getType().name().contains("DIAMOND")) {
-                    return;
-                }
-                if (!itemStack.getType().name().contains("CHAINMAIL")) {
+            ItemStack equippedArmor = armorContents[slot];
+            String equippedArmorType = equippedArmor == null ? "" : equippedArmor.getType().name();
+            if (ironArmor || chainmailArmor) {
+                if (equippedArmorType.contains("DIAMOND")) {
                     return;
                 }
                 //check if player is equipping a mythic pants
-                final String internalName1 = ItemUtil.getInternalName(armorContents[slot]);
+                final String internalName1 = ItemUtil.getInternalName(equippedArmor);
                 if (internalName1 != null && (internalName1.equalsIgnoreCase("mythic_leggings") || internalName1.equals("armageddon_boots") || internalName1.equals("angel_chestplate") || internalName1.equals("kings_helmet"))) {
                     return;
                 }
                 armorContents[slot] = itemStack;
                 player.getInventory().setArmorContents(armorContents);
 
+                event.getItem().remove();
                 player.playSound(player.getLocation(), Sound.HORSE_ARMOR, 1F, 1F);
-            } else if (itemStack.getType().name().contains("DIAMOND")) {
-                final String internalName1 = ItemUtil.getInternalName(armorContents[slot]);
+            } else if (diamondArmor) {
+                final String internalName1 = ItemUtil.getInternalName(equippedArmor);
                 if (internalName1 != null && (internalName1.equalsIgnoreCase("mythic_leggings") || internalName1.equals("armageddon_boots") || internalName1.equals("angel_chestplate") || internalName1.equals("kings_helmet"))) {
                     //check if player is equipping a mythic pants
                     InventoryUtil.addInvReverse(player.getInventory(), itemStack);
                     return;
-                } else if (armorContents[slot].getType().name().contains("DIAMOND") || armorContents[slot].getType().name().contains("IRON")) {
+                } else if (equippedArmorType.contains("DIAMOND") || equippedArmorType.contains("IRON")) {
                     InventoryUtil.addInvReverse(player.getInventory(), armorContents[slot]);
                 }
 
                 armorContents[slot] = itemStack;
                 player.getInventory().setArmorContents(armorContents);
+                event.getItem().remove();
                 player.playSound(player.getLocation(), Sound.HORSE_ARMOR, 1F, 1F);
             }
         } else if (stack.getType() == Material.ARROW) {
             ItemBuilder arrowBuilder = new ItemBuilder(Material.ARROW).internalName("default_arrow").defaultItem().canDrop(false).canSaveToEnderChest(false);
             player.getInventory().addItem(arrowBuilder.build());
+            event.getItem().remove();
             player.playSound(player.getLocation(), Sound.ITEM_PICKUP, 1F, 1F);
-        } else if ((stack.getType() == Material.BOW || Utils.toNMStackQuick(stack).getItem() instanceof ItemSword) && !event.isCancelled()) {
+        } else if (stack.getType() == Material.BOW || Utils.toNMStackQuick(stack).getItem() instanceof ItemSword) {
             InventoryUtil.addInvReverse(player.getInventory(), event.getItem().getItemStack());
+            event.getItem().remove();
         } else if (stack.getType() == Material.GOLD_INGOT) {
             if (event.getItem().hasMetadata("gold")) {
                 PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(event.getPlayer().getUniqueId());
@@ -390,6 +400,7 @@ public class PlayerListener implements Listener {
                 player.sendMessage(CC.translate("&6&l捡起硬币! &7从地上找到了&6 " + gold + " &7硬币!"));
                 player.playSound(player.getLocation(), Sound.NOTE_PLING, 1, 1.8F);
                 event.getItem().removeMetadata("gold", ThePit.getInstance()); // for garbage clear
+                event.getItem().remove();
             }
         }
     }

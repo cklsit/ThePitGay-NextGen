@@ -88,9 +88,7 @@ public class BountyRunnable extends BukkitRunnable {
                             , CC.translate(color + "&l" + bounty + "g"));
 
             List<Player> reviewers = new ObjectArrayList<>(Bukkit.getOnlinePlayers());
-            if (!player.hasPermission("pit.admin")) {
-                reviewers.remove(player);
-            }
+            reviewers.remove(player);
             reviewers.removeIf(
                     target -> PlayerProfile.getPlayerProfileByUuid(target.getUniqueId())
                             .getPlayerOption().isBountyHiddenWhenNear()
