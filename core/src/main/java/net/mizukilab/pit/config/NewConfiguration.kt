@@ -6,6 +6,7 @@ import net.mizukilab.pit.item.MythicColor
 import net.mizukilab.pit.listener.CombatListener
 import net.mizukilab.pit.menu.prestige.button.PrestigeStatusButton
 import net.mizukilab.pit.util.level.LevelUtil
+import org.bukkit.configuration.ConfigurationSection
 import org.bukkit.configuration.file.YamlConfiguration
 import org.bukkit.entity.Player
 import java.io.File
@@ -76,12 +77,8 @@ object NewConfiguration {
 
         var hasChanges = false
         if (unusedKeys.isNotEmpty()) {
-            println("发现 ${unusedKeys.size} 个无用的配置项，正在清理...")
-            unusedKeys.forEach { key ->
-                println("删除无用配置: $key")
-                removeConfigKey(key)
-                hasChanges = true
-            }
+            println("发现 ${unusedKeys.size} 个未登记的配置项，保留不变:")
+            unusedKeys.forEach { key -> println("  - $key") }
         }
 
         if (missingKeys.isNotEmpty()) {
@@ -99,60 +96,9 @@ object NewConfiguration {
 
         if (hasChanges) {
             save()
-            println("配置文件清理完成！")
+            println("配置文件缺失项补全完成！")
         } else {
-            println("配置文件无需清理")
-        }
-    }
-
-    private fun removeConfigKey(key: String) {
-        val keys = key.split(".")
-        var currentSection: org.bukkit.configuration.ConfigurationSection = config
-
-        for (i in 0 until keys.size - 1) {
-            val sectionKey = keys[i]
-            if (currentSection.isConfigurationSection(sectionKey)) {
-                currentSection = currentSection.getConfigurationSection(sectionKey)!!
-            } else {
-                return
-            }
-        }
-
-        val finalKey = keys.last()
-        currentSection.set(finalKey, null)
-
-        cleanupEmptySections(keys.dropLast(1))
-    }
-
-    private fun cleanupEmptySections(keyPath: List<String>) {
-        if (keyPath.isEmpty()) return
-        for (depth in keyPath.size downTo 1) {
-            val currentPath = keyPath.take(depth)
-            val parentPath = currentPath.dropLast(1)
-            val sectionName = currentPath.last()
-            var parentSection: org.bukkit.configuration.ConfigurationSection = config
-            for (pathPart in parentPath) {
-                if (parentSection.isConfigurationSection(pathPart)) {
-                    parentSection = parentSection.getConfigurationSection(pathPart)!!
-                } else {
-                    continue
-                }
-            }
-            if (parentSection.isConfigurationSection(sectionName)) {
-                val targetSection = parentSection.getConfigurationSection(sectionName)!!
-                val allKeys = targetSection.getKeys(true)
-                val isEmpty = allKeys.isEmpty() || allKeys.all { key ->
-                    val value = targetSection.get(key)
-                    value == null || (value is org.bukkit.configuration.ConfigurationSection && value.getKeys(true)
-                        .isEmpty())
-                }
-                if (isEmpty) {
-                    println("删除空配置节: ${currentPath.joinToString(".")}")
-                    parentSection.set(sectionName, null)
-                } else {
-                    break
-                }
-            }
+            println("配置文件无需修改")
         }
     }
 
@@ -204,7 +150,11 @@ object NewConfiguration {
     }
 
     fun load() {
-        refreshAndSave()
+        val permissionKeysMigrated = normalizePermissionKeys()
+        val defaultsAdded = refreshAndSave()
+        if (permissionKeysMigrated && !defaultsAdded) {
+            save()
+        }
         val validationResult = validateConfig()
         if (!validationResult.isValid) {
             validationResult.printReport()
@@ -236,6 +186,7 @@ object NewConfiguration {
 
         PrestigeStatusButton.limit = config.getInt("highest-prestige")
         patchCaches()
+        eventOnlineRequired.clear()
         config.getConfigurationSection("event-online-required")?.let {
             it.getKeys(false).forEach { eventName ->
                 eventOnlineRequired[eventName] = it.getInt(eventName)
@@ -251,9 +202,9 @@ object NewConfiguration {
         scoreboardAnimationInterval = config.getInt("scoreboard-animation-interval", 80)
 
         mythicChance.clear()
-        config.getConfigurationSection("mythicDropChance")!!.let {
+        config.getConfigurationSection("mythicDropChance")?.let {
             for (groupName in it.getKeys(false)) {
-                val permission = it.getString("${groupName}.test")!!
+                val permission = it.getString("${groupName}.permission") ?: continue
                 val chance = it.getDouble("${groupName}.value", 0.005)
 
                 mythicChance.add(permission to chance)
@@ -294,7 +245,7 @@ object NewConfiguration {
                 val darkRateSection = configElf.getConfigurationSection("dark")
 
                 for (key in darkRateSection.getKeys(false)) {
-                    val permission = darkRateSection.getString("${key}.test", "pit.${key}")
+                    val permission = darkRateSection.getString("${key}.permission", "pit.enchant.${key}")
                     val chance = darkRateSection.getDouble("${key}.value", 0.02)
 
                     this += Rate(permission, chance)
@@ -305,12 +256,8 @@ object NewConfiguration {
                 val normalSection = configElf.getConfigurationSection("normal")
 
                 for (key in normalSection.getKeys(false)) {
-                    val permission = normalSection.getString("${key}.test")
-                    val chance = normalSection.getDouble("${key}.value")
-
-                    if (permission == null) {
-                        continue
-                    }
+                    val permission = normalSection.getString("${key}.permission", "pit.enchant.${key}")
+                    val chance = normalSection.getDouble("${key}.value", 0.02)
 
                     this += Rate(permission, chance)
                 }
@@ -320,12 +267,8 @@ object NewConfiguration {
                 val normalSection = configElf.getConfigurationSection("sewers")
 
                 for (key in normalSection.getKeys(false)) {
-                    val permission = normalSection.getString("${key}.test")
-                    val chance = normalSection.getDouble("${key}.value")
-
-                    if (permission == null) {
-                        continue
-                    }
+                    val permission = normalSection.getString("${key}.permission", "pit.enchant.${key}")
+                    val chance = normalSection.getDouble("${key}.value", 0.02)
 
                     this += Rate(permission, chance)
                 }
@@ -334,7 +277,7 @@ object NewConfiguration {
                 val rageSection = configElf.getConfigurationSection("rage")
 
                 for (key in rageSection.getKeys(false)) {
-                    val permission = rageSection.getString("${key}.test", "pit.${key}")
+                    val permission = rageSection.getString("${key}.permission", "pit.enchant.${key}")
                     val chance = rageSection.getDouble("${key}.value", 0.02)
 
                     this += Rate(permission, chance)
@@ -342,7 +285,7 @@ object NewConfiguration {
             })
         }
         maxLevel = config.getInt("maxLevel", 120)
-        scoreBoardAnimation = config.getList("scoreboard.animation", scoreBoardAnimation) as List<String>
+        scoreBoardAnimation = expandScoreboardAnimation(config.getStringList("scoreboard.animation"))
         loadingBoardTips = config.getList("scoreboard.loading", loadingBoardTips) as List<String>
         bountyTickInterval = config.getInt("bounty.updateInterval", bountyTickInterval);
         watermarks = config.getString("water-marks", watermarks)
@@ -398,14 +341,100 @@ object NewConfiguration {
         }?.value ?: 0.005
     }
 
-    private fun refreshAndSave() {
+    private fun refreshAndSave(): Boolean {
+        var hasChanges = false
         defaults.forEach {
             if (config.get(it.key) == null) {
                 config.set(it.key, it.value)
+                hasChanges = true
             }
         }
 
-        config.save(File(ThePit.getInstance().dataFolder, "custom.yml"))
+        if (hasChanges) {
+            config.save(File(ThePit.getInstance().dataFolder, "custom.yml"))
+        }
+        return hasChanges
+    }
+
+    private fun expandScoreboardAnimation(lines: List<String>): List<String> {
+        val expanded = ArrayList<String>()
+        val repeatPattern = Regex("""^(.*?)\s*\[x(\d+)]\s*$""")
+
+        for (line in lines) {
+            val match = repeatPattern.matchEntire(line)
+            if (match == null) {
+                expanded += line
+                continue
+            }
+
+            val repeatCount = match.groupValues[2].toIntOrNull()?.coerceAtLeast(1) ?: 1
+            val frame = match.groupValues[1].trimEnd()
+            repeat(repeatCount) {
+                expanded += frame
+            }
+        }
+
+        return expanded
+    }
+
+    private fun normalizePermissionKeys(): Boolean {
+        var hasChanges = false
+
+        fun normalizeSection(
+            section: ConfigurationSection,
+            defaultPermission: String?,
+            replaceLegacyDefault: Boolean = false
+        ) {
+            if (section.contains("test")) {
+                section.set("test", null)
+                hasChanges = true
+            }
+            val currentPermission = section.getString("permission")
+            if (defaultPermission != null && (
+                    !section.contains("permission") ||
+                        (replaceLegacyDefault && currentPermission == "pit.default")
+                    )
+            ) {
+                section.set("permission", defaultPermission)
+                hasChanges = true
+            }
+        }
+
+        config.getConfigurationSection("rate")?.let { rateSection ->
+            for (levelKey in rateSection.getKeys(false)) {
+                val levelSection = rateSection.getConfigurationSection(levelKey) ?: continue
+                for (rateTypeKey in levelSection.getKeys(false)) {
+                    val rateTypeSection = levelSection.getConfigurationSection(rateTypeKey) ?: continue
+                    for (groupKey in rateTypeSection.getKeys(false)) {
+                        if (groupKey == "vip1" || groupKey == "vip2") {
+                            rateTypeSection.set(groupKey, null)
+                            hasChanges = true
+                            continue
+                        }
+                        val groupSection = rateTypeSection.getConfigurationSection(groupKey) ?: continue
+                        normalizeSection(
+                            groupSection,
+                            if (groupKey == "default") "pit.enchant.default" else null,
+                            groupKey == "default"
+                        )
+                    }
+                }
+            }
+        }
+
+        config.getConfigurationSection("mythicDropChance")?.let { dropChanceSection ->
+            for (groupKey in dropChanceSection.getKeys(false)) {
+                if (groupKey == "vip1" || groupKey == "vip2") {
+                    dropChanceSection.set(groupKey, null)
+                    hasChanges = true
+                    continue
+                }
+                val groupSection = dropChanceSection.getConfigurationSection(groupKey) ?: continue
+                normalizeSection(groupSection, null)
+            }
+        }
+
+        return hasChanges
     }
 
     private data class Rate(
@@ -513,25 +542,14 @@ object NewConfiguration {
         ),
         "title.event.epic.interval" to 10,
         "scoreboard.animation" to listOf(
-            "&5&l神话天坑",
-            "&f&l神&5&l话天坑",
-            "&f&l神话&f&l天&5&l坑",
-            "&f&l神话天&f&l坑",
-            "&f&l神话天坑",
-            "&5&l神话天坑",
-            "&f&l神话天坑",
-            "&5&l神话天坑",
-            "&f&l神话天坑",
-            "&5&l神话天坑",
-            "&f&l神话天坑",
-            "&5&l神话天坑",
-            "&f&l神话天坑",
-            "&5&l神话天坑",
-            "&5&l神话天坑",
-            "&5&l神话天坑",
-            "&5&l神话天坑",
-            "&5&l神话天坑",
-            "&5&l神话天坑"
+            "&e&l天坑乱斗 [x40]",
+            "&6&l天&e&l坑乱斗 [x2]",
+            "&f&l天&6&l坑&e&l乱斗 [x2]",
+            "&f&l天坑&6&l乱&e&l斗 [x2]",
+            "&f&l天坑乱&6&l斗 [x2]",
+            "&f&l天坑乱斗 [x8]",
+            "&e&l天坑乱斗 [x6]",
+            "&f&l天坑乱斗 [x6]"
         ),
         "scoreboard.loading" to listOf(
             "", "&c正在加载档案...", "&c请稍等片刻...", "", "&c公告群: &exxxxxxx", "", "&cThePitUltimate"
@@ -541,10 +559,10 @@ object NewConfiguration {
 
         "bounty.updateInterval" to bountyTickInterval,
 
-        "mythicDropChance.vip1.test" to "permission.vip1",
-        "mythicDropChance.vip1.value" to 0.01,
-        "mythicDropChance.vip2.test" to "permission.vip2",
-        "mythicDropChance.vip2.value" to 0.02,
+        "mythicDropChance.vip.permission" to "pit.mythicdrop.vip",
+        "mythicDropChance.vip.value" to 0.02,
+        "mythicDropChance.default.permission" to "pit.mythicdrop.default",
+        "mythicDropChance.default.value" to 0.005,
 
         "punch_y" to 4.0,
         "scoreboard-animation-interval" to 80,
@@ -555,9 +573,8 @@ object NewConfiguration {
         val rateTypes = listOf("dark", "normal", "rage", "sewers")
         val levels = listOf(1, 2, 3)
         val vipConfigs = mapOf(
-            "vip1" to mapOf("test" to "pit.vip1", "value" to 0.08),
-            "vip2" to mapOf("test" to "pit.vip2", "value" to 0.04),
-            "default" to mapOf("value" to 0.02)
+            "vip" to mapOf("permission" to "pit.enchant.vip", "value" to 0.08),
+            "default" to mapOf("permission" to "pit.enchant.default", "value" to 0.02)
         )
 
         for (level in levels) {
@@ -566,9 +583,7 @@ object NewConfiguration {
                     val baseKey = "rate.$level.$rateType.$vipType"
                     config.forEach { (configType, value) ->
                         val fullKey = "$baseKey.$configType"
-                        if (isValidKey(fullKey)) {
-                            rateDefaults[fullKey] = value
-                        }
+                        rateDefaults[fullKey] = value
                     }
                 }
             }
@@ -577,35 +592,6 @@ object NewConfiguration {
         return rateDefaults
     }
 
-
-    private fun isValidKey(key: String): Boolean {
-        val invalidPatterns = listOf(
-            "11l11llll1iili11",
-            Regex("[0-9]+[il]+[0-9]+[il]+"),
-            Regex("^[0-9il]+$")
-        )
-
-        val validPattern = Regex("^[a-zA-Z0-9._-]+$")
-
-        if (!validPattern.matches(key)) {
-            return false
-        }
-        for (pattern in invalidPatterns) {
-            when (pattern) {
-                is String -> if (key.contains(pattern)) return false
-                is Regex -> if (pattern.containsMatchIn(key)) return false
-            }
-        }
-
-        val expectedComponents = listOf("rate", "dark", "normal", "rage", "sewers", "vip1", "vip2", "default", "test", "value")
-        val keyParts = key.split(".")
-
-        if (!keyParts.any { part -> expectedComponents.contains(part) }) {
-            return false
-        }
-
-        return true
-    }
     fun getMaxScoreboardAnimationInterval(): Int {
 
         return scoreboardAnimationInterval.coerceIn(50, 500)

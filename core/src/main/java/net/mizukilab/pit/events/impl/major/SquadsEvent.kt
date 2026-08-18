@@ -3,7 +3,7 @@ package net.mizukilab.pit.events.impl.major
 import cn.charlotte.pit.ThePit
 import cn.charlotte.pit.data.PlayerProfile
 import cn.charlotte.pit.event.PitKillEvent
-import cn.charlotte.pit.events.*
+import cn.charlotte.pit.events.AbstractEvent
 import cn.charlotte.pit.events.trigger.type.IEpicEvent
 import cn.charlotte.pit.events.trigger.type.addon.IPreparative
 import cn.charlotte.pit.events.trigger.type.addon.IScoreBoardInsert
@@ -36,10 +36,7 @@ import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
-import kotlin.math.cos
-import kotlin.math.max
-import kotlin.math.min
-import kotlin.math.sin
+import kotlin.math.*
 import kotlin.random.Random
 
 
@@ -230,14 +227,14 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
             }
             if (enchantBoostLevel > 0) {
                 rewardCoins += 0.5 * enchantBoostLevel * rewardCoins
-                rewardRenown += Math.floor(0.5 * enchantBoostLevel * rewardRenown).toInt()
+                rewardRenown += floor(0.5 * enchantBoostLevel * rewardRenown).toInt()
                 val mythicLeggings = MythicLeggingsItem()
                 mythicLeggings.loadFromItemStack(player.inventory.leggings)
                 if (mythicLeggings.isEnchanted) {
                     if (mythicLeggings.maxLive > 0 && mythicLeggings.live <= 2) {
                         player.inventory.leggings = ItemStack(Material.AIR)
                     } else {
-                        mythicLeggings.live = mythicLeggings.live - 2
+                        mythicLeggings.live -= 2
                         player.inventory.leggings = mythicLeggings.toItemStack()
                     }
                 }
@@ -252,8 +249,8 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
                 }
             }
             profile.grindCoins(rewardCoins)
-            profile.coins = profile.coins + rewardCoins
-            profile.renown = profile.renown + rewardRenown
+            profile.coins += rewardCoins
+            profile.renown += rewardRenown
             player.sendMessage(CC.translate("&6你的奖励: &6+" + rewardCoins + "硬币 &e+" + rewardRenown + "声望"))
             if (rank > 0) {
                 player.sendMessage(CC.translate("&6&l你的队伍: &7获得了 &b" + team.score + " &7分数 (排名#" + rank + ")"))

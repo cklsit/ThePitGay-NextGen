@@ -34,8 +34,8 @@ import net.mizukilab.pit.util.item.ItemUtil;
 import net.mizukilab.pit.util.level.LevelUtil;
 import net.mizukilab.pit.util.random.RandomUtil;
 import net.mizukilab.pit.util.time.TimeUtil;
-import org.bukkit.Material;
 import org.bukkit.*;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.craftbukkit.v1_8_R3.CraftWorld;
 import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
@@ -62,8 +62,6 @@ import org.bukkit.util.BlockIterator;
 
 import java.lang.reflect.Field;
 import java.text.DecimalFormat;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -83,21 +81,6 @@ public class PlayerListener implements Listener {
 
     private final DecimalFormat numFormat = new DecimalFormat("0.00");
 
-    public PackedOperator loadData(PlayerJoinEvent event) {
-        final Player player = event.getPlayer();
-        ThePit.getInstance().getParker().hideAlways(player);
-        PackedOperator orLoadOperator = ((ProfileOperator) ThePit.getInstance().getProfileOperator()).getOrLoadOperator(player);
-        orLoadOperator.pendingUntilLoaded(prof -> {
-            //post init, when checked
-            orLoadOperator.heartBeat();
-
-            this.whenLoaded(prof, player);
-        });
-        event.setJoinMessage(null);
-        event.getPlayer().sendMessage(CC.translate("&eThePit Public by KleeLoveLife, (可选删除)"));
-        return orLoadOperator;
-    }
-
     private static boolean statusCheck(PackedOperator orLoadOperator) {
         byte code = orLoadOperator.profile().code;
         if (code == -2) {
@@ -105,34 +88,6 @@ public class PlayerListener implements Listener {
             return true;
         }
         return false;
-    }
-    public boolean isSaving(PackedOperator op){
-        if(op.profile() != null){
-            return op.profile().code == -2;
-        }
-        return false;
-    }
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onPlayerQuit(PlayerQuitEvent event) {
-        event.setQuitMessage(null);
-
-        ((ProfileOperator) ThePit.getInstance().getProfileOperator())
-                .operatorStrict(event.getPlayer()).ifPresent(profileOper -> {
-                    PlayerProfile profile = profileOper.profile();
-                    if(isSaving(profileOper)){
-                        return;
-                    }
-                    //synchronize
-                    PlayerInv playerInv = PlayerInv.fromPlayerInventory(event.getPlayer().getInventory());
-                    profile.disallow();
-                    checkIllegalProfile(profile);
-                    profile.setLogin(false); //我草泥马
-                    //fire at post
-                    profile.setInventoryUnsafe(playerInv).allow();
-                    triggerDeath(event, profile);
-                    //handle Death
-                    profile.setBounty(0);
-                });
     }
 
     private static void triggerDeath(PlayerQuitEvent event, PlayerProfile profile) {
@@ -157,67 +112,11 @@ public class PlayerListener implements Listener {
         }
     }
 
-
-    public void whenLoaded(PlayerProfile load, Player player) {
-        updateLoginTime(load);
-        load.setPlayerName(player.getName());
-        load.setLowerName(player.getName().toLowerCase());
-        if (load.getProfileFormatVersion() == 0) {
-            PitProfileUpdater.updateVersion0(load);
-        }
-        if (player != null && player.isOnline()) {
-            load.setLogin(true);
-            Bukkit.getScheduler().runTask(ThePit.getInstance(), () -> {
-                PlayerUtil.postResetPlayer(player);
-                new PitProfileLoadedEvent(load).callEvent();
-            });
-            FixedRewardData.Companion.sendMail(load, player);
-            ThePit.getInstance().getParker().showAlways(player);
-        }
-    }
-
     private static void updateLoginTime(PlayerProfile load) {
         if (load.getRegisterTime() <= 1) {
             load.setRegisterTime(System.currentTimeMillis());
         }
         load.setLastLoginTime(System.currentTimeMillis());
-    }
-
-    @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent event) {
-        ThePit pit = ThePit.getInstance();
-        Player player = event.getPlayer();
-
-        PlayerUtil.resetPlayer(player, true);
-        pit.getMapSelector().teleportIntoSpawn(player);
-
-        if (ProfileLoadRunnable.getInstance() == null) {
-            event.getPlayer().kickPlayer("Didn't load completely");
-            return;
-        }
-
-
-        ProfileLoadRunnable.getInstance().handleJoin(player);
-
-        loadData(event);
-    }
-
-
-    @EventHandler
-    public void onProfileLoadComplete(PitProfileLoadedEvent event) {
-        PlayerProfile profile = event.getPlayerProfile();
-        Player player = Bukkit.getPlayer(profile.getPlayerUuid());
-
-        if (player == null || !player.isOnline()) {
-            return;
-        }
-
-        bungeeCheck(player);
-        removeUnavailableMegaStreak(profile);
-        processAccountStatus(profile, player);
-        postSynchronize(profile, player);
-        //todo 修复最大生命值
-        recoverMaximumHealth(profile, player);
     }
 
     private static void removeUnavailableMegaStreak(PlayerProfile profile) {
@@ -258,6 +157,105 @@ public class PlayerListener implements Listener {
         profile.applyExperienceToPlayer(player);
 
         PlayerUtil.resetPlayer(player, false, false);
+    }
+
+    public PackedOperator loadData(PlayerJoinEvent event) {
+        final Player player = event.getPlayer();
+        ThePit.getInstance().getParker().hideAlways(player);
+        PackedOperator orLoadOperator = ((ProfileOperator) ThePit.getInstance().getProfileOperator()).getOrLoadOperator(player);
+        orLoadOperator.pendingUntilLoaded(prof -> {
+            //post init, when checked
+            orLoadOperator.heartBeat();
+
+            this.whenLoaded(prof, player);
+        });
+        event.setJoinMessage(null);
+        event.getPlayer().sendMessage(CC.translate("&eThePit Public by KleeLoveLife, ShanguanLinG"));
+        return orLoadOperator;
+    }
+
+    public boolean isSaving(PackedOperator op) {
+        if (op.profile() != null) {
+            return op.profile().code == -2;
+        }
+        return false;
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        event.setQuitMessage(null);
+
+        ((ProfileOperator) ThePit.getInstance().getProfileOperator())
+                .operatorStrict(event.getPlayer()).ifPresent(profileOper -> {
+                    PlayerProfile profile = profileOper.profile();
+                    if (isSaving(profileOper)) {
+                        return;
+                    }
+                    //synchronize
+                    PlayerInv playerInv = PlayerInv.fromPlayerInventory(event.getPlayer().getInventory());
+                    profile.disallow();
+                    checkIllegalProfile(profile);
+                    profile.setLogin(false); //我草泥马
+                    //fire at post
+                    profile.setInventoryUnsafe(playerInv).allow();
+                    triggerDeath(event, profile);
+                    //handle Death
+                    profile.setBounty(0);
+                });
+    }
+
+    public void whenLoaded(PlayerProfile load, Player player) {
+        updateLoginTime(load);
+        load.setPlayerName(player.getName());
+        load.setLowerName(player.getName().toLowerCase());
+        if (load.getProfileFormatVersion() == 0) {
+            PitProfileUpdater.updateVersion0(load);
+        }
+        if (player.isOnline()) {
+            load.setLogin(true);
+            Bukkit.getScheduler().runTask(ThePit.getInstance(), () -> {
+                PlayerUtil.postResetPlayer(player);
+                new PitProfileLoadedEvent(load).callEvent();
+            });
+            FixedRewardData.Companion.sendMail(load, player);
+            ThePit.getInstance().getParker().showAlways(player);
+        }
+    }
+
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        ThePit pit = ThePit.getInstance();
+        Player player = event.getPlayer();
+
+        PlayerUtil.resetPlayer(player, true);
+        pit.getMapSelector().teleportIntoSpawn(player);
+
+        if (ProfileLoadRunnable.getInstance() == null) {
+            event.getPlayer().kickPlayer("Didn't load completely");
+            return;
+        }
+
+
+        ProfileLoadRunnable.getInstance().handleJoin(player);
+
+        loadData(event);
+    }
+
+    @EventHandler
+    public void onProfileLoadComplete(PitProfileLoadedEvent event) {
+        PlayerProfile profile = event.getPlayerProfile();
+        Player player = Bukkit.getPlayer(profile.getPlayerUuid());
+
+        if (player == null || !player.isOnline()) {
+            return;
+        }
+
+        bungeeCheck(player);
+        removeUnavailableMegaStreak(profile);
+        processAccountStatus(profile, player);
+        postSynchronize(profile, player);
+        //todo 修复最大生命值
+        recoverMaximumHealth(profile, player);
     }
 
     private void processAccountStatus(PlayerProfile profile, Player player) {

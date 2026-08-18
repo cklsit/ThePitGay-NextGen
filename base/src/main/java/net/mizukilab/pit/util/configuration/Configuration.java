@@ -10,8 +10,11 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 public class Configuration {
 
@@ -19,6 +22,7 @@ public class Configuration {
     private final JavaPlugin plugin;
     private final File file;
     private final File directory;
+    private final Set<String> unreadablePaths = new HashSet<>();
 
     public Configuration(JavaPlugin plugin) {
         this(plugin, "config.yml");
@@ -61,10 +65,15 @@ public class Configuration {
 
     public void save() {
         Field[] toSave = this.getClass().getDeclaredFields();
+        boolean hasChanges = false;
 
         for (Field f : toSave) {
             if (f.isAnnotationPresent(ConfigData.class)) {
                 ConfigData configData = f.getAnnotation(ConfigData.class);
+
+                if (!this.config.contains(configData.path()) || unreadablePaths.contains(configData.path())) {
+                    continue;
+                }
 
                 try {
                     f.setAccessible(true);
@@ -97,84 +106,98 @@ public class Configuration {
                         configValue = saveValue;
                     }
 
-                    this.config.addDefault(configData.path(), configValue);
-                    this.config.set(configData.path(), configValue);
-                    System.out.println("Setting: " + configData.path() + " to " + saveValue);
+                    if (!Objects.equals(this.config.get(configData.path()), configValue)) {
+                        this.config.set(configData.path(), configValue);
+                        hasChanges = true;
+                        System.out.println("Setting: " + configData.path() + " to " + saveValue);
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         }
 
-        try {
-            this.config.save(this.file);
-        } catch (IOException var13) {
-            var13.printStackTrace();
+        if (hasChanges) {
+            try {
+                this.config.save(this.file);
+            } catch (IOException var13) {
+                var13.printStackTrace();
+            }
         }
 
     }
 
     public void load() {
+        unreadablePaths.clear();
         Field[] toLoad = this.getClass().getDeclaredFields();
-        int var3 = toLoad.length;
 
         for (Field f : toLoad) {
             try {
                 f.setAccessible(true);
-                if (f.isAnnotationPresent(ConfigData.class)) {
-                    ConfigData configData = f.getAnnotation(ConfigData.class);
-                    f.setAccessible(true);
-                    if (this.config.contains(configData.path())) {
-                        if (!f.isAnnotationPresent(ConfigSerializer.class)) {
-                            try {
-                                if (this.config.isList(configData.path())) {
-                                    f.set(this, this.config.getList(configData.path(), new ArrayList<>()));
-                                } else {
-                                    f.set(this, this.config.get(configData.path()));
-                                }
-                            } catch (IllegalAccessException var11) {
-                                var11.printStackTrace();
-                            }
-                        } else if (this.config.isList(configData.path())) {
-                            try {
-                                List<String> list = this.config.getStringList(configData.path());
-                                List<Object> deserializedList = new ArrayList<>();
+                if (!f.isAnnotationPresent(ConfigData.class)) {
+                    continue;
+                }
 
-                                for (String s : list) {
-                                    deserializedList.add(this.deserializeValue(f, s));
-                                }
+                ConfigData configData = f.getAnnotation(ConfigData.class);
+                if (!this.config.contains(configData.path())) {
+                    continue;
+                }
 
-                                f.set(this, deserializedList);
-                            } catch (InstantiationException | IllegalAccessException var13) {
-                                System.out.println("Error reading list in configuration file: " + this.config.getName() + " path: " + configData.path());
-                                var13.printStackTrace();
-                            }
+                if (!f.isAnnotationPresent(ConfigSerializer.class)) {
+                    try {
+                        if (this.config.isList(configData.path())) {
+                            f.set(this, this.config.getList(configData.path(), new ArrayList<>()));
                         } else {
-                            if (List.class.isAssignableFrom(f.getType()) && this.config.get(configData.path()) == null) {
-                                f.set(this, new ArrayList<>());
-                            } else {
-                                try {
-                                    Object object = this.config.get(configData.path());
-                                    f.set(this, this.deserializeValue(f, object.toString()));
-                                } catch (InstantiationException | IllegalAccessException var12) {
-                                    System.out.println("Error reading value in configuration file: " + this.config.getName() + " path: " + configData.path());
-                                    var12.printStackTrace();
-                                }
-                            }
+                            f.set(this, this.config.get(configData.path()));
                         }
-                    } else {
-                        if (f.isAnnotationPresent(ConfigSerializer.class)) {
-                            try {
-//                              Object object = this.config.get(configData.path());
-                                f.set(this, this.deserializeValue(f, null));
-                            } catch (InstantiationException | IllegalAccessException | IllegalArgumentException var12) {
-                                var12.printStackTrace();
-                                System.out.println("Error reading value in configuration file: " + this.config.getName() + " path: " + configData.path());
+                    } catch (IllegalAccessException | IllegalArgumentException e) {
+                        unreadablePaths.add(configData.path());
+                        e.printStackTrace();
+                    }
+                } else if (this.config.isList(configData.path())) {
+                    try {
+                        List<String> list = this.config.getStringList(configData.path());
+                        List<Object> deserializedList = new ArrayList<>();
+                        boolean valid = true;
+
+                        for (String s : list) {
+                            Object deserializedValue = this.deserializeValue(f, s);
+                            if (deserializedValue == null) {
+                                valid = false;
+                                break;
                             }
+                            deserializedList.add(deserializedValue);
                         }
+
+                        if (valid) {
+                            f.set(this, deserializedList);
+                        } else {
+                            unreadablePaths.add(configData.path());
+                        }
+                    } catch (InstantiationException | IllegalAccessException | IllegalArgumentException e) {
+                        unreadablePaths.add(configData.path());
+                        System.out.println("Error reading list in configuration file: " + this.config.getName() + " path: " + configData.path());
+                        e.printStackTrace();
+                    }
+                } else {
+                    try {
+                        Object object = this.config.get(configData.path());
+                        Object deserializedValue = this.deserializeValue(f, object == null ? null : object.toString());
+                        if (deserializedValue != null) {
+                            f.set(this, deserializedValue);
+                        } else {
+                            unreadablePaths.add(configData.path());
+                        }
+                    } catch (InstantiationException | IllegalAccessException | IllegalArgumentException e) {
+                        unreadablePaths.add(configData.path());
+                        System.out.println("Error reading value in configuration file: " + this.config.getName() + " path: " + configData.path());
+                        e.printStackTrace();
                     }
                 }
             } catch (Exception e) {
+                if (f.isAnnotationPresent(ConfigData.class)) {
+                    unreadablePaths.add(f.getAnnotation(ConfigData.class).path());
+                }
                 e.printStackTrace();
             }
         }

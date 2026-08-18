@@ -18,7 +18,7 @@ quest-npc-skin: ewogICJ0aW1lc3RhbXAiIDogMTU5OTIxNzI3NjA5NywKICAicHJvZmlsZUlkIiA6
 shop-npc-skin: ewogICJ0aW1lc3RhbXAiIDogMTY0NTk4MDY0NjU4NywKICAicHJvZmlsZUlkIiA6ICI1MjhlYzVmMmEzZmM0MDA0YjYwY2IwOTA5Y2JiMjdjYiIsCiAgInByb2ZpbGVOYW1lIiA6ICJQdWxpenppIiwKICAic2lnbmF0dXJlUmVxdWlyZWQiIDogdHJ1ZSwKICAidGV4dHVyZXMiIDogewogICAgIlNLSU4iIDogewogICAgICAidXJsIiA6ICJodHRwOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlL2NmNzhlNzVkZjlkMjg4YjM5ZDRlMDFjNzEwYjRlZjNhYmI2NDQwNGVmZDU2YWQ5OTE1ZTU5ZWVhMTI2ZWNlMGUiCiAgICB9CiAgfQp9
 status-npc-skin: ewogICJ0aW1lc3RhbXAiIDogMTY0ODY3MjI4MTczMiwKICAicHJvZmlsZUlkIiA6ICI1MjhlYzVmMmEzZmM0MDA0YjYwY2IwOTA5Y2JiMjdjYiIsCiAgInByb2ZpbGVOYW1lIiA6ICJQdWxpenppIiwKICAic2lnbmF0dXJlUmVxdWlyZWQiIDogdHJ1ZSwKICAidGV4dHVyZXMiIDogewogICAgIlNLSU4iIDogewogICAgICAidXJsIiA6ICJodHRwOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlL2MxNTIxYTAyNTY2ODgxYjIwNTA4Mzg5YjM4MmEzMDIzMWE4NDViYTc0OWEyN2QxNDQ5NTUyNzQ3NDgxY2Y4YjkiLAogICAgICAibWV0YWRhdGEiIDogewogICAgICAgICJtb2RlbCIgOiAic2xpbSIKICAgICAgfQogICAgfQogIH0KfQ==
 noob-protect:
-  enable: true
+  enable: false
   level: 120
   damage_boost: 1.1
   damage_reduce: 0.9
@@ -30,21 +30,21 @@ custom-chat-format:
   enable: false
   format: '%pit_genesis_tag%%pit_level_tag_roman% %s&f: %s'
 event-online-required:
-  hunt: 1
-  dragon_egg: 1
-  respawn_family: 1
-  auction: 1
-  cake: 1
-  care_package: 20
-  everyone_bounty_event: 10
-  quick_math_event: 5
-  ham: 20
-  rage_pit: 20
-  red_vs_blue: 20
-  spire: 20
-  block_head: 999
-  squads: 999
-highest-prestige: 35
+  hunt: 1000
+  dragon_egg: 1000
+  respawn_family: 1000
+  auction: 1000
+  cake: 1000
+  care_package: 1000
+  everyone_bounty_event: 1000
+  quick_math_event: 1000
+  ham: 1000
+  rage_pit: 1000
+  red_vs_blue: 1000
+  spire: 1000
+  block_head: 1000
+  squads: 1000
+highest-prestige: 100
 title:
   event:
     epic:
@@ -54,157 +54,172 @@ title:
       interval: 10
 scoreboard:
   animation:
-    - '&f&l神&5&l话&5&l天&5&l坑'
-    - '&d&l神&f&l话&5&l天&5&l坑'
-    - '&5&l神&d&l话&f&l天&5&l坑'
-    - '&5&l神&5&l话&d&l天&f&l坑'
-    - '&5&l神&5&l话&5&l天&d&l坑'
-    - '&5&l神&5&l话&f&l天&5&l坑'
-    - '&5&l神&f&l话&d&l天&5&l坑'
-    - '&f&l神&d&l话&5&l天&5&l坑'
-    - '&d&l神&5&l话&5&l天&5&l坑'
-    - '&5&l神&5&l话&5&l天&5&l坑'
-    - '&5&l神&5&l话&5&l天&f&l坑'
-    - '&5&l神&5&l话&f&l天&d&l坑'
-    - '&5&l神&f&l话&d&l天&5&l坑'
-    - '&f&l神&d&l话&5&l天&5&l坑'
-    - '&d&l神&5&l话&5&l天&5&l坑'
-    - '&5&l神&f&l话&5&l天&5&l坑'
-    - '&d&l神&5&l话&f&l天&5&l坑'
-    - '&5&l神&d&l话&5&l天&f&l坑'
-    - '&5&l神&5&l话&d&l天&5&l坑'
-    - '&5&l神&5&l话&5&l天&d&l坑'
+    - '&e&l天坑乱斗 [x40]'
+    - '&6&l天&e&l坑乱斗 [x2]'
+    - '&f&l天&6&l坑&e&l乱斗 [x2]'
+    - '&f&l天坑&6&l乱&e&l斗 [x2]'
+    - '&f&l天坑乱&6&l斗 [x2]'
+    - '&f&l天坑乱斗 [x8]'
+    - '&e&l天坑乱斗 [x6]'
+    - '&f&l天坑乱斗 [x6]'
   loading:
     - ''
     - '&c正在加载档案...'
     - '&c请稍等片刻...'
     - ''
-    - '&c公告群: &exxxxxxx'
-    - ''
-    - '&cThePitUltimate'
+    - '&ewww.hypixel.net'
 scoreboard-showtime: true
 forbidEnchant:
-  - 'false'
+  - false
+#  - 致富一击
+#  - 致残
+#  - 金手铐
+#  - 医师
+#  - 迅捷追击
+#  - 致富之路
+#  - 钻石回收者
+#  - 迅捷打击
+#  - 扔雪球!
+#  - 生命吸收
+#  - 手艺人
+#  - '幸运一击: 箭矢'
+#  - '强力击: 耀金'
+#  - '强力击: 紊乱'
+#  - 奇迹力场
+#  - 迅捷之风
+#  - 天坑钱包
+#  - 背水一战
+#  - 阻滞战术
+#  - 夜幕降临
+#  - 雷箭
+#  - 亡灵之箭
+#  - 枯萎穿心
+#  - 灵魂吞噬者
+#  - 破镜
+#  - 黄金助推器
+#  - 锐箭
+#  - 残弩
+#  - 紫金
+#  - 鹅卵石
+#  - '复生: 生命吸收'
+#  - '复生: 抗性'
+#  - 复仇之魂
+#  - 诅咒
+#  - 过度医疗
+#  - 快速愈合
+#  - 丧钟
+#  - 金手铐
+#  - 神秘领域
+#  - 羽毛掠夺者
+#  - 幻影盾
+#  - 国王杀手
+#  - 天使军：忠义
+#  - TNT
+#  - 荆棘反射
+#  - 战地医师
+#  - 守护天使
+#  - 元素
+#  - 战斗铲之王
+#  - 赫尔墨斯
+#  - 箭矢回收
+#  - 末影跃进
+#  - 斗士
 bounty:
   updateInterval: 1
 rate:
   1:
     dark:
-      vip1:
-        test: pit.vip1
-        value: 0.08
-      vip2:
-        test: pit.vip2
-        value: 0.04
+      vip:
+        permission: pit.enchant.vip
+        value: 0.0
       default:
-        value: 0.02
+        permission: pit.enchant.default
+        value: 0.0
     normal:
-      vip1:
-        test: pit.vip1
-        value: 0.08
-      vip2:
-        test: pit.vip2
-        value: 0.04
+      vip:
+        permission: pit.enchant.vip
+        value: 0.0
       default:
-        value: 0.02
+        permission: pit.enchant.default
+        value: 0.0
     rage:
-      vip1:
-        test: pit.vip1
-        value: 0.08
-      vip2:
-        test: pit.vip2
-        value: 0.04
+      vip:
+        permission: pit.enchant.vip
+        value: 0.1
       default:
-        value: 0.02
+        permission: pit.enchant.default
+        value: 0.1
     sewers:
-      vip1:
-        test: pit.vip1
-        value: 0.08
-      vip2:
-        test: pit.vip2
-        value: 0.04
+      vip:
+        permission: pit.enchant.vip
+        value: 0.0
       default:
-        value: 0.02
+        permission: pit.enchant.default
+        value: 0.0
   2:
     dark:
-      vip1:
-        test: pit.vip1
-        value: 0.08
-      vip2:
-        test: pit.vip2
-        value: 0.04
+      vip:
+        permission: pit.enchant.vip
+        value: 0.1
       default:
-        value: 0.02
+        permission: pit.enchant.default
+        value: 0.1
     normal:
-      vip1:
-        test: pit.vip1
-        value: 0.08
-      vip2:
-        test: pit.vip2
-        value: 0.04
+      vip:
+        permission: pit.enchant.vip
+        value: 0.1
       default:
-        value: 0.02
+        permission: pit.enchant.default
+        value: 0.1
     rage:
-      vip1:
-        test: pit.vip1
-        value: 0.08
-      vip2:
-        test: pit.vip2
-        value: 0.04
+      vip:
+        permission: pit.enchant.vip
+        value: 0.0
       default:
-        value: 0.02
+        permission: pit.enchant.default
+        value: 0.0
     sewers:
-      vip1:
-        test: pit.vip1
-        value: 0.08
-      vip2:
-        test: pit.vip2
-        value: 0.04
+      vip:
+        permission: pit.enchant.vip
+        value: 0.0
       default:
-        value: 0.02
+        permission: pit.enchant.default
+        value: 0.0
 
   3:
     dark:
-      vip1:
-        test: pit.vip1
-        value: 0.08
-      vip2:
-        test: pit.vip2
-        value: 0.04
+      vip:
+        permission: pit.enchant.vip
+        value: 0.0
       default:
-        value: 0.02
+        permission: pit.enchant.default
+        value: 0.0
     normal:
-      vip1:
-        test: pit.vip1
-        value: 0.08
-      vip2:
-        test: pit.vip2
-        value: 0.04
+      vip:
+        permission: pit.enchant.vip
+        value: 0.1
       default:
-        value: 0.02
+        permission: pit.enchant.default
+        value: 0.1
     rage:
-      vip1:
-        test: pit.vip1
-        value: 0.08
-      vip2:
-        test: pit.vip2
-        value: 0.04
+      vip:
+        permission: pit.enchant.vip
+        value: 0.0
       default:
-        value: 0.02
+        permission: pit.enchant.default
+        value: 0.0
     sewers:
-      vip1:
-        test: pit.vip1
-        value: 0.08
-      vip2:
-        test: pit.vip2
-        value: 0.04
+      vip:
+        permission: pit.enchant.vip
+        value: 0.0
       default:
-        value: 0.02
+        permission: pit.enchant.default
+        value: 0.0
 mythicDropChance:
-  vip1:
-    test: permission.vip1
+  vip:
+    permission: pit.mythicdrop.vip
+    value: 0.012
+  default:
+    permission: pit.mythicdrop.default
     value: 0.01
-  vip2:
-    test: permission.vip2
-    value: 0.02
 kingsQuestsMarker: 5c854119-9c7c-4ae5-9649-fe8c039193b8

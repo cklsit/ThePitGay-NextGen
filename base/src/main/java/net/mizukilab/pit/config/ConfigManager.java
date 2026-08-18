@@ -184,7 +184,9 @@ public class ConfigManager {
     }
 
     public void reload() {
-        global.load();
+        PitGlobalConfig reloadedGlobal = new PitGlobalConfig(instance);
+        reloadedGlobal.load();
+        global = reloadedGlobal;
         instance.setGlobalConfig(global);
         pitConfigs.clear();
         cursor = 0;

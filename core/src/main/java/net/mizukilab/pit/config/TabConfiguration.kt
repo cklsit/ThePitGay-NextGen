@@ -80,6 +80,7 @@ object TabConfiguration {
         enable = config.getBoolean("enable")
         tick = config.getInt("tick")
         delay = config.getInt("delay")
+        animation.clear()
         config.getConfigurationSection("animation").getKeys(false).forEach {
             animation[it] = this.config.getStringList("animation.${it}")
         }
@@ -88,12 +89,16 @@ object TabConfiguration {
     }
 
     private fun refreshAndSave() {
+        var hasChanges = false
         this.defaults.entries.forEach {
             if (this.config.get(it.key) == null) {
                 this.config.set(it.key, it.value)
+                hasChanges = true
             }
         }
-        this.config.save(File(ThePit.getInstance().dataFolder, "tab.yml"))
+        if (hasChanges) {
+            this.config.save(File(ThePit.getInstance().dataFolder, "tab.yml"))
+        }
     }
 
     private val defaults = mapOf(

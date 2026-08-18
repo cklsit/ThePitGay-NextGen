@@ -16,15 +16,22 @@ public class LocationSerializer extends AbstractSerializer<Location> {
 
     @Override
     public Location fromString(String data) {
-        if (data == null) {
-            return new Location(Bukkit.getWorlds().get(0), 0, 50, 0);
+        if (data == null || data.trim().isEmpty()) {
+            return null;
         }
 
         String[] parts = data.split("\\|");
         if (parts.length != 6) {
-            return new Location(Bukkit.getWorlds().get(0), 0, 50, 0);
+            return null;
         }
-        return new Location(Bukkit.getWorld(parts[0]), Float.parseFloat(parts[1]), Float.parseFloat(parts[2]), Float.parseFloat(parts[3]), Float.parseFloat(parts[4]), Float.parseFloat(parts[5]));
+        try {
+            if (Bukkit.getWorld(parts[0]) == null) {
+                return null;
+            }
+            return new Location(Bukkit.getWorld(parts[0]), Float.parseFloat(parts[1]), Float.parseFloat(parts[2]), Float.parseFloat(parts[3]), Float.parseFloat(parts[4]), Float.parseFloat(parts[5]));
+        } catch (RuntimeException ignored) {
+            return null;
+        }
     }
 
 }
