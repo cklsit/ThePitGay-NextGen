@@ -99,8 +99,8 @@ public class ProtectListener implements Listener {
 
             Set<Material> BLOCKED_MATERIALS = EnumSet.of(
                     Material.WATER,
-                    Material.STATIONARY_WATER,
-                    Material.WATER_LILY
+                    Material.WATER,
+                    Material.LILY_PAD
             );
 
             Location temp = location.clone();
@@ -130,7 +130,7 @@ public class ProtectListener implements Listener {
                     if (PlayerUtil.isVenom(event.getPlayer()) || PlayerUtil.isEquippingSomber(event.getPlayer())) {
                         return;
                     }
-                    TNTPrimed tntPrimed = (TNTPrimed) event.getPlayer().getWorld().spawnEntity(event.getBlockPlaced().getLocation(), EntityType.PRIMED_TNT);
+                    TNTPrimed tntPrimed = (TNTPrimed) event.getPlayer().getWorld().spawnEntity(event.getBlockPlaced().getLocation(), EntityType.TNT);
                     tntPrimed.setFuseTicks(30);
 
                     tntPrimed.setMetadata("internal", new FixedMetadataValue(ThePit.getInstance(), "tnt_enchant_item"));
@@ -146,7 +146,7 @@ public class ProtectListener implements Listener {
                     if (PlayerUtil.isVenom(event.getPlayer()) || PlayerUtil.isEquippingSomber(event.getPlayer())) {
                         return;
                     }
-                    TNTPrimed tntPrimed = (TNTPrimed) event.getPlayer().getWorld().spawnEntity(event.getBlockPlaced().getLocation(), EntityType.PRIMED_TNT);
+                    TNTPrimed tntPrimed = (TNTPrimed) event.getPlayer().getWorld().spawnEntity(event.getBlockPlaced().getLocation(), EntityType.TNT);
                     tntPrimed.setFuseTicks(0);
 
                     tntPrimed.setMetadata("internal", new FixedMetadataValue(ThePit.getInstance(), "tnt_enchant_item"));
@@ -168,7 +168,7 @@ public class ProtectListener implements Listener {
                     existTime = (long) (baseTime * (1 + (0.6 * entry.getValue().getLevel())));
                 }
             }
-            if (event.getBlockPlaced().getType() == Material.WOOD) {
+            if (event.getBlockPlaced().getType() == Material.OAK_PLANKS) {
                 existTime = 30L;
             }
             /*
@@ -209,8 +209,8 @@ public class ProtectListener implements Listener {
 
             Set<Material> BLOCKED_MATERIALS = EnumSet.of(
                     Material.WATER,
-                    Material.STATIONARY_WATER,
-                    Material.WATER_LILY
+                    Material.WATER,
+                    Material.LILY_PAD
             );
 
             Location location = event.getBlockClicked().getLocation();

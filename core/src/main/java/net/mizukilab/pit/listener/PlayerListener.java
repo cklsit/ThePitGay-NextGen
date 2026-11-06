@@ -349,7 +349,7 @@ public class PlayerListener implements Listener {
                 player.getInventory().setArmorContents(armorContents);
 
                 event.getItem().remove();
-                player.playSound(player.getLocation(), Sound.HORSE_ARMOR, 1F, 1F);
+                player.playSound(player.getLocation(), Sound.ITEM_ARMOR_EQUIP_GENERIC, 1F, 1F);
             } else if (diamondArmor) {
                 final String internalName1 = ItemUtil.getInternalName(equippedArmor);
                 if (internalName1 != null && (internalName1.equalsIgnoreCase("mythic_leggings") || internalName1.equals("armageddon_boots") || internalName1.equals("angel_chestplate") || internalName1.equals("kings_helmet"))) {
@@ -363,13 +363,13 @@ public class PlayerListener implements Listener {
                 armorContents[slot] = itemStack;
                 player.getInventory().setArmorContents(armorContents);
                 event.getItem().remove();
-                player.playSound(player.getLocation(), Sound.HORSE_ARMOR, 1F, 1F);
+                player.playSound(player.getLocation(), Sound.ITEM_ARMOR_EQUIP_GENERIC, 1F, 1F);
             }
         } else if (stack.getType() == Material.ARROW) {
             ItemBuilder arrowBuilder = new ItemBuilder(Material.ARROW).internalName("default_arrow").defaultItem().canDrop(false).canSaveToEnderChest(false);
             player.getInventory().addItem(arrowBuilder.build());
             event.getItem().remove();
-            player.playSound(player.getLocation(), Sound.ITEM_PICKUP, 1F, 1F);
+            player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1F, 1F);
         } else if (stack.getType() == Material.BOW || Utils.toNMStackQuick(stack).getItem() instanceof ItemSword) {
             InventoryUtil.addInvReverse(player.getInventory(), event.getItem().getItemStack());
             event.getItem().remove();
@@ -396,7 +396,7 @@ public class PlayerListener implements Listener {
 
                 profile.setGoldPicked(profile.getGoldPicked() + 1);
                 player.sendMessage(CC.translate("&6&l捡起硬币! &7从地上找到了&6 " + gold + " &7硬币!"));
-                player.playSound(player.getLocation(), Sound.NOTE_PLING, 1, 1.8F);
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1.8F);
                 event.getItem().removeMetadata("gold", ThePit.getInstance()); // for garbage clear
                 event.getItem().remove();
             }
@@ -406,13 +406,13 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onPlayerInteractBlock(PlayerInteractEvent event) {
         if (event.getClickedBlock() != null) {
-            if (event.getClickedBlock().getType() == Material.ENCHANTMENT_TABLE) {
+            if (event.getClickedBlock().getType() == Material.ENCHANTING_TABLE) {
                 event.setCancelled(true);
                 PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(event.getPlayer().getUniqueId());
                 PerkData data = profile.getUnlockedPerkMap().get("Mythicism");
                 if (data != null) {
                     ThePit.getApi().openMythicWellMenu(event.getPlayer());
-                    event.getPlayer().playSound(event.getPlayer().getLocation(), Sound.CHICKEN_EGG_POP, 1, 0.9F);
+                    event.getPlayer().playSound(event.getPlayer().getLocation(), Sound.ENTITY_CHICKEN_EGG, 1, 0.9F);
                     return;
                 }
                 event.getPlayer().sendMessage(CC.translate("&c你需要达到 " + LevelUtil.getLevelTag(0, 120) + " &c解锁精通玩法并解锁精通天赋 &6神话附魔师 &c以使用神话之井!"));
@@ -427,7 +427,7 @@ public class PlayerListener implements Listener {
             return;
         }
         Player player = e.getPlayer();
-        if (e.getClickedBlock() != null && (e.getClickedBlock().getType() == Material.WORKBENCH
+        if (e.getClickedBlock() != null && (e.getClickedBlock().getType() == Material.CRAFTING_TABLE
                 || e.getClickedBlock().getType() == Material.ANVIL || e.getClickedBlock().getType() == Material.CHEST || e.getClickedBlock().getType() == Material.TRAPPED_CHEST)) {
             e.setCancelled(true);
             return;
@@ -436,13 +436,13 @@ public class PlayerListener implements Listener {
         if (item == null || item.getType() == Material.AIR) {
             return;
         }
-        if (player.getGameMode() != GameMode.CREATIVE && item.getType() == Material.SKULL_ITEM && item.getDurability() == 3 && (e.getAction() == Action.RIGHT_CLICK_AIR || e.getAction() == Action.RIGHT_CLICK_BLOCK) && "golden_head".equals(ItemUtil.getInternalName(item))) {
+        if (player.getGameMode() != GameMode.CREATIVE && item.getType() == Material.SKELETON_SKULL_ITEM && item.getDurability() == 3 && (e.getAction() == Action.RIGHT_CLICK_AIR || e.getAction() == Action.RIGHT_CLICK_BLOCK) && "golden_head".equals(ItemUtil.getInternalName(item))) {
             e.setCancelled(true);
             if (System.currentTimeMillis() - goldenAppleCooldown.getOrDefault(player.getUniqueId(), 0L) <= 1000L) {
                 e.setUseItemInHand(Event.Result.DENY);
                 return;
             }
-            player.playSound(player.getLocation(), Sound.EAT, 1F, 1F);
+            player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EAT, 1F, 1F);
             goldenAppleCooldown.put(player.getUniqueId(), System.currentTimeMillis());
             PlayerUtil.takeOneItemInHand(player);
             player.removePotionEffect(PotionEffectType.SPEED);
@@ -461,7 +461,7 @@ public class PlayerListener implements Listener {
                     e.setUseItemInHand(Event.Result.DENY);
                     return;
                 }
-                player.playSound(player.getLocation(), Sound.EAT, 1F, 1F);
+                player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EAT, 1F, 1F);
                 goldenAppleCooldown.put(player.getUniqueId(), System.currentTimeMillis());
                 PlayerUtil.takeOneItemInHand(player);
                 player.removePotionEffect(PotionEffectType.REGENERATION);
@@ -475,12 +475,12 @@ public class PlayerListener implements Listener {
                     e.setUseItemInHand(Event.Result.DENY);
                     return;
                 }
-                player.playSound(player.getLocation(), Sound.EAT, 1F, 1F);
+                player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EAT, 1F, 1F);
                 goldenAppleCooldown.put(player.getUniqueId(), System.currentTimeMillis());
                 PlayerUtil.takeOneItemInHand(player);
                 PlayerUtil.heal(player, 8);
-                player.removePotionEffect(PotionEffectType.DAMAGE_RESISTANCE);
-                player.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 60, 1), true);
+                player.removePotionEffect(PotionEffectType.RESISTANCE);
+                player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 60, 1), true);
                 (((CraftPlayer) player).getHandle()).setAbsorptionHearts(6.0F);
             }
         } else if (item.getType() == Material.MONSTER_EGG) {
@@ -492,19 +492,19 @@ public class PlayerListener implements Listener {
                     e.getPlayer().sendMessage(CC.translate("&c在再次使用此物品前,请等待" + TimeUtil.millisToRoundedTime(cooldown.getRemaining()).replace(" ", "") + "!"));
                     return;
                 }
-                player.playSound(player.getLocation(), Sound.EAT, 1F, 1F);
+                player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EAT, 1F, 1F);
                 firstAidEggCooldown.put(player.getUniqueId(), new Cooldown(30, TimeUnit.SECONDS));
                 player.removePotionEffect(PotionEffectType.SPEED);
                 PlayerUtil.heal(player, 5);
             }
-        } else if (item.getType() == Material.MUSHROOM_SOUP) {
+        } else if (item.getType() == Material.MUSHROOM_STEW) {
             if ("perk_tasty_soup_kill".equals(ItemUtil.getInternalName(item))) {
                 e.setCancelled(true);
                 if (System.currentTimeMillis() - goldenAppleCooldown.getOrDefault(player.getUniqueId(), 0L) <= 1000L) {
                     e.setUseItemInHand(Event.Result.DENY);
                     return;
                 }
-                player.playSound(player.getLocation(), Sound.EAT, 1F, 1F);
+                player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EAT, 1F, 1F);
                 goldenAppleCooldown.put(player.getUniqueId(), System.currentTimeMillis());
                 PlayerUtil.takeOneItemInHand(player);
                 PlayerUtil.heal(player, 2);
@@ -518,7 +518,7 @@ public class PlayerListener implements Listener {
                     e.setUseItemInHand(Event.Result.DENY);
                     return;
                 }
-                player.playSound(player.getLocation(), Sound.EAT, 1F, 1F);
+                player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EAT, 1F, 1F);
                 goldenAppleCooldown.put(player.getUniqueId(), System.currentTimeMillis());
                 PlayerUtil.takeOneItemInHand(player);
                 player.removePotionEffect(PotionEffectType.REGENERATION);
@@ -542,7 +542,7 @@ public class PlayerListener implements Listener {
                 PlayerUtil.takeOneItemInHand(e.getPlayer());
                 e.getPlayer().addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 20 * 20, 0));
                 e.getPlayer().sendMessage(CC.translate("&f牛奶! &7你喝下了牛奶"));
-                e.getPlayer().playSound(e.getPlayer().getLocation(), Sound.DRINK, 1f, 1f);
+                e.getPlayer().playSound(e.getPlayer().getLocation(), Sound.ENTITY_GENERIC_DRINK, 1f, 1f);
             }
         }*/
     }
@@ -554,7 +554,7 @@ public class PlayerListener implements Listener {
         if (event.getItem() != null && event.getItem().getType() == Material.GOLDEN_APPLE) {
             (((CraftPlayer) event.getPlayer()).getHandle()).setAbsorptionHearts(8.0F);
             PlayerUtil.takeOneItemInHand(player);
-            player.playSound(player.getLocation(), Sound.EAT, 1F, 1F);
+            player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EAT, 1F, 1F);
             player.removePotionEffect(PotionEffectType.REGENERATION);
             player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 100, 1), true);
             if (PlayerUtil.isPlayerUnlockedPerk(player, "yummy_perk")) {
@@ -568,13 +568,13 @@ public class PlayerListener implements Listener {
         if (event.getItem() != null && "perk_olympus".equals(ItemUtil.getInternalName(event.getItem()))) {
             PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
             PlayerUtil.takeOneItemInHand(player);
-            player.playSound(player.getLocation(), Sound.EAT, 1F, 1F);
+            player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EAT, 1F, 1F);
             player.removePotionEffect(PotionEffectType.REGENERATION);
             player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 10 * 20, 2), true);
             player.removePotionEffect(PotionEffectType.SPEED);
             player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 24 * 20, 0), true);
-            player.removePotionEffect(PotionEffectType.DAMAGE_RESISTANCE);
-            player.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 4 * 20, 1), true);
+            player.removePotionEffect(PotionEffectType.RESISTANCE);
+            player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 4 * 20, 1), true);
             profile.setExperience(profile.getExperience() + 27);
 
             event.setCancelled(true);
@@ -639,7 +639,7 @@ public class PlayerListener implements Listener {
                 }
 
                 BlockIterator blockIterator = new BlockIterator(event.getPlayer());
-                TNTPrimed tntPrimed = (TNTPrimed) event.getPlayer().getWorld().spawnEntity(event.getPlayer().getLocation(), EntityType.PRIMED_TNT);
+                TNTPrimed tntPrimed = (TNTPrimed) event.getPlayer().getWorld().spawnEntity(event.getPlayer().getLocation(), EntityType.TNT);
                 tntPrimed.setFuseTicks(30);
                 for (int i = 0; i < 20; i++) {
                     blockIterator.next();
@@ -661,7 +661,7 @@ public class PlayerListener implements Listener {
                 }
 
                 BlockIterator blockIterator = new BlockIterator(event.getPlayer());
-                TNTPrimed tntPrimed = (TNTPrimed) event.getPlayer().getWorld().spawnEntity(event.getPlayer().getLocation(), EntityType.PRIMED_TNT);
+                TNTPrimed tntPrimed = (TNTPrimed) event.getPlayer().getWorld().spawnEntity(event.getPlayer().getLocation(), EntityType.TNT);
                 tntPrimed.setFuseTicks(30);
                 for (int i = 0; i < 20; i++) {
                     blockIterator.next();

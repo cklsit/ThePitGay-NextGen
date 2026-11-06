@@ -1,12 +1,9 @@
 package net.mizukilab.pit.util.chat;
 
 import cn.charlotte.pit.ThePit;
-import net.minecraft.server.v1_8_R3.ChatComponentText;
-import net.minecraft.server.v1_8_R3.PacketPlayOutChat;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.mizukilab.pit.actionbar.IActionBarManager;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitRunnable;
 
 /**
  * @Author: EmptyIrony
@@ -31,10 +28,8 @@ public class ActionBarUtil {
     }
 
     public static void sendActionBar0(Player player, String message) {
-        ChatComponentText components = new ChatComponentText(CC.translate(message));
-        PacketPlayOutChat packet = new PacketPlayOutChat(components, (byte) 2);
-
-        ((CraftPlayer) player).getHandle().playerConnection.sendPacket(packet);
+        // 1.21：动作栏走 Adventure，替代 1.8 的 PacketPlayOutChat(byte) 构造
+        player.sendActionBar(LegacyComponentSerializer.legacySection().deserialize(CC.translate(message)));
     }
 
 

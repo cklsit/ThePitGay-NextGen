@@ -185,7 +185,7 @@ class LimitXZQ1Ench : AbstractEnchantment(), ITickTask, MovementHandler, IPlayer
                     speedLevel(enchantLevel)
                 ), true
             )
-            attacker.addPotionEffect(PotionEffect(PotionEffectType.SLOW, 2 * 20, 0))
+            attacker.addPotionEffect(PotionEffect(PotionEffectType.SLOWNESS, 2 * 20, 0))
         }
     }
 

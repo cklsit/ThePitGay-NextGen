@@ -62,7 +62,7 @@ public class ApostleForTheGesusKillStreak extends AbstractPerk implements Listen
 
     @Override
     public Material getIcon() {
-        return Material.EYE_OF_ENDER;
+        return Material.ENDER_EYE;
     }
 
     @Override

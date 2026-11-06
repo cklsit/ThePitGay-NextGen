@@ -87,7 +87,7 @@ public class MegaLongBowEnchant extends AbstractEnchantment implements Listener,
         if (itemInHand.getType() == Material.BOW) {
             if (cooldown.getOrDefault(player.getUniqueId(), new Cooldown(0)).hasExpired()) {
                 cooldown.put(player.getUniqueId(), new Cooldown(1, TimeUnit.SECONDS));
-                player.addPotionEffect(new PotionEffect(PotionEffectType.JUMP, 2 * 20, level), false);
+                player.addPotionEffect(new PotionEffect(PotionEffectType.JUMP_BOOST, 2 * 20, level), false);
                 event.setCancelled(true);
                 final EntityPlayer ePlayer = ((CraftPlayer) player).getHandle();
                 final ItemStack itemStack = Utils.toNMStackQuick(itemInHand);

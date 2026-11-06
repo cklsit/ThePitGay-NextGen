@@ -4,7 +4,6 @@ import cn.charlotte.pit.ThePit
 import cn.charlotte.pit.util.hologram.HologramAPI
 import cn.charlotte.pit.util.hologram.touch.TouchHandler
 import cn.charlotte.pit.util.hologram.view.ViewHandler
-import eu.decentsoftware.holograms.api.nms.NMS
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.entity.Entity
@@ -37,9 +36,9 @@ class PacketHologram(var displayText: String, var loc: Location) : Parent {
 
     override fun spawn(receivers: MutableCollection<out Player>?): Boolean {
         if (!Bukkit.isPrimaryThread()) {
-            Bukkit.getScheduler().runTask(ThePit.getInstance()) {
+            Bukkit.getScheduler().runTask(ThePit.getInstance(), Runnable {
                 spawn(receivers)
-            }
+            })
             return true;
         }
         allPlayers = false
@@ -52,9 +51,9 @@ class PacketHologram(var displayText: String, var loc: Location) : Parent {
 
     override fun spawn(): Boolean {
         if (!Bukkit.isPrimaryThread()) {
-            Bukkit.getScheduler().runTask(ThePit.getInstance()) {
+            Bukkit.getScheduler().runTask(ThePit.getInstance(), Runnable {
                 spawn()
-            }
+            })
             return true;
         }
         spawned = true
@@ -68,9 +67,9 @@ class PacketHologram(var displayText: String, var loc: Location) : Parent {
             spawned = false
             HologramAPI.removeHologram(this)
         } else {
-            Bukkit.getScheduler().runTask(ThePit.getInstance()) {
+            Bukkit.getScheduler().runTask(ThePit.getInstance(), Runnable {
                 deSpawn()
-            }
+            })
         }
         return true
     }
@@ -110,9 +109,9 @@ class PacketHologram(var displayText: String, var loc: Location) : Parent {
         if (!Bukkit.isPrimaryThread()) {
             move(loc)
         } else {
-            Bukkit.getScheduler().runTask(ThePit.getInstance()) {
+            Bukkit.getScheduler().runTask(ThePit.getInstance(), Runnable {
                 move(loc)
-            }
+            })
         }
     }
 
@@ -202,23 +201,27 @@ class PacketHologram(var displayText: String, var loc: Location) : Parent {
     }
 
     override fun getAttachedTo(): Entity? {
-        TODO("Not yet implemented")
+        return attachedEntity
     }
 
     override fun setAttachedTo(entity: Entity?) {
-        entity ?: run {
-            attachingEntity = -1
+        attachedEntity = entity
+        val line = hologram.entity ?: return
+        line.eject()
+        if (entity == null) {
             return
         }
-
-        attachingEntity = entity.entityId
-        for (player in Bukkit.getOnlinePlayers()) {
-            sendAttach(player)
-        }
+        entity.addPassenger(line)
     }
 
+    private var attachedEntity: Entity? = null
+
     private fun sendAttach(player: Player) {
-        val lineId = hologram.entity.entityId
-        NMS.getInstance().attachFakeEntity(player, lineId, attachingEntity)
+        // 1.21 下全息行为真实实体，作为乘客跟随宿主实体即可，无需发包
+        val entity = attachedEntity ?: return
+        val line = hologram.entity ?: return
+        if (!line.isDead) {
+            entity.addPassenger(line)
+        }
     }
 }

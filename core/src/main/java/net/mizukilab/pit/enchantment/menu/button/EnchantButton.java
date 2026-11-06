@@ -152,7 +152,7 @@ public class EnchantButton extends Button {
                     lines.add("&c天赋 &6邪术 &c等级 &eIII &c后解锁此功能!");
                 }
             }
-            return new ItemBuilder(Material.ENCHANTMENT_TABLE)
+            return new ItemBuilder(Material.ENCHANTING_TABLE)
                     .name("&d神话之井")
                     .lore(lines)
                     .build();
@@ -216,7 +216,7 @@ public class EnchantButton extends Button {
                 return;
             }
             if (!removeMythicLegWithColor(player, color)) {
-                player.playSound(player.getLocation(), Sound.ENDERMAN_TELEPORT, 1, 1);
+                player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1, 1);
                 player.sendMessage(CC.translate("&c请放入一条额外的 " + color.getChatColor() + color.getDisplayName() + "色神话之甲 &c才能附魔!"));
                 return;
             }
@@ -458,7 +458,7 @@ public class EnchantButton extends Button {
                             if (!PlusPlayer.getPlusPlayer().contains(player.getName())) {
                                 p.spigot().sendMessage(new ChatComponentBuilder(CC.translate("&d&l稀有附魔! &7" + profile.getFormattedNameWithRoman() + " &7在神话之井中获得了稀有物品: " + mythicItem.toItemStack().getItemMeta().getDisplayName() + " &e[查看]"))
                                         .setCurrentHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, hoverEventComponents)).create());
-                                p.playSound(p.getLocation(), Sound.ENDERDRAGON_GROWL, 1, 1);
+                                p.playSound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1, 1);
                             }
                         }
 

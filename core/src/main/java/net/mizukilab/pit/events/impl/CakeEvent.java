@@ -162,7 +162,7 @@ public class CakeEvent extends AbstractEvent implements INormalEvent, Listener {
 
             cakePlayerData.cooldown = new Cooldown(100);
 
-            if (block.getType() == Material.CAKE_BLOCK) {
+            if (block.getType() == Material.CAKE) {
                 int baseCoins = 1;
 
                 if (block.getData() == 6) {
@@ -182,11 +182,11 @@ public class CakeEvent extends AbstractEvent implements INormalEvent, Listener {
                 profile.grindCoins(totalCoins);
                 profile.setCoins(profile.getCoins() + totalCoins);
 
-                player.playSound(player.getLocation(), Sound.EAT, 1, 1);
+                player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EAT, 1, 1);
 
                 CC.send(MessageType.EVENT, player, "&d&l蛋糕! &6+" + totalCoins + "金币 &d" + cakePlayerData.clicked + "次吃蛋糕" + " &6(" + numFormatTwo.format(cakePlayerData.coins) + "金币在这次事件中)");
 
-            } else if (block.getType() == Material.STAINED_CLAY) {
+            } else if (block.getType() == Material.TERRACOTTA) {
                 final byte data = block.getState().getData().getData();
                 if (data == 2) {
                     block.setType(Material.AIR);
@@ -198,7 +198,7 @@ public class CakeEvent extends AbstractEvent implements INormalEvent, Listener {
                     profile.grindCoins(totalCoins);
                     profile.setCoins(profile.getCoins() + totalCoins);
 
-                    player.playSound(player.getLocation(), Sound.EAT, 1, 1);
+                    player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EAT, 1, 1);
 
                     CC.send(MessageType.EVENT, player, "&d&l蛋糕! &7吃下了 &c樱桃 &6+20金币&7!");
                 } else if (data == 15) {
@@ -211,7 +211,7 @@ public class CakeEvent extends AbstractEvent implements INormalEvent, Listener {
                     profile.setExperience(profile.getExperience() + totalXp);
                     profile.applyExperienceToPlayer(player);
 
-                    player.playSound(player.getLocation(), Sound.EAT, 1, 1);
+                    player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EAT, 1, 1);
 
                     CC.send(MessageType.EVENT, player, "&d&l蛋糕! &7吃下了 &4巧克力 &b+20经验&7!");
                 }
@@ -222,7 +222,7 @@ public class CakeEvent extends AbstractEvent implements INormalEvent, Listener {
 
     private boolean canEat(Location location) {
         for (Location face : LocationUtil.getFaces(location)) {
-            if (face.getBlock().getType() != Material.CAKE_BLOCK && face.getBlock().getType() != Material.STAINED_CLAY) {
+            if (face.getBlock().getType() != Material.CAKE && face.getBlock().getType() != Material.TERRACOTTA) {
                 return true;
             }
         }

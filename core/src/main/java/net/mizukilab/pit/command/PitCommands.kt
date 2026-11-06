@@ -148,7 +148,7 @@ class PitCommands {
                 )
                 return
             }
-            Bukkit.getScheduler().runTaskAsynchronously(ThePit.getInstance()) {
+            Bukkit.getScheduler().runTaskAsynchronously(ThePit.getInstance(), Runnable {
                 val lookupStrict = ThePit.getInstance()?.profileOperator?.namedIOperator(name)
                 if (lookupStrict == null || lookupStrict.profile().playerName == "NotLoadPlayer") {
                     player.sendMessage(CC.translate("&c此玩家的档案不存在,请检查输入是否有误."))
@@ -169,7 +169,7 @@ class PitCommands {
                         player
                     )
                 }
-            }
+            })
         } catch (e: Exception) {
             if (player.hasPermission("pit.admin")) {
                 CC.printError(player, e)
@@ -404,7 +404,7 @@ class PitCommands {
         //player.sendMessage(CC.translate("&c&l即将传送,请保持脱战状态并不要移动位置..."));
         player.setMetadata("backing", FixedMetadataValue(ThePit.getInstance(), true))
 
-        Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), {
+        Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), Runnable Runnable {
             if (player.isOnline) {
                 if (player.hasMetadata("backing")) {
                     val location = ThePit.getInstance().pitConfig
@@ -703,7 +703,7 @@ class PitCommands {
             data.active()
 
             profile.getMailData().sendMail(mail)
-            player.playSound(player.location, Sound.LEVEL_UP, 1f, 0.8f)
+            player.playSound(player.location, Sound.ENTITY_PLAYER_LEVELUP, 1f, 0.8f)
             player.sendMessage(CC.translate("&a领取成功! 请在邮件NPC处领取奖励!"))
         } else {
             player.sendMessage(CC.translate("&c你已经领取过这个CDK了!"))

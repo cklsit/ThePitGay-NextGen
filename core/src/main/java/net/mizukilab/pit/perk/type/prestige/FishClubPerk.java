@@ -169,7 +169,7 @@ public class FishClubPerk extends AbstractPerk implements Listener {
                     final Item item = location.getWorld().dropItem(
                             caughtLocation,
                             (ItemStack) RandomUtil.helpMeToChooseOne(
-                                    new ItemBuilder(Material.RAW_FISH)
+                                    new ItemBuilder(Material.COD)
                                             .internalName("fishing_fish")
                                             .name("&c大鲑鱼")
 
@@ -180,7 +180,7 @@ public class FishClubPerk extends AbstractPerk implements Listener {
                                                     "&8即使你不是很饿"
                                             )
                                             .build(),
-                                    new ItemBuilder(Material.RAW_FISH)
+                                    new ItemBuilder(Material.COD)
                                             .name("&c鲑鱼")
                                             .internalName("fishing_fish")
                                             .lore(
@@ -190,7 +190,7 @@ public class FishClubPerk extends AbstractPerk implements Listener {
                                                     "&8即使你不是很饿"
                                             )
                                             .build(),
-                                    new ItemBuilder(Material.RAW_FISH)
+                                    new ItemBuilder(Material.COD)
                                             .name("&c小鲑鱼")
                                             .internalName("fishing_fish")
                                             .lore(
@@ -200,7 +200,7 @@ public class FishClubPerk extends AbstractPerk implements Listener {
                                                     "&8即使你不是很饿"
                                             )
                                             .build(),
-                                    new ItemBuilder(Material.RAW_FISH)
+                                    new ItemBuilder(Material.COD)
                                             .name("&c大Irony鱼")
                                             .internalName("fishing_fish_irony")
                                             .lore(
@@ -210,7 +210,7 @@ public class FishClubPerk extends AbstractPerk implements Listener {
                                                     "&8即使你不是很饿"
                                             )
                                             .build(),
-                                    new ItemBuilder(Material.RAW_FISH)
+                                    new ItemBuilder(Material.COD)
                                             .name("&cIrony鱼")
                                             .internalName("fishing_fish_irony")
                                             .lore(
@@ -220,7 +220,7 @@ public class FishClubPerk extends AbstractPerk implements Listener {
                                                     "&8即使你不是很饿"
                                             )
                                             .build(),
-                                    new ItemBuilder(Material.RAW_FISH)
+                                    new ItemBuilder(Material.COD)
                                             .name("&c小Irony鱼")
                                             .internalName("fishing_fish_irony")
                                             .lore(

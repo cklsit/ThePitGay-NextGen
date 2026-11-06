@@ -144,7 +144,7 @@ public class RagePitEvent extends AbstractEvent implements IEpicEvent, Listener 
                         .getSpawnLocations()
                         .get(RandomUtil.random.nextInt(ThePit.getInstance().getPitConfig().getSpawnLocations().size()));
                 player.teleport(location);
-                player.playSound(player.getLocation(), Sound.ENDERDRAGON_GROWL, 1, 0.5F);
+                player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1, 0.5F);
                 player.sendMessage(CC.translate("&5&l大型事件! &6&l疯狂天坑 &7事件开始!"));
             }
 

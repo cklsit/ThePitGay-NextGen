@@ -299,9 +299,9 @@ public class RedVSBlueEvent extends AbstractEvent implements IEpicEvent, Listene
     private void sendPacket(Player player) {
         PacketPlayOutEntityEquipment packet = null;
         if (redTeam.contains(player.getUniqueId())) {
-            packet = new PacketPlayOutEntityEquipment(player.getEntityId(), 4, Utils.toNMStackQuick(new ItemBuilder(Material.WOOL).durability(14).build()));
+            packet = new PacketPlayOutEntityEquipment(player.getEntityId(), 4, Utils.toNMStackQuick(new ItemBuilder(Material.WHITE_WOOL).durability(14).build()));
         } else if (blueTeam.contains(player.getUniqueId())) {
-            packet = new PacketPlayOutEntityEquipment(player.getEntityId(), 4, Utils.toNMStackQuick(new ItemBuilder(Material.WOOL).durability(11).build()));
+            packet = new PacketPlayOutEntityEquipment(player.getEntityId(), 4, Utils.toNMStackQuick(new ItemBuilder(Material.WHITE_WOOL).durability(11).build()));
         }
         if (packet == null) {
             return;

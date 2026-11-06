@@ -116,7 +116,7 @@ object SewersRunnable : BukkitRunnable(), Listener {
         val profile = player.getPitProfile()
         val id = randomList.random() ?: return
 
-        player.playSound(player.location, Sound.LEVEL_UP, 1f, 1f)
+        player.playSound(player.location, Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f)
         player.sendMessage(CC.translate("&9下水道! &7你领取了下水道奖励."))
 
         val rewardMessage = when (id) {

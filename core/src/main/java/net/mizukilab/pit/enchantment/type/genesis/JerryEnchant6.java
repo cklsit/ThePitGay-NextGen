@@ -12,7 +12,7 @@ import net.mizukilab.pit.util.cooldown.Cooldown;
 import net.mizukilab.pit.util.music.PositionSongPlayer;
 import net.mizukilab.pit.util.music.Song;
 import lombok.SneakyThrows;
-import net.minecraft.server.v1_8_R3.EnumParticle;
+import org.bukkit.Particle;
 import net.minecraft.server.v1_8_R3.PacketPlayInFlying;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -117,7 +117,7 @@ public class JerryEnchant6 extends AbstractEnchantment implements ITickTask, Mov
         if (songPlayer == null) {
             initializeSongPlayer(target);
         } else {
-            PlayerUtil.sendParticle(target.getLocation().add(0, 3, 0), EnumParticle.NOTE, 2);
+            PlayerUtil.sendParticle(target.getLocation().add(0, 3, 0), Particle.NOTE, 2);
         }
     }
 

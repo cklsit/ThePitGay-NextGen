@@ -1,10 +1,9 @@
 package net.mizukilab.pit.util.item;
 
 import cn.charlotte.pit.ThePit;
-import net.minecraft.server.v1_8_R3.*;
+import cn.charlotte.pit.compat.item.ItemData;
 import net.mizukilab.pit.item.AbstractPitItem;
 import net.mizukilab.pit.item.IItemFactory;
-import net.mizukilab.pit.util.Log;
 import net.mizukilab.pit.util.PublicUtil;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Nullable;
@@ -12,39 +11,34 @@ import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 
 /**
+ * 物品数据读写工具。
+ * <p>
+ * 1.21 适配：原实现直接操作 NMS 的 {@code tag.extra} 复合标签，
+ * 现统一改走 {@link ItemData}（PDC 存储），键名与取值语义保持不变。
+ *
  * @Author: EmptyIrony
  * @Date: 2021/1/1 1:37
  */
 public class ItemUtil {
 
+    public static final String KEY_INTERNAL = "internal";
+    public static final String KEY_UUID = "uuid";
+    public static final String KEY_VERSION = "version";
+    public static final String KEY_ENCH = "ench";
 
     public static String getUUID(ItemStack item) {
-        return getItemStringData(item, "uuid");
+        return ItemData.getString(item, KEY_UUID);
     }
+
     public static int getHashCodeForUUID(ItemStack item) {
-        NBTTagCompound extra = getExtra(item);
-        return getHashCodeForUUID0(item, extra);
-
-    }
-
-    public static int getHashCodeForUUID0(ItemStack item, NBTTagCompound extra) {
-        if(extra == null) {
+        String uuid = getUUID(item);
+        if (uuid == null) {
             return -1;
         }
-        //        tag.setLong("up",PublicUtil.getMostSignificantBits(uuidseq));
-        //        tag.setLong("do",PublicUtil.getLeastSignificantBits(uuidseq));
-        long up = getLong(extra, "up");
-        long down = getLong(extra, "do");
-        if(up == 0 || down == 0) {
-            UUID uuidObj = getUUIDObj(item);
-            if (uuidObj != null) {
-                Log.WriteLine("SET UUID OBJECT for " + up + " d:" + down + "by: " + item + " to: " + extra);
-                setUUIDObj(extra, uuidObj);
-
-                return uuidObj.hashCode();
-            } else {
-                return -1;
-            }
+        long up = PublicUtil.getMostSignificantBits(uuid);
+        long down = PublicUtil.getLeastSignificantBits(uuid);
+        if (up == 0 || down == 0) {
+            return -1;
         }
         return PublicUtil.hashTwoLong(up, down);
     }
@@ -52,49 +46,27 @@ public class ItemUtil {
     public static UUID getUUIDObj(ItemStack stack) {
         String uuid = getUUID(stack);
         if (uuid == null) return null;
-        return UUID.fromString(uuid);
+        try {
+            return UUID.fromString(uuid);
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
     }
 
-    public static void setUUIDObj(NBTTagCompound extra, UUID uuid) {
-        setUUID(extra, uuid.toString());
-    }
     public static void setUUIDObj(ItemStack stack, UUID uuid) {
         setUUID(stack, uuid.toString());
     }
 
     public static void setUUID(ItemStack stack, String uuid) {
-        NBTTagCompound extra = getExtra(stack);
-        setUUID(extra,uuid);
-    }
-    public static void setUUID(NBTTagCompound compound, String uuid) {
-        if (compound != null) {
-            compound.setString("uuid", uuid);
-            updateMagic(compound,uuid);
-        }
-    }
-    public static long getLong(NBTTagCompound tag,String what) {
-        return tag.getLong(what);
+        ItemData.set(stack, KEY_UUID, uuid);
     }
 
-    public static void updateMagic(NBTTagCompound tag,String uuidseq) {
-        tag.set("up",new NBTTagLong(PublicUtil.getMostSignificantBits(uuidseq)));
-        tag.set("do",new NBTTagLong(PublicUtil.getLeastSignificantBits(uuidseq)));
-
-    }
     public static void setVer(ItemStack stack, String ver) {
-        NBTTagCompound extra = getExtra(stack);
-        if (extra != null) {
-            extra.setString("version", ver);
-        }
+        ItemData.set(stack, KEY_VERSION, ver);
     }
 
     public static String getVer(ItemStack stack) {
-        NBTTagCompound extra = getExtra(stack);
-        if (extra != null) {
-            NBTBase nbtBase = extra.get("version");
-            return nbtBase instanceof NBTTagString ? ((NBTTagString) nbtBase).a_() : null;
-        }
-        return null;
+        return ItemData.getString(stack, KEY_VERSION);
     }
 
     public static boolean shouldUpdateItem(ItemStack stack) {
@@ -117,7 +89,7 @@ public class ItemUtil {
         } else {
             uuid = UUID.randomUUID();
         }
-        setUUIDObj(stack, uuid); //async? I think never will have bugs on here
+        setUUIDObj(stack, uuid);
         return uuid;
     }
 
@@ -134,12 +106,11 @@ public class ItemUtil {
     }
 
     public static boolean isIllegalItem(ItemStack item) {
-        NBTTagCompound extra = getExtra(item);
-        if (extra == null) {
+        if (!ItemData.hasAny(item)) {
             return true;
         }
-
-        return !extra.hasKey("internal") || getInternalName(item).endsWith("_reward");
+        String internalName = getInternalName(item);
+        return internalName == null || internalName.endsWith("_reward");
     }
 
     public static boolean canDrop(ItemStack item) {
@@ -151,17 +122,14 @@ public class ItemUtil {
     }
 
     public static boolean canTrade(ItemStack item) {
-        NBTTagCompound extra = getExtra(item);
-        if (extra == null) {
-
+        if (!ItemData.hasAny(item)) {
             return false;
         }
-
         if (forceCanTrade(item)) {
             return true;
         }
         String internalName = getInternalName(item);
-        boolean b = extra.hasKey("canTrade") && extra.getBoolean("canTrade");
+        boolean b = getItemBoolData(item, "canTrade");
         boolean b1 = (internalName != null && internalName.startsWith("mythic_"));
         return b1 || b;
     }
@@ -178,23 +146,6 @@ public class ItemUtil {
         return getItemBoolData(item, "defaultItem");
     }
 
-    @Nullable
-    public static NBTTagCompound getExtra(ItemStack item) {
-        if (item == null || item.getTypeId() == 0) { //Faster
-            return null;
-        }
-
-        net.minecraft.server.v1_8_R3.ItemStack nmsItem = PublicUtil.toNMStackQuick(item);
-        NBTTagCompound tag = nmsItem.getTag();
-        if (tag == null) {
-            return null;
-        }
-        if (tag.get("extra") instanceof NBTTagCompound extra) {
-            return extra;
-        }
-        return null;
-    }
-
     public static boolean isDeathDrop(ItemStack item) {
         return getItemBoolData(item, "deathDrop");
     }
@@ -202,60 +153,41 @@ public class ItemUtil {
     public static boolean isRemovedOnJoin(ItemStack item) {
         return getItemBoolData(item, "removeOnJoin");
     }
-    public static boolean isMythicItem(ItemStack stack){
+
+    public static boolean isMythicItem(ItemStack stack) {
         return getVer(stack) != null;
     }
+
     public static String getInternalName(ItemStack item) {
-        return getItemStringData(item, "internal");
+        return ItemData.getString(item, KEY_INTERNAL);
     }
 
     public static Object[] getInternalNameAndUUID(ItemStack stack) {
-        NBTTagCompound extra = getExtra(stack);
         Object[] objects = new Object[2];
-        String internal = getInternalName0(extra);
-        String uuid = getItemStringData0(extra, "uuid");
-        objects[0] = internal;
-        objects[1] = uuid;
+        objects[0] = getInternalName(stack);
+        objects[1] = getUUID(stack);
         return objects;
     }
 
+    @Nullable
     public static Integer getItemIntData(ItemStack item, String key) {
-        NBTTagCompound extra = getExtra(item);
-        if (extra != null) {
-            NBTBase nbtBase = extra.get(key);
-            if (nbtBase instanceof NBTTagInt intData) {
-                return intData.d();
-            }
-        }
-        return null;
+        return ItemData.getInt(item, key);
     }
 
     public static boolean getItemBoolData(ItemStack item, String key) {
-        NBTTagCompound extra = getExtra(item);
-        if (extra != null) {
-            NBTBase nbtBase = extra.get(key);
-            if (nbtBase instanceof NBTTagByte byted) {
-                return byted.f() != 0;
-            }
-        }
-
-        return false;
+        return ItemData.getBoolean(item, key);
     }
 
-    public static String getItemStringData0(NBTTagCompound extra, String key) {
-        if (extra != null) {
-            NBTBase nbtBase = extra.get(key);
-            if (nbtBase instanceof NBTTagString string) {
-                return string.a_();
-            }
-        }
-        return null;
-    }
+    @Nullable
     public static String getItemStringData(ItemStack item, String key) {
-        return getItemStringData0(getExtra(item), key);
+        return ItemData.getString(item, key);
     }
 
-    public static String getInternalName0(NBTTagCompound extra) {
-        return getItemStringData0(extra,"internal");
+    public static void setItemData(ItemStack item, String key, Object value) {
+        ItemData.set(item, key, value);
+    }
+
+    public static boolean hasItemData(ItemStack item, String key) {
+        return ItemData.has(item, key);
     }
 }

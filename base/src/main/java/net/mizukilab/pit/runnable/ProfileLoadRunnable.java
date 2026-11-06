@@ -59,7 +59,7 @@ public class ProfileLoadRunnable extends BukkitRunnable { //这是什么用的? 
             iterator.remove();
             player.removePotionEffect(PotionEffectType.WEAKNESS);
             player.removePotionEffect(PotionEffectType.SPEED);
-            player.removePotionEffect(PotionEffectType.JUMP);
+            player.removePotionEffect(PotionEffectType.JUMP_BOOST);
             return;
         }
 

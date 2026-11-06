@@ -1,7 +1,7 @@
 package net.mizukilab.pit.item.type
 
 import cn.charlotte.pit.ThePit
-import net.minecraft.server.v1_8_R3.EnumParticle
+import org.bukkit.Particle
 import net.mizukilab.pit.item.AbstractPitItem
 import net.mizukilab.pit.util.ParticleBuilder
 import net.mizukilab.pit.util.PlayerUtil

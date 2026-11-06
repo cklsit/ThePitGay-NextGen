@@ -6,17 +6,20 @@ package net.mizukilab.pit.util.item;
  */
 
 import cn.charlotte.pit.data.sub.EnchantmentRecord;
-import com.mojang.authlib.GameProfile;
-import com.mojang.authlib.properties.Property;
+import cn.charlotte.pit.compat.item.ItemData;
+import cn.charlotte.pit.compat.item.LegacyColor;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.minecraft.server.v1_8_R3.*;
 import net.mizukilab.pit.enchantment.AbstractEnchantment;
 import net.mizukilab.pit.util.PublicUtil;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Color;
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack;
+import org.bukkit.NamespacedKey;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.inventory.EquipmentSlotGroup;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -24,13 +27,18 @@ import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.potion.PotionEffect;
+import org.bukkit.profile.PlayerProfile;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.Field;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ItemBuilder {
 
@@ -83,17 +91,22 @@ public class ItemBuilder {
 
     public ItemBuilder setSkullProperty(String texture) {
         SkullMeta meta = (SkullMeta) is.getItemMeta();
-        GameProfile gp = new GameProfile(UUID.randomUUID(), null);
-        gp.getProperties().put("textures", new Property("textures", texture));
         try {
-            Field field = meta.getClass().getDeclaredField("profile");
-            field.setAccessible(true);
-            field.set(meta, gp);
+            // 1.21 移除 GameProfile 反射写入，改为官方 PlayerProfile 纹理接口
+            String json = new String(Base64.getDecoder().decode(texture), StandardCharsets.UTF_8);
+            Matcher matcher = SKIN_URL_PATTERN.matcher(json);
+            if (matcher.find()) {
+                PlayerProfile profile = Bukkit.createPlayerProfile(UUID.randomUUID(), "PitTexture");
+                profile.getTextures().setSkin(new URL(matcher.group(1)));
+                meta.setOwnerProfile(profile);
+            }
         } catch (Exception ignored) {
         }
         is.setItemMeta(meta);
         return this;
     }
+
+    private static final Pattern SKIN_URL_PATTERN = Pattern.compile("\"url\"\\s*:\\s*\"([^\"]+)\"");
 
     public ItemBuilder lore(String name) {
         ItemMeta meta = this.is.getItemMeta();
@@ -148,6 +161,16 @@ public class ItemBuilder {
     }
 
     public ItemBuilder durability(int durability) {
+        // 1.13 起染色材质被拆分，旧写法（基础材质 + data）在此还原为具体颜色变体
+        Material colored = LegacyColor.resolve(this.is.getType(), durability);
+        if (colored != null) {
+            ItemStack replacement = new ItemStack(colored, this.is.getAmount());
+            if (this.is.hasItemMeta()) {
+                replacement.setItemMeta(this.is.getItemMeta());
+            }
+            this.is = replacement;
+            return this;
+        }
         this.is.setDurability((short) durability);
         return this;
     }
@@ -274,82 +297,33 @@ public class ItemBuilder {
     }
 
     public ItemBuilder changeNbt(String key, String value) {
-        net.minecraft.server.v1_8_R3.ItemStack nmsItem = PublicUtil.toNMStackQuick(is);
-        NBTTagCompound tag = getNbtTagCompound(nmsItem.getTag());
-        NBTTagCompound extra = getNbtTagCompound(tag.getCompound("extra"));
-        if (value == null) {
-            extra.remove(key);
-        } else {
-            extra.setString(key, value);
-        }
-        tag.set("extra", extra);
-
-        nmsItem.setTag(tag);
-
-        this.is = CraftItemStack.asBukkitCopy(nmsItem);
-
+        // 1.21：NMS tag.extra 迁移到 PDC（ItemData）
+        ItemData.set(is, key, value);
         return this;
     }
 
     public ItemBuilder changeNbt(String key, boolean value) {
-        net.minecraft.server.v1_8_R3.ItemStack nmsItem = PublicUtil.toNMStackQuick(is);
-        NBTTagCompound tag = getNbtTagCompound(nmsItem.getTag());
-        NBTTagCompound extra = getNbtTagCompound(tag.getCompound("extra"));
-        extra.setBoolean(key, value);
-        tag.set("extra", extra);
-
-        nmsItem.setTag(tag);
-
-        this.is = CraftItemStack.asBukkitCopy(nmsItem);
-
+        ItemData.set(is, key, value);
         return this;
     }
 
     public ItemBuilder changeNbt(String key, int value) {
-        net.minecraft.server.v1_8_R3.ItemStack nmsItem = PublicUtil.toNMStackQuick(is);
-        NBTTagCompound tag = getNbtTagCompound(nmsItem.getTag());
-        NBTTagCompound extra = getNbtTagCompound(tag.getCompound("extra"));
-        extra.setInt(key, value);
-        tag.set("extra", extra);
-
-        nmsItem.setTag(tag);
-
-        this.is = CraftItemStack.asBukkitCopy(nmsItem);
-
+        ItemData.set(is, key, value);
         return this;
     }
 
     public ItemBuilder changeNbt(String key, double value) {
-        net.minecraft.server.v1_8_R3.ItemStack nmsItem = PublicUtil.toNMStackQuick(is);
-        NBTTagCompound tag = getNbtTagCompound(nmsItem.getTag());
-        NBTTagCompound extra = getNbtTagCompound(tag.getCompound("extra"));
-        extra.setDouble(key, value);
-        tag.set("extra", extra);
-
-        nmsItem.setTag(tag);
-
-        this.is = CraftItemStack.asBukkitCopy(nmsItem);
-
+        ItemData.set(is, key, value);
         return this;
     }
 
-    @NotNull
-    private static NBTTagCompound getNbtTagCompound(NBTTagCompound tag) {
-        NBTTagCompound extra = tag;
-        if (extra == null) {
-            extra = new NBTTagCompound();
-        }
-        return extra;
-    }
-
     public ItemStack buildWithUnbreakable() {
-
-        net.minecraft.server.v1_8_R3.ItemStack nmsItem = PublicUtil.toNMStackQuick(is);
-        NBTTagCompound tag = getNbtTagCompound(nmsItem.getTag());
-        tag.setBoolean("Unbreakable", true);
-        nmsItem.setTag(tag);
-
-        return CraftItemStack.asBukkitCopy(nmsItem);
+        ItemMeta meta = is.getItemMeta();
+        if (meta != null) {
+            meta.setUnbreakable(true);
+            is.setItemMeta(meta);
+        }
+        return is;
     }
 
     public ItemBuilder internalName(String name) {
@@ -383,19 +357,11 @@ public class ItemBuilder {
     }
 
     public ItemBuilder enchant(Map<AbstractEnchantment, Integer> enchant) {
-        net.minecraft.server.v1_8_R3.ItemStack nmsItem = PublicUtil.toNMStackQuick(is);
-        NBTTagCompound tag = getNbtTagCompound(nmsItem.getTag());
-        NBTTagCompound extra = getNbtTagCompound(tag.getCompound("extra"));
-        NBTTagList nbtTagList = new NBTTagList();
-
+        List<String> records = new ArrayList<>(enchant.size());
         for (Map.Entry<AbstractEnchantment, Integer> entry : enchant.entrySet()) {
-            NBTTagString nbtTagString = new NBTTagString(entry.getKey().getNbtName() + ":" + entry.getValue());
-            nbtTagList.add(nbtTagString);
+            records.add(entry.getKey().getNbtName() + ":" + entry.getValue());
         }
-        extra.set("ench", nbtTagList);
-
-        this.is = CraftItemStack.asBukkitCopy(nmsItem);
-
+        ItemData.set(is, ItemUtil.KEY_ENCH, records);
         return this;
     }
 
@@ -420,23 +386,17 @@ public class ItemBuilder {
     }
 
     public ItemBuilder itemDamage(double damageValue) {
-        net.minecraft.server.v1_8_R3.ItemStack nmsItem = PublicUtil.toNMStackQuick(is);
-        NBTTagCompound tag = getNbtTagCompound(nmsItem.getTag());
-
-        NBTTagList modifiers = new NBTTagList();
-        NBTTagCompound damage = new NBTTagCompound();
-        damage.set("AttributeName", new NBTTagString("generic.attackDamage"));
-        damage.set("Name", new NBTTagString("generic.attackDamage"));
-        damage.set("Amount", new NBTTagDouble(damageValue));
-        damage.set("Operation", new NBTTagInt(0));
-        damage.set("UUIDLeast", new NBTTagInt(894654));
-        damage.set("UUIDMost", new NBTTagInt(2872));
-        modifiers.add(damage);
-        tag.set("AttributeModifiers", modifiers);
-        nmsItem.setTag(tag);
-
-        this.is = CraftItemStack.asBukkitCopy(nmsItem);
-
+        ItemMeta meta = is.getItemMeta();
+        if (meta != null) {
+            // 原实现写 AttributeModifiers NBT，1.21 使用官方属性修饰符 API
+            meta.removeAttributeModifier(Attribute.ATTACK_DAMAGE);
+            meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, new AttributeModifier(
+                    new NamespacedKey("thepit", "item_damage"),
+                    damageValue,
+                    AttributeModifier.Operation.ADD_NUMBER,
+                    EquipmentSlotGroup.MAINHAND));
+            is.setItemMeta(meta);
+        }
         return this;
     }
 

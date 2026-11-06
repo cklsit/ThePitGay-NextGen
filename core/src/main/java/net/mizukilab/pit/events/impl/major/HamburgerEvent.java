@@ -91,7 +91,7 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
         this.pizzaDataMap = new HashMap<>();
         this.villagerDataMap = new HashMap<>();
         this.spawnedLocations = new ArrayList<>();
-        this.pizza = new ItemBuilder(Material.SKULL_ITEM)
+        this.pizza = new ItemBuilder(Material.SKELETON_SKULL_ITEM)
                 .durability(3)
                 .internalName("ham")
                 .removeOnJoin(true)
@@ -124,7 +124,7 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
     @EventHandler
     public void onRightClick(PlayerInteractEvent event) {
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-            if (event.getClickedBlock().getType() == Material.SKULL) {
+            if (event.getClickedBlock().getType() == Material.SKELETON_SKULL) {
                 final Skull skull = (Skull) event.getClickedBlock().getState();
                 if (skull.getSkullType() == SkullType.PLAYER) {
                     Location location1 = event.getClickedBlock().getLocation();
@@ -286,7 +286,7 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
 
     @EventHandler(priority = EventPriority.LOW)
     public void onPlace(BlockPlaceEvent event) {
-        if (event.getBlockPlaced().getType() == Material.SKULL) {
+        if (event.getBlockPlaced().getType() == Material.SKELETON_SKULL) {
             event.setCancelled(true);
         }
         if (event.getBlockPlaced().getLocation().distance(location) < 8) {

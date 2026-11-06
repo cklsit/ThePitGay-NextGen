@@ -26,6 +26,7 @@ repositories {
     maven("https://repo.rosewooddev.io/repository/public/")
     maven("https://repo.extendedclip.com/content/repositories/placeholderapi/")
     maven("https://repo.panda-lang.org/releases")
+    maven("https://repo.papermc.io/repository/maven-public/")
 }
 tasks.named<ShadowJar>("shadowJar") {
     archiveFileName.set("ThePitUltimate-$version.jar")
@@ -48,7 +49,6 @@ dependencies {
     api(libs.book)
     api(libs.slf4j)
     api(libs.litecommands)
-    api(libs.adventure.bukkit)
     api(libs.kotlin)
     compileOnly("com.caoccao.javet:javet:3.1.4") // Linux and Windows (x86_64)
     compileOnly("org.projectlombok:lombok:1.18.32")
@@ -72,11 +72,10 @@ dependencies {
     compileOnly(libs.fastutil)
 
     compileOnly("us.crazycrew.crazycrates:api:0.7")
-    compileOnly(libs.spigot.get8())
+    compileOnly(libs.paper.api)
     compileOnly(libs.luckperms)
     compileOnly(libs.playerpoints)
     compileOnly(libs.decentholograms)
-    compileOnly(libs.adventure.bukkit)
 }
 kotlin {
     jvmToolchain(21)
@@ -85,6 +84,7 @@ kotlin {
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
     options.release.set(21)
+    options.compilerArgs.addAll(listOf("-Xmaxerrs", "6000", "-Xlint:none"))
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {

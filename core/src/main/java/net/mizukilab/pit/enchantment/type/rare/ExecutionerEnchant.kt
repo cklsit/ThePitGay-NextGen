@@ -78,7 +78,7 @@ class ExecutionerEnchant : AbstractEnchantment(), IAttackEntity {
         if (targetPlayer.health - damage * boostDamage.get() < enchantLevel + 1) {
             cancel.set(true)
             finalDamage.getAndAdd(2000.0)
-            attacker.playSound(attacker.location, Sound.VILLAGER_DEATH, 1f, 0.5f)
+            attacker.playSound(attacker.location, Sound.ENTITY_VILLAGER_DEATH, 1f, 0.5f)
             val deathLoc = target.getLocation()
             val packetA = PacketPlayOutWorldEvent(
                 2001,

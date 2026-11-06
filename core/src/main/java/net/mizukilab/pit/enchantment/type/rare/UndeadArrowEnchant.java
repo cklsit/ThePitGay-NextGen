@@ -58,7 +58,7 @@ public class UndeadArrowEnchant extends AbstractEnchantment implements IPlayerSh
         if (targetPlayer.getHealth() - damage * boostDamage.get() < (1.5 + (enchantLevel * 0.5))) {
             cancel.set(true);
             targetPlayer.damage(9999);
-            attacker.playSound(attacker.getLocation(), Sound.VILLAGER_DEATH, 1, 1F);
+            attacker.playSound(attacker.getLocation(), Sound.ENTITY_VILLAGER_DEATH, 1, 1F);
 
             Location deathLoc = target.getLocation();
             PacketPlayOutWorldEvent packetA = new PacketPlayOutWorldEvent(2001, new BlockPosition(deathLoc.getBlockX(), deathLoc.getBlockY(), deathLoc.getBlockZ()), 152, false);

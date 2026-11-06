@@ -131,7 +131,7 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
                     .getSpawnLocations()
                     .get(RandomUtil.random.nextInt(ThePit.getInstance().getPitConfig().getSpawnLocations().size()));
             player.teleport(location);
-            player.playSound(player.getLocation(), Sound.ENDERDRAGON_GROWL, 1, 0.5F);
+            player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1, 0.5F);
         }
 
         FaweAPI.getTaskManager().async(() -> {
@@ -237,10 +237,10 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
         final int floor = data.floor;
 
         if (floor == 0) {
-            final SpireSword sword = new SpireSword(Material.WOOD_SWORD);
+            final SpireSword sword = new SpireSword(Material.OAK_PLANKS_SWORD);
             player.getInventory().addItem(sword.toItemStack());
         } else if (floor == 1 || floor == 2) {
-            player.getInventory().addItem(SpireArmor.toItemStack(Material.WOOD_SWORD));
+            player.getInventory().addItem(SpireArmor.toItemStack(Material.OAK_PLANKS_SWORD));
             player.getInventory().setChestplate(SpireArmor.toItemStack(Material.LEATHER_CHESTPLATE));
 
             player.getInventory().setLeggings(SpireArmor.toItemStack(Material.CHAINMAIL_LEGGINGS));
@@ -303,7 +303,7 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
             data.soul = data.soul + this.getKillRewardSouls(data);
             data.kills++;
             TitleUtil.sendTitle(killer, CC.translate("&a击杀!"), this.getFloorColor(data.floor) + "第" + (data.floor + 1) + "层", 5, 20, 10);
-            killer.playSound(killer.getLocation(), Sound.LEVEL_UP, 1, 1.5F);
+            killer.playSound(killer.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1, 1.5F);
 
             Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), () -> {
                 int amount = InventoryUtil.getAmountOfItem(killer, "broken_soul");

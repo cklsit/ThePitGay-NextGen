@@ -348,19 +348,19 @@ public class PlayerUtil {
         ItemStack[] is = player.getInventory().getArmorContents();
         for (ItemStack i : is) {
             Material type = i.getType();
-            if (type == Material.LEATHER_HELMET || type == Material.LEATHER_BOOTS || type == Material.GOLD_BOOTS || type == Material.CHAINMAIL_BOOTS) {
+            if (type == Material.LEATHER_HELMET || type == Material.LEATHER_BOOTS || type == Material.GOLDEN_BOOTS || type == Material.CHAINMAIL_BOOTS) {
                 defense += 1;
             }
-            if (type == Material.LEATHER_LEGGINGS || type == Material.GOLD_HELMET || type == Material.CHAINMAIL_HELMET || type == Material.IRON_HELMET) {
+            if (type == Material.LEATHER_LEGGINGS || type == Material.GOLDEN_HELMET || type == Material.CHAINMAIL_HELMET || type == Material.IRON_HELMET) {
                 defense += 2;
             }
-            if (type == Material.LEATHER_CHESTPLATE || type == Material.GOLD_LEGGINGS || type == Material.DIAMOND_HELMET || type == Material.DIAMOND_BOOTS) {
+            if (type == Material.LEATHER_CHESTPLATE || type == Material.GOLDEN_LEGGINGS || type == Material.DIAMOND_HELMET || type == Material.DIAMOND_BOOTS) {
                 defense += 3;
             }
             if (type == Material.CHAINMAIL_LEGGINGS) {
                 defense += 4;
             }
-            if (type == Material.GOLD_CHESTPLATE || type == Material.CHAINMAIL_CHESTPLATE || type == Material.IRON_LEGGINGS) {
+            if (type == Material.GOLDEN_CHESTPLATE || type == Material.CHAINMAIL_CHESTPLATE || type == Material.IRON_LEGGINGS) {
                 defense += 5;
             }
             if (type == Material.IRON_CHESTPLATE || type == Material.DIAMOND_LEGGINGS) {

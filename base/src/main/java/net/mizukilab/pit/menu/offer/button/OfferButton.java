@@ -34,7 +34,7 @@ public class OfferButton extends Button {
     public ItemStack getButtonItem(Player player) {
         PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
         IOperator orLoadOperatorOffline = ThePit.getInstance().getProfileOperator().getOrConstructIOperator(target);
-        ItemBuilder builder = new ItemBuilder(Material.STAINED_CLAY)
+        ItemBuilder builder = new ItemBuilder(Material.TERRACOTTA)
                 .name("&e交易报价");
 
         PlayerProfile targetProfile = orLoadOperatorOffline.profile();

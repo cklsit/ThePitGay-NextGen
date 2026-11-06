@@ -44,7 +44,7 @@ public class SewersNpc extends AbstractCustomEntityNPC {
     @Override
     public void handlePlayerInteract(Player player) {
         new SewersMenu().openMenu(player);
-        player.playSound(player.getLocation(), Sound.SILVERFISH_HIT, 1, 1);
+        player.playSound(player.getLocation(), Sound.ENTITY_SILVERFISH_HURT, 1, 1);
     }
 
     @Override

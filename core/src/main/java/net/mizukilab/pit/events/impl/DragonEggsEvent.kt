@@ -71,16 +71,16 @@ class DragonEggsEvent : AbstractEvent(), INormalEvent, Listener {
         registerEvents()
         CC.boardCast(CC.translate("&5&l龙蛋！ &d龙蛋已在中心点位刷新,请前往点击！"))
         setEggLocation(eggLocation!!)
-        playSoundToOnlinePlayers(Sound.ENDERDRAGON_GROWL, 1.5f, 1.5f)
+        playSoundToOnlinePlayers(Sound.ENTITY_ENDER_DRAGON_GROWL, 1.5f, 1.5f)
     }
 
     private fun setEggLocation(location: Location) {
-        Bukkit.getScheduler().runTask(ThePit.getInstance()) {
+        Bukkit.getScheduler().runTask(ThePit.getInstance(), Runnable {
             prepareNewLocation()
             eggLocation = location
             eggLocation!!.block.type = Material.DRAGON_EGG
             reCreateHologram(location)
-        }
+        })
     }
 
     @EventHandler
@@ -103,7 +103,7 @@ class DragonEggsEvent : AbstractEvent(), INormalEvent, Listener {
             p.coins += coins.toDouble()
             p.experience += exp.toDouble()
         }
-        player.playSound(player.location, Sound.CLICK, 1.5f, 1.5f)
+        player.playSound(player.location, Sound.UI_BUTTON_CLICK, 1.5f, 1.5f)
         player.sendMessage(CC.translate("&5&l龙蛋！ &7点击龙蛋 获得 &e$coins &6金币 &e$exp &b经验&7"))
         addClicks()
         handleClickEvents()
@@ -122,7 +122,7 @@ class DragonEggsEvent : AbstractEvent(), INormalEvent, Listener {
         prepareNewLocation()
         eggLocation?.let { setEggLocation(findRandomLocation(it)) }
         CC.boardCast("&5&l龙蛋！ &7龙蛋已被移动到了新的位置！")
-        playSoundToOnlinePlayers(Sound.ENDERDRAGON_HIT, 1.5f, 1.5f)
+        playSoundToOnlinePlayers(Sound.ENTITY_ENDER_DRAGON_HURT, 1.5f, 1.5f)
         isClick = true
     }
 
@@ -152,13 +152,13 @@ class DragonEggsEvent : AbstractEvent(), INormalEvent, Listener {
     }
 
     override fun onInactive() {
-        Bukkit.getScheduler().runTask(ThePit.getInstance()) {
+        Bukkit.getScheduler().runTask(ThePit.getInstance(), Runnable {
             isActive = false
             unregisterEvents()
             cleanup()
-            playSoundToOnlinePlayers(Sound.ENDERDRAGON_DEATH, 1.5f, 1.5f)
+            playSoundToOnlinePlayers(Sound.ENTITY_ENDER_DRAGON_DEATH, 1.5f, 1.5f)
             CC.boardCast(CC.translate("&5&l龙蛋！ &7活动已结束！"))
-        }
+        })
     }
 
     private fun cleanup() {

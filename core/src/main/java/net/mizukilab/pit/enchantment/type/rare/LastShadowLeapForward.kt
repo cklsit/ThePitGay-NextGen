@@ -89,9 +89,9 @@ class LastShadowLeapForward : AbstractEnchantment(), Listener, IActionDisplayEnc
                 this.setY(0.5)
             }
 
-            Bukkit.getScheduler().runTask(ThePit.getInstance()) {
+            Bukkit.getScheduler().runTask(ThePit.getInstance(), Runnable {
                 player.velocity = vector
-            }
+            })
             player.addPotionEffect(
                 PotionEffect(
                     PotionEffectType.SPEED,

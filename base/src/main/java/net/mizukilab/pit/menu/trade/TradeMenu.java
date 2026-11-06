@@ -169,8 +169,8 @@ public class TradeMenu extends Menu {
                         return;
                     }
                 }
-                tradeManager.getPlayerA().playSound(tradeManager.getPlayerA().getLocation(), Sound.VILLAGER_HAGGLE, 1, 1);
-                tradeManager.getPlayerB().playSound(tradeManager.getPlayerB().getLocation(), Sound.VILLAGER_HAGGLE, 1, 1);
+                tradeManager.getPlayerA().playSound(tradeManager.getPlayerA().getLocation(), Sound.ENTITY_VILLAGER_TRADE, 1, 1);
+                tradeManager.getPlayerB().playSound(tradeManager.getPlayerB().getLocation(), Sound.ENTITY_VILLAGER_TRADE, 1, 1);
                 tradeManager.setBConfirm(false);
                 tradeManager.setAConfirm(false);
                 tradeManager.setAPutCooldown(new Cooldown(5, TimeUnit.SECONDS));

@@ -166,7 +166,7 @@ public class VolleyEnchant extends AbstractEnchantment implements Listener {
         }
     }
     public void forkItemBowEntity(ItemBow bow,ItemStack itemstack, World world, EntityHuman entityhuman, int i,int count) {
-        boolean flag = entityhuman.abilities.canInstantlyBuild || EnchantmentManager.getEnchantmentLevel(Enchantment.ARROW_INFINITE.id, itemstack) > 0;
+        boolean flag = entityhuman.abilities.canInstantlyBuild || EnchantmentManager.getEnchantmentLevel(Enchantment.INFINITY.id, itemstack) > 0;
         if (flag || entityhuman.inventory.b(Items.ARROW)) {
             int j = bow.d(itemstack) - i;
             float f = (float) j / 20.0F;
@@ -181,13 +181,13 @@ public class VolleyEnchant extends AbstractEnchantment implements Listener {
 
             boolean shouldCritical = f == 1.0F;
 
-            int enchantmentLevel = EnchantmentManager.getEnchantmentLevel(Enchantment.ARROW_DAMAGE.id, itemstack);
+            int enchantmentLevel = EnchantmentManager.getEnchantmentLevel(Enchantment.POWER.id, itemstack);
             boolean arrowDmg = enchantmentLevel > 0;
             double d0 = 2.5 + enchantmentLevel * 0.5;
-            int enchantmentLevel1 = EnchantmentManager.getEnchantmentLevel(Enchantment.ARROW_KNOCKBACK.id, itemstack);
+            int enchantmentLevel1 = EnchantmentManager.getEnchantmentLevel(Enchantment.PUNCH.id, itemstack);
             for (int k = 0; k < count; k++) {
                 EntityArrow entityarrow = new EntityArrow(world, entityhuman, f * 2.0F);
-                if (EnchantmentManager.getEnchantmentLevel(Enchantment.ARROW_FIRE.id, itemstack) > 0) {
+                if (EnchantmentManager.getEnchantmentLevel(Enchantment.FLAME.id, itemstack) > 0) {
                     CraftEntity bukkitEntity = entityarrow.getBukkitEntity();
                     bukkitEntity.setMetadata("volley_enchant_arrow", new FixedMetadataValue(ThePit.getInstance(), true));
                     Utils.pointMetadataAndRemove(bukkitEntity, 100, "volley_enchant");

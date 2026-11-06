@@ -373,7 +373,7 @@ class PitAdminCommands {
     @Async
     fun setTableNpc(@Context player: Player): String {
         ThePit.getInstance()
-            .pitConfig.enchantLocation = player.getTargetBlock(setOf(Material.ENCHANTMENT_TABLE), 100).location
+            .pitConfig.enchantLocation = player.getTargetBlock(setOf(Material.ENCHANTING_TABLE), 100).location
         ThePit.getInstance().pitConfig.save()
         return CC.translate("&a成功设置附魔方块位置: ${ThePit.getInstance().pitConfig.enchantLocation}")
     }

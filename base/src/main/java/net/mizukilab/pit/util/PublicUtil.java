@@ -3,15 +3,10 @@ package net.mizukilab.pit.util;
 import cn.charlotte.pit.ThePit;
 import cn.charlotte.pit.data.PlayerProfile;
 import cn.charlotte.pit.data.sub.PlayerOption;
-import net.minecraft.server.v1_8_R3.Chunk;
-import net.minecraft.server.v1_8_R3.World;
 import net.mizukilab.pit.parm.AutoRegister;
 import net.mizukilab.pit.parm.listener.*;
 import net.mizukilab.pit.util.rank.RankUtil;
 import org.bukkit.Bukkit;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftEntity;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
-import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
@@ -173,52 +168,29 @@ public class PublicUtil {
         mostSignificantBits |= getHexValueForChar(uuidSequence.charAt(17));
         return mostSignificantBits;
     }
-    public static net.minecraft.server.v1_8_R3.ItemStack toNMStackQuick(ItemStack item) {
-        if (item instanceof CraftItemStack) {
-            try {
-                if (METHOD_ != null) {
-                    return (net.minecraft.server.v1_8_R3.ItemStack) METHOD_.get(item);
-                }
-                java.lang.reflect.Field handleField = CraftItemStack.class.getDeclaredField("handle");
-                handleField.setAccessible(true);
-                net.minecraft.server.v1_8_R3.ItemStack itemStack = (net.minecraft.server.v1_8_R3.ItemStack) handleField.get(item);
-                if (itemStack != null) {
-                    MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(CraftItemStack.class, MethodHandles.lookup());
-                    VarHandle varHandle = lookup.unreflectVarHandle(handleField);
-                    METHOD_ = varHandle;
-
-                }
-                return itemStack;
-            } catch (NoSuchFieldException | IllegalAccessException e) {
-                throw new RuntimeException("Failed to access the handle field", e);
-            }
-        } else {
-            return CraftItemStack.asNMSCopy(item);
-        }
+    /**
+     * 1.21 起不再暴露 NMS ItemStack；保留该名称仅为兼容旧调用，返回原物品。
+     *
+     * @deprecated 直接使用 Bukkit {@link ItemStack}
+     */
+    @Deprecated
+    public static ItemStack toNMStackQuick(ItemStack item) {
+        return item;
     }
 
-    public static void removeFromWorld(Entity entity){
+    /**
+     * 1.21 的实体移除由 Bukkit API 完成，不再需要手工从区块中摘除。
+     */
+    public static void removeFromWorld(Entity entity) {
         if (!Bukkit.isPrimaryThread()) {
             Bukkit.getScheduler().runTask(ThePit.getInstance(), () -> removeFromWorld(entity));
             return;
         }
-        if(entity instanceof CraftEntity){
-            net.minecraft.server.v1_8_R3.Entity entityRaw = ((CraftEntity) entity).getHandle();
-            int i = entityRaw.ae;
-            int j = entityRaw.ag;
-            World world = entityRaw.world;
-            Chunk chunkIfLoaded = world.getChunkIfLoaded(i, j);
-            if (chunkIfLoaded != null) {
-                chunkIfLoaded.b(entityRaw);
-            }
+        if (entity != null && entity.isValid()) {
+            entity.remove();
         }
     }
-    /**
-     * 超级高效的split方法。
-     *
-     * @param line string
-     * @return a array of strings
-     */
+
     public static String[] splitByCharAt(final String line, final char delimiter) {
         String[] temp = new String[(line.length() / 2) + 1];
         int wordCount = 0;

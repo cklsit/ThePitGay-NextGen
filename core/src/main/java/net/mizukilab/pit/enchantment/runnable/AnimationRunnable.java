@@ -112,7 +112,7 @@ public class AnimationRunnable extends BukkitRunnable {
                     }
 
                     for (Location location : animationLocations) {
-                        player.sendBlockChange(location, Material.STAINED_GLASS, foundColor.getColorByte());
+                        player.sendBlockChange(location, Material.WHITE_STAINED_GLASS, foundColor.getColorByte());
                     }
                     continue;
                 }
@@ -146,11 +146,11 @@ public class AnimationRunnable extends BukkitRunnable {
 
                     if (data.animationTick > 0) {
                         int prevIndex = (realTick - 1 + 8) % 8;
-                        data.player.sendBlockChange(animationLocations.get(prevIndex), Material.STAINED_GLASS, (byte) 0);
+                        data.player.sendBlockChange(animationLocations.get(prevIndex), Material.WHITE_STAINED_GLASS, (byte) 0);
                     }
 
                     Location location = animationLocations.get(realTick);
-                    data.player.sendBlockChange(location, Material.STAINED_GLASS, data.color);
+                    data.player.sendBlockChange(location, Material.WHITE_STAINED_GLASS, data.color);
                 }
                 data.animationTick++;
             }
@@ -164,40 +164,40 @@ public class AnimationRunnable extends BukkitRunnable {
             byte currentColor = colors[tick % colors.length];
 
             for (Location location : animationLocations) {
-                player.sendBlockChange(location, Material.STAINED_GLASS, currentColor);
+                player.sendBlockChange(location, Material.WHITE_STAINED_GLASS, currentColor);
             }
             if (tick % 3 == 0) {
-                player.playSound(player.getLocation(), Sound.NOTE_PLING, 1, 1.5F + (tick / 3) * 0.1F);
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1.5F + (tick / 3) * 0.1F);
                 spawnParticles(player, "SPELL_MOB", foundColor);
             }
         } else if (tick <= 35) {
             int rotationIndex = ((tick - 12) / 3) % 8;
             for (Location location : animationLocations) {
-                player.sendBlockChange(location, Material.STAINED_GLASS, (byte) 0);
+                player.sendBlockChange(location, Material.WHITE_STAINED_GLASS, (byte) 0);
             }
-            player.sendBlockChange(animationLocations.get(rotationIndex), Material.STAINED_GLASS, foundColor.getColorByte());
+            player.sendBlockChange(animationLocations.get(rotationIndex), Material.WHITE_STAINED_GLASS, foundColor.getColorByte());
 
             if ((tick - 12) % 3 == 0) {
                 float pitch = 0.5F + ((tick - 12) / 3) * 0.15F;
-                player.playSound(player.getLocation(), Sound.NOTE_PIANO, 1, pitch);
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 1, pitch);
                 spawnSpiralParticles(player, foundColor);
             }
         } else if (tick <= 59) {
             int burstIndex = ((tick - 36) / 3) % 8;
 
             for (int i = 0; i <= burstIndex; i++) {
-                player.sendBlockChange(animationLocations.get(i), Material.STAINED_GLASS, foundColor.getColorByte());
+                player.sendBlockChange(animationLocations.get(i), Material.WHITE_STAINED_GLASS, foundColor.getColorByte());
             }
 
             if ((tick - 36) % 3 == 0) {
-                player.playSound(player.getLocation(), Sound.NOTE_PLING, 1, 1.0F + burstIndex * 0.1F);
-                player.playSound(player.getLocation(), Sound.ORB_PICKUP, 0.5F, 2.0F);
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1.0F + burstIndex * 0.1F);
+                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5F, 2.0F);
                 spawnMagicParticles(player, foundColor);
             }
 
             if (tick == 59) {
-                player.playSound(player.getLocation(), Sound.LEVEL_UP, 1, 1.2F);
-                player.playSound(player.getLocation(), Sound.ENDERDRAGON_GROWL, 0.5F, 1.5F);
+                player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1, 1.2F);
+                player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 0.5F, 1.5F);
                 spawnFinalMagicParticles(player, foundColor);
             }
         } else {
@@ -205,11 +205,11 @@ public class AnimationRunnable extends BukkitRunnable {
                 data.finished = true;
 
                 for (Location location : animationLocations) {
-                    player.sendBlockChange(location, Material.STAINED_GLASS, foundColor.getColorByte());
+                    player.sendBlockChange(location, Material.WHITE_STAINED_GLASS, foundColor.getColorByte());
                 }
 
-                player.playSound(player.getLocation(), Sound.LEVEL_UP, 1, 1.0F);
-                player.playSound(player.getLocation(), Sound.ORB_PICKUP, 1, 2.0F);
+                player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1, 1.0F);
+                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 2.0F);
                 spawnFinalBurstParticles(player, foundColor);
 
                 PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
@@ -247,7 +247,7 @@ public class AnimationRunnable extends BukkitRunnable {
         Location center = player.getLocation().add(0, 1, 0);
         int[] rgb = ParticleUtil.getColorFromMythicColor(color.getInternalName());
         ParticleUtil.createMagicCircleParticles(player, center, 1.5, rgb[0], rgb[1], rgb[2]);
-        player.playSound(center, Sound.FIZZ, 0.5F, 1.5F);
+        player.playSound(center, Sound.BLOCK_FIRE_EXTINGUISH, 0.5F, 1.5F);
     }
 
     private void spawnSpiralParticles(Player player, MythicColor color) {
@@ -255,7 +255,7 @@ public class AnimationRunnable extends BukkitRunnable {
         int[] rgb = ParticleUtil.getColorFromMythicColor(color.getInternalName());
 
         ParticleUtil.createSpiralParticles(player, center, rgb[0], rgb[1], rgb[2]);
-        player.playSound(player.getLocation(), Sound.PORTAL, 0.3F, 2.0F);
+        player.playSound(player.getLocation(), Sound.BLOCK_PORTAL_AMBIENT, 0.3F, 2.0F);
     }
 
     private void spawnMagicParticles(Player player, MythicColor color) {
@@ -263,7 +263,7 @@ public class AnimationRunnable extends BukkitRunnable {
         int[] rgb = ParticleUtil.getColorFromMythicColor(color.getInternalName());
 
         ParticleUtil.createMagicParticles(player, center, rgb[0], rgb[1], rgb[2]);
-        player.playSound(player.getLocation(), Sound.PORTAL, 0.3F, 1.5F);
+        player.playSound(player.getLocation(), Sound.BLOCK_PORTAL_AMBIENT, 0.3F, 1.5F);
     }
 
     private void spawnFinalMagicParticles(Player player, MythicColor color) {
@@ -271,7 +271,7 @@ public class AnimationRunnable extends BukkitRunnable {
         int[] rgb = ParticleUtil.getColorFromMythicColor(color.getInternalName());
 
         ParticleUtil.createSpiralParticles(player, center, rgb[0], rgb[1], rgb[2]);
-        player.playSound(player.getLocation(), Sound.FIREWORK_TWINKLE, 1.0F, 1.5F);
+        player.playSound(player.getLocation(), Sound.BLOCK_FIRE_AMBIENTWORK_TWINKLE, 1.0F, 1.5F);
     }
 
 
@@ -279,8 +279,8 @@ public class AnimationRunnable extends BukkitRunnable {
         Location center = player.getLocation().add(0, 1, 0);
         int[] rgb = ParticleUtil.getColorFromMythicColor(color.getInternalName());
         ParticleUtil.createFinalBurstParticles(player, center, rgb[0], rgb[1], rgb[2]);
-        player.playSound(player.getLocation(), Sound.FIREWORK_LARGE_BLAST, 1.0F, 1.0F);
-        player.playSound(player.getLocation(), Sound.FIREWORK_TWINKLE, 1.0F, 1.5F);
+        player.playSound(player.getLocation(), Sound.BLOCK_FIRE_AMBIENTWORK_LARGE_BLAST, 1.0F, 1.0F);
+        player.playSound(player.getLocation(), Sound.BLOCK_FIRE_AMBIENTWORK_TWINKLE, 1.0F, 1.5F);
     }
 
 
@@ -293,7 +293,7 @@ public class AnimationRunnable extends BukkitRunnable {
 
     public void sendStart(Player player) {
         for (Location location : animationLocations) {
-            player.sendBlockChange(location, Material.STAINED_GLASS, (byte) 0);
+            player.sendBlockChange(location, Material.WHITE_STAINED_GLASS, (byte) 0);
         }
     }
 

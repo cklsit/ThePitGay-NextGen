@@ -168,8 +168,8 @@ object PitHook {
         //PrivatePlayerRunnable.runTaskTimer(ThePit.getInstance(),1L,1L)
         PlayerPointsAPI.init()
         println("Done")
-        Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), { checkBlackList() }, 40L)
-        Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), { loaded = true }, 20L)
+        Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), Runnable Runnable { checkBlackList() }, 40L)
+        Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), Runnable Runnable { loaded = true }, 20L)
 
     }
 
@@ -332,7 +332,7 @@ object PitHook {
         try {
             var itemFactor = ThePit.getInstance().itemFactor
             itemFactor.registerItems(clazzList)
-            Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), {
+            Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), Runnable Runnable {
                 itemFactor.registerItems(ItemConstructor.getItems())
             }, 10)
         } catch (e: Exception) {
@@ -557,7 +557,7 @@ private fun loadEnchants() {
     }
     enchantmentFactor.init(classes)
     EnchantedConstructor.apply {
-        Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), {
+        Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), Runnable Runnable {
             enchantmentFactor.init(getEnchantments())
         }, 10);
     }
@@ -693,7 +693,7 @@ private fun loadPerks() {
     }
 
     perkFactory.init(classes as Collection<Class<*>>?)
-    Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), {
+    Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), Runnable Runnable {
         perkFactory.init(PerkConstructor.getPerks())
     }, 10)
 }

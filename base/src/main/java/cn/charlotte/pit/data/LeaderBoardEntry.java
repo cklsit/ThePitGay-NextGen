@@ -29,6 +29,26 @@ public class LeaderBoardEntry {
         this.prestige = prestige;
     }
 
+    public String getName() {
+        return this.name;
+    }
+
+    public UUID getUuid() {
+        return this.uuid;
+    }
+
+    public int getRank() {
+        return this.rank;
+    }
+
+    public double getExperience() {
+        return this.experience;
+    }
+
+    public int getPrestige() {
+        return this.prestige;
+    }
+
     public static List<LeaderBoardEntry> getLeaderBoardEntries() {
         return LeaderBoardEntry.leaderBoardEntries;
     }

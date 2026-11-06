@@ -156,7 +156,7 @@ public class CombatListener implements Listener {
 
                 //CombatSpade Boost
                 if (itemInHand != null
-                        && itemInHand.getType() == Material.DIAMOND_SPADE && "shopItem".equalsIgnoreCase(ItemUtil.getInternalName(itemInHand))) {
+                        && itemInHand.getType() == Material.DIAMOND_SHOVEL && "shopItem".equalsIgnoreCase(ItemUtil.getInternalName(itemInHand))) {
                     for (ItemStack is : player.getInventory().getArmorContents()) {
                         if (is.getType().name().startsWith("DIAMOND")) {
                             event.setDamage(event.getDamage() + 0.5);
@@ -497,7 +497,7 @@ public class CombatListener implements Listener {
                 profile.setShootAttack(profile.getShootAttack() + 1);
                 if (!profile.isInArena()) {
                     event.setCancelled(true);
-                    player.playSound(player.getLocation(), Sound.VILLAGER_NO, 1.0f, 1.0f);
+                    player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
                 }
             }
         } else if (event.getEntity() instanceof FishHook hook) {
@@ -940,7 +940,7 @@ public class CombatListener implements Listener {
 
                 totalCoins = eventBoost * totalCoins;
                 totalXp = eventBoost * totalXp;
-                assistPlayer.playSound(assistPlayer.getLocation(), Sound.ORB_PICKUP, 1, 1.7F);
+                assistPlayer.playSound(assistPlayer.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1.7F);
                 CC.send(MessageType.COMBAT, assistPlayer, CC.translate("&a&l助攻! &7" + numFormat.format(percentage * 100) + "% 的伤害在 " + playerProfile.getFormattedName() + " &6+" + numFormat.format(totalCoins) + "硬币 " + (assistProfile.getLevel() < 120 ? "&b+" + numFormat.format(totalXp) + "经验值" : "") + (eventBoost > 1 ? boostString : "")));
             }
         }
@@ -1064,7 +1064,7 @@ public class CombatListener implements Listener {
 
                         @Override
                         public void run() {
-                            killer.playSound(beKilledPlayer.getLocation(), Sound.NOTE_PLING, 1, 0.1F + (0.5F * task));
+                            killer.playSound(beKilledPlayer.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 0.1F + (0.5F * task));
                             task++;
 
                             if (task >= 6) {
@@ -1174,7 +1174,7 @@ public class CombatListener implements Listener {
     private void handleBoardCastMessage(PlayerProfile killerProfile, PlayerProfile playerProfile, Player killer, LivingEntity beKilledPlayer, double totalCoins, double totalXp) {
 
         if (beKilledPlayer instanceof Player) {
-            (((Player) beKilledPlayer)).playSound(beKilledPlayer.getLocation(), Sound.ZOMBIE_INFECT, 1, 1.5F);
+            (((Player) beKilledPlayer)).playSound(beKilledPlayer.getLocation(), Sound.ENTITY_ZOMBIE_INFECT, 1, 1.5F);
         }
 
         String genesisStatus = "";
@@ -1226,7 +1226,7 @@ public class CombatListener implements Listener {
                     prefix = "多杀";
                     ThePit.getInstance().getSoundFactory().playSound("streak", killer);
                 } else {
-                    killer.playSound(killer.getLocation(), Sound.ORB_PICKUP, 1, 1.9F);
+                    killer.playSound(killer.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1.9F);
                     prefix = "击杀";
                 }
             }

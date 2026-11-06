@@ -58,7 +58,7 @@ class JewelSword : IMythicItem(), Listener {
     }
 
     override fun getItemDisplayMaterial(): Material {
-        return Material.GOLD_SWORD
+        return Material.GOLDEN_SWORD
     }
 
     override fun toItemStack(): ItemStack {

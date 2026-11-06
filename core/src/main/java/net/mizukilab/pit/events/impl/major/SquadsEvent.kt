@@ -8,7 +8,7 @@ import cn.charlotte.pit.events.trigger.type.IEpicEvent
 import cn.charlotte.pit.events.trigger.type.addon.IPreparative
 import cn.charlotte.pit.events.trigger.type.addon.IScoreBoardInsert
 import cn.charlotte.pit.events.trigger.type.addon.ISortable
-import net.minecraft.server.v1_8_R3.EnumParticle
+import org.bukkit.Particle
 import net.minecraft.server.v1_8_R3.PacketPlayOutWorldParticles
 import net.mizukilab.pit.Util.Companion.chatColorToColor
 import net.mizukilab.pit.Util.Companion.chatColorToData
@@ -108,7 +108,7 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
     override fun onActive() {
         val config = ThePit.getInstance().pitConfig
         for (location in config.squadsLocations) {
-            location.block.type = Material.STANDING_BANNER
+            location.block.type = Material.WHITE_BANNER
             val blockState = location.block.state
             val banner = blockState as Banner
             banner.baseColor = DyeColor.WHITE
@@ -302,7 +302,7 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
 
     @EventHandler
     fun onBlockBreak(event: BlockBreakEvent) {
-        if (event.block.type == Material.BANNER) {
+        if (event.block.type == Material.WHITE_BANNER) {
             event.isCancelled = true
         }
     }
@@ -431,12 +431,12 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
                 this.bannerStatus = BannerStatus.CAPTURING
 
                 if (capturingState > 5) {
-                    Bukkit.getScheduler().runTask(ThePit.getInstance()) {
+                    Bukkit.getScheduler().runTask(ThePit.getInstance(), Runnable {
                         val state = this.location.block.state
                         val banner = state as Banner
                         banner.baseColor = DyeColor.getByDyeData(chatColorToData[capturingTeam.chatColor]!!.toByte())
                         banner.update(true, false)
-                    }
+                    })
 
                     val first = players.first()
                     val gotPlayer =
@@ -466,7 +466,7 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
                     setCapturedHologram()
 
                     capturingTeam.banners.add(this)
-                    Bukkit.getScheduler().runTask(ThePit.getInstance()) {
+                    Bukkit.getScheduler().runTask(ThePit.getInstance(), Runnable {
                         val firework = BoomFirework((location.world as CraftWorld).handle)
                         val meta = (firework.bukkitEntity as Firework).fireworkMeta
                         meta.addEffect(
@@ -480,7 +480,7 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
                         if ((location.world as CraftWorld).handle.addEntity(firework)) {
                             firework.isInvisible = true
                         }
-                    }
+                    })
                 }
             } else {
                 this.capturingState = 0
@@ -497,9 +497,9 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
 
         fun drawParticle() {
             if (bannerStatus == BannerStatus.FIGHTING) {
-                drawCircle(EnumParticle.FLAME, null)
+                drawCircle(Particle.FLAME, null)
             } else if (bannerStatus == BannerStatus.CAPTURING && capturingTeam != null) {
-                drawCircle(EnumParticle.REDSTONE, chatColorToColor[capturingTeam!!.chatColor]!!)
+                drawCircle(Particle.DUST, chatColorToColor[capturingTeam!!.chatColor]!!)
             }
         }
 

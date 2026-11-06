@@ -46,7 +46,7 @@ public class PlayerEnderChest {
         int limit = row * 9;
 
         for (int i = limit; i < this.inventory.getContents().length; i++) {
-            inventory.setItem(i, new ItemBuilder(Material.STAINED_GLASS_PANE).name("&c未解锁的槽位").durability(14).lore("", "&7前面的区域, 以后再来探索吧!").internalName("not_unlock_slot").build());
+            inventory.setItem(i, new ItemBuilder(Material.WHITE_STAINED_GLASS_PANE).name("&c未解锁的槽位").durability(14).lore("", "&7前面的区域, 以后再来探索吧!").internalName("not_unlock_slot").build());
         }
         for (int i = 27; i < this.inventory.getContents().length; i++) {
             if (i >= limit) {

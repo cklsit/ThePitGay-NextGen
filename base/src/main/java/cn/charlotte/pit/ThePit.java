@@ -19,7 +19,6 @@ import com.google.common.io.ByteStreams;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
-import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.Component;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.LuckPermsProvider;
@@ -155,7 +154,6 @@ public class ThePit extends JavaPlugin implements PluginMessageListener {
     @Getter
     private String serverId;
     @Getter
-    private BukkitAudiences audiences;
     @Setter
     @Getter
     private IActionBarManager actionBarManager;
@@ -191,7 +189,6 @@ public class ThePit extends JavaPlugin implements PluginMessageListener {
     @Override
     public void onEnable() {
         BASE_VERSION = this.getDescription().getVersion();
-        audiences = BukkitAudiences.create(this);
         BannerUtil.printFileContent("banner.txt");
         serverId = DateCodeUtils.dateToCode(LocalDate.now());
 

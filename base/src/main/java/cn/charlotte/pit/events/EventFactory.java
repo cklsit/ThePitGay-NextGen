@@ -19,7 +19,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static org.bukkit.Sound.BURP;
+import static org.bukkit.Sound.ENTITY_PLAYER_BURP;
 
 /**
  * @Author: EmptyIrony

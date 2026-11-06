@@ -19,7 +19,7 @@ class PacketHologramRunnable : BukkitRunnable() {
         @JvmStatic
         fun deSpawnAll() {
             holograms.forEach {
-                it.hologram.entity.remove()
+                it.hologram.entity?.remove()
             }
             holograms.clear()
         }

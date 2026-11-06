@@ -76,7 +76,7 @@ public class EnderChestListener implements Listener {
             final Location location = locationCache.remove(event.getPlayer().getUniqueId());
 
             if (location != null) {
-                ((Player) event.getPlayer()).playSound(event.getPlayer().getLocation(), Sound.CHEST_CLOSE, 1, 0.6F);
+                ((Player) event.getPlayer()).playSound(event.getPlayer().getLocation(), Sound.BLOCK_CHEST_CLOSE, 1, 0.6F);
 
                 BlockPosition pos = new BlockPosition(location.getBlockX(), location.getBlockY(), location.getBlockZ());
                 PacketPlayOutBlockAction packet = new PacketPlayOutBlockAction(pos, Blocks.ENDER_CHEST, (byte) 1, (byte) 0);
@@ -136,7 +136,7 @@ public class EnderChestListener implements Listener {
             }
 
             profile.getEnderChest().openEnderChest(player);
-            player.playSound(player.getLocation(), Sound.CHEST_OPEN, 1, 0.6F);
+            player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1, 0.6F);
 
             this.locationCache.put(player.getUniqueId(), location);
 

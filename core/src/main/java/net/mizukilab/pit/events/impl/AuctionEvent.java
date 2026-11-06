@@ -779,7 +779,7 @@ public class AuctionEvent extends AbstractEvent implements INormalEvent, Listene
                     lines.add("");
                     lines.add("&7服务器: &a" + ThePit.getInstance().getServer().getName());
                     lines.add("&7时间: &f" + dateFormat.format(System.currentTimeMillis()));
-                    itemStacks.add(new ItemBuilder(Material.MAP).name("&e拍卖信息").lore(lines).build());
+                    itemStacks.add(new ItemBuilder(Material.FILLED_MAP).name("&e拍卖信息").lore(lines).build());
                     if (!highestBid.getUuid().equals(uuid)) {
                         tradeData.setAPaidCoin(((long) playerHighestBid.getCoins()));
                         lines.add("");

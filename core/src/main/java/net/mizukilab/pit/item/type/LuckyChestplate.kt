@@ -114,7 +114,7 @@ class LuckyChestplate : IMythicItem(), Listener {
                 "lucky_chestplate",
                 FixedMetadataValue(ThePit.getInstance(), System.currentTimeMillis() + 1000 * 30)
             )
-            player.playSound(player.location, Sound.ANVIL_USE, 1f, 1f)
+            player.playSound(player.location, Sound.BLOCK_ANVIL_USE, 1f, 1f)
             player.sendMessage("您抵御了一次必中伤害")
         }
     }

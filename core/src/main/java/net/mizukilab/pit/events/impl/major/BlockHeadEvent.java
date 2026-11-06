@@ -51,14 +51,14 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
     private final Map<UUID, PlayerBlockHeadData> dataMap = new HashMap<>();
     private final Map<UUID, Integer> rankMap = new HashMap<>();
     public final Map<UUID, PowerUP> pup = new HashMap<>();
-    private static final List<Material> canBeUsed = Arrays.asList(Material.STONE, Material.GRASS, Material.DIRT, Material.COBBLESTONE, Material.WOOD, Material.BEDROCK
+    private static final List<Material> canBeUsed = Arrays.asList(Material.STONE, Material.SHORT_GRASS, Material.DIRT, Material.COBBLESTONE, Material.OAK_PLANKS, Material.RED_BEDROCK
             , Material.GOLD_ORE, Material.IRON_ORE, Material.COAL_ORE
-            , Material.LOG, Material.LAPIS_ORE,
-            Material.LAPIS_BLOCK, Material.SANDSTONE, Material.NOTE_BLOCK, Material.BED_BLOCK, Material.PISTON_STICKY_BASE
-            , Material.WOOL, Material.GOLD_BLOCK, Material.IRON_BLOCK, Material.BRICK, Material.TNT, Material.BOOKSHELF, Material.MOSSY_COBBLESTONE, Material.OBSIDIAN,
-            Material.DIAMOND_ORE, Material.DIAMOND_BLOCK, Material.FURNACE, Material.BURNING_FURNACE, Material.REDSTONE_ORE, Material.ICE, Material.GLOWSTONE, Material.SMOOTH_BRICK, Material.MELON_BLOCK
+            , Material.OAK_LOG, Material.LAPIS_ORE,
+            Material.LAPIS_BLOCK, Material.SANDSTONE, Material.NOTE_BLOCK, Material.RED_BED_BLOCK, Material.STICKY_PISTON
+            , Material.WHITE_WOOL, Material.GOLD_BLOCK, Material.IRON_BLOCK, Material.BRICK, Material.TNT, Material.BOOKSHELF, Material.MOSSY_COBBLESTONE, Material.OBSIDIAN,
+            Material.DIAMOND_ORE, Material.DIAMOND_BLOCK, Material.FURNACE, Material.FURNACE, Material.REDSTONE_ORE, Material.ICE, Material.GLOWSTONE, Material.STONE_BRICKS, Material.MELON
             , Material.PUMPKIN_STEM, Material.MELON_STEM,
-            Material.NETHER_BRICK, Material.ENDER_STONE, Material.EMERALD_ORE, Material.OBSIDIAN);
+            Material.NETHER_BRICKS, Material.END_STONE, Material.EMERALD_ORE, Material.OBSIDIAN);
     private final Map<String, BlockData> oriBlock = new HashMap<>();
     private final List<Material> selectedMaterials = new ArrayList<>();
     private final List<Entity> entities = new ArrayList<>();
@@ -99,7 +99,7 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
 
         if (data != null) {
             if (System.currentTimeMillis() - get(player, "trail") < 15000) {
-                if (!player.getLocation().add(0.0, -1.0, 0.0).getBlock().getType().equals(Material.AIR) && !player.getLocation().add(0.0, -1.0, 0.0).getBlock().getType().equals(Material.STATIONARY_WATER) && !player.getLocation().add(0.0, -1.0, 0.0).getBlock().getType().equals(Material.SNOW)) {
+                if (!player.getLocation().add(0.0, -1.0, 0.0).getBlock().getType().equals(Material.AIR) && !player.getLocation().add(0.0, -1.0, 0.0).getBlock().getType().equals(Material.WATER) && !player.getLocation().add(0.0, -1.0, 0.0).getBlock().getType().equals(Material.SNOW)) {
                     Location belowLocation = new Location(player.getLocation().getWorld(), player.getLocation().getX(), player.getLocation().getY() - 1, player.getLocation().getZ());
                     if (oriBlock.containsKey(loc(belowLocation))) {
                         Player blockBelonger = oriBlock.get(loc(belowLocation)).getBelonger();
@@ -131,14 +131,14 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
             if (stand.getCustomName().contains("快速染径") && (System.currentTimeMillis() - get(player, "trail") > 15000)) {
                 refresh(player, "trail");
                 player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 15 * 20, 1));
-                player.playSound(player.getLocation(), Sound.ORB_PICKUP, 100.0f, 1.0f);
+                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 100.0f, 1.0f);
                 player.sendMessage(CC.translate("&9&l快速染径！ &7你获得了15秒的 &f速度II&7,以及你经过的地方将被你染色！"));
             }
             if (stand.getCustomName().contains("超级恢复") && (System.currentTimeMillis() - get(player, "heal") > 15000)) {
                 refresh(player, "heal");
                 player.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 99999, 1));
                 player.setHealth(player.getMaxHealth());
-                player.playSound(player.getLocation(), Sound.ORB_PICKUP, 100.0f, 1.0f);
+                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 100.0f, 1.0f);
                 player.sendMessage(CC.translate("&9&l超级恢复！ &7你获得了4颗心的额外生命!并且你的血量已恢复最大值"));
             }
             if (stand.getCustomName().contains("钻石套装") && (System.currentTimeMillis() - get(player, "diamond") > 15000)) {
@@ -172,12 +172,12 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
                         inventory.setBoots(boot);
                     }
                 }
-                player.playSound(player.getLocation(), Sound.ORB_PICKUP, 100.0f, 1.0f);
+                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 100.0f, 1.0f);
                 player.sendMessage(CC.translate("&9&l钻石套装！ &7你已装备钻石套装！"));
             }
             if (stand.getCustomName().contains("战斗加成") && (System.currentTimeMillis() - get(player, "combat") > 15000)) {
                 refresh(player, "combat");
-                player.playSound(player.getLocation(), Sound.ORB_PICKUP, 100.0f, 1.0f);
+                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 100.0f, 1.0f);
                 player.sendMessage(CC.translate("&9&l战斗加成！ &7击杀玩家后,方块爆炸的半径增加！"));
             }
             stand.remove();
@@ -205,7 +205,7 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
         for (int x = -r; x <= r; x++) {
             for (int z = -r; z <= r; z++) {
                 Location blockLocation = new Location(killerLocation.getWorld(), killerLocation.getX() + x, killerLocation.getY() - 1, killerLocation.getZ() + z);
-                if (!blockLocation.getBlock().getType().equals(Material.AIR) && !blockLocation.getBlock().getType().equals(Material.STATIONARY_WATER) && !blockLocation.getBlock().getType().equals(Material.SNOW)) {
+                if (!blockLocation.getBlock().getType().equals(Material.AIR) && !blockLocation.getBlock().getType().equals(Material.WATER) && !blockLocation.getBlock().getType().equals(Material.SNOW)) {
                     if (oriBlock.containsKey(loc(blockLocation))) {
                         Player blockBelonger = oriBlock.get(loc(blockLocation)).getBelonger();
                         if (dataMap.containsKey(blockBelonger.getUniqueId())) {
@@ -221,7 +221,7 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
                         allblocks++;
                         blockLocation.getBlock().setType(killerData.block);
                     }
-                } else if (!blockLocation.add(0.0, -1.0, 0.0).getBlock().getType().equals(Material.AIR) && !blockLocation.add(0.0, -1.0, 0.0).getBlock().getType().equals(Material.STATIONARY_WATER) && !blockLocation.add(0.0, -1.0, 0.0).getBlock().getType().equals(Material.SNOW)) {
+                } else if (!blockLocation.add(0.0, -1.0, 0.0).getBlock().getType().equals(Material.AIR) && !blockLocation.add(0.0, -1.0, 0.0).getBlock().getType().equals(Material.WATER) && !blockLocation.add(0.0, -1.0, 0.0).getBlock().getType().equals(Material.SNOW)) {
                     if (oriBlock.containsKey(loc(blockLocation.add(0.0, -1.0, 0.0)))) {
                         Player blockBelonger = oriBlock.get(loc(blockLocation.add(0.0, -1.0, 0.0))).getBelonger();
                         if (dataMap.containsKey(blockBelonger.getUniqueId())) {
@@ -237,7 +237,7 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
                         allblocks++;
                         blockLocation.add(0.0, -1.0, 0.0).getBlock().setType(killerData.block);
                     }
-                } else if (!blockLocation.add(0.0, -2.0, 0.0).getBlock().getType().equals(Material.AIR) && !blockLocation.add(0.0, -2.0, 0.0).getBlock().getType().equals(Material.STATIONARY_WATER) && !blockLocation.add(0.0, -2.0, 0.0).getBlock().getType().equals(Material.SNOW)) {
+                } else if (!blockLocation.add(0.0, -2.0, 0.0).getBlock().getType().equals(Material.AIR) && !blockLocation.add(0.0, -2.0, 0.0).getBlock().getType().equals(Material.WATER) && !blockLocation.add(0.0, -2.0, 0.0).getBlock().getType().equals(Material.SNOW)) {
                     if (oriBlock.containsKey(loc(blockLocation.add(0.0, -2.0, 0.0)))) {
                         Player blockBelonger = oriBlock.get(loc(blockLocation.add(0.0, -2.0, 0.0))).getBelonger();
                         if (dataMap.containsKey(blockBelonger.getUniqueId())) {
@@ -667,7 +667,7 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
         }
         stand.setCustomNameVisible(true);
         stand.setGravity(false);
-        ItemStack is = new ItemStack(Material.SKULL_ITEM, 1, (short) 3);
+        ItemStack is = new ItemStack(Material.SKELETON_SKULL_ITEM, 1, (short) 3);
         SkullMeta sm = (SkullMeta) is.getItemMeta();
         GameProfile profile = new GameProfile(UUID.randomUUID(), "");
         switch (type) {

@@ -38,6 +38,7 @@ repositories {
     maven("https://repo.rosewooddev.io/repository/public/")
     maven("https://repo.extendedclip.com/content/repositories/placeholderapi/")
     maven("https://repo.panda-lang.org/releases")
+    maven("https://repo.papermc.io/repository/maven-public/")
 }
 val gitVersion = version.toString()
 
@@ -165,7 +166,6 @@ dependencies {
     compileOnly(libs.book)
     compileOnly(libs.slf4j)
     compileOnly(libs.litecommands)
-    compileOnly(libs.adventure.bukkit)
     compileOnly("com.caoccao.javet:javet:3.1.4")
     compileOnly("org.projectlombok:lombok:1.18.32")
     annotationProcessor("org.projectlombok:lombok:1.18.32")
@@ -184,11 +184,10 @@ dependencies {
     compileOnly(libs.fastutil)
 
     compileOnly("us.crazycrew.crazycrates:api:0.7")
-    compileOnly(libs.spigot.get8())
+    compileOnly(libs.paper.api)
     compileOnly(libs.luckperms)
     compileOnly(libs.playerpoints)
     compileOnly(libs.decentholograms)
-    compileOnly(libs.adventure.bukkit)
     implementation(kotlin("reflect"))
 }
 kotlin {
@@ -198,6 +197,7 @@ kotlin {
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
     options.release.set(21)
+    options.compilerArgs.addAll(listOf("-Xmaxerrs", "6000", "-Xlint:none"))
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {

@@ -4,7 +4,7 @@ import cn.charlotte.pit.ThePit;
 import cn.charlotte.pit.data.PlayerProfile;
 import cn.charlotte.pit.data.operator.IOperator;
 import cn.hutool.core.collection.ConcurrentHashSet;
-import net.minecraft.server.v1_8_R3.EnumParticle;
+import org.bukkit.Particle;
 import net.minecraft.server.v1_8_R3.PacketPlayInFlying;
 import net.minecraft.server.v1_8_R3.PacketPlayOutWorldParticles;
 import net.mizukilab.pit.config.PitWorldConfig;
@@ -98,7 +98,7 @@ public class PlayerMoveHandler implements MovementHandler, Listener {
 
                 player.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, 9999999, 1, false), true);
                 player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 9999999, -100, false), true);
-                player.addPotionEffect(new PotionEffect(PotionEffectType.JUMP, 9999999, -100, false), true);
+                player.addPotionEffect(new PotionEffect(PotionEffectType.JUMP_BOOST, 9999999, -100, false), true);
                 return;
             }
         }
@@ -286,10 +286,10 @@ public class PlayerMoveHandler implements MovementHandler, Listener {
                 direction.normalize().multiply(2.2);
             }
             armorStand.setVelocity(direction);
-            player.playSound(player.getLocation(), Sound.EXPLODE, 1.5f, 0.8f);
-            player.playSound(player.getLocation(), Sound.FIREWORK_LAUNCH, 1.0f, 1.2f);
+            player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 0.8f);
+            player.playSound(player.getLocation(), Sound.BLOCK_FIRE_AMBIENTWORK_LAUNCH, 1.0f, 1.2f);
             PacketPlayOutWorldParticles explosionPacket = new PacketPlayOutWorldParticles(
-                    EnumParticle.EXPLOSION_LARGE, true,
+                    Particle.EXPLOSION, true,
                     (float) to.getX(), (float) to.getY(), (float) to.getZ(),
                     0.3F, 0.3F, 0.3F, 0, 8
             );
@@ -366,7 +366,7 @@ public class PlayerMoveHandler implements MovementHandler, Listener {
                     try {
                         if (ticks % 3 == 0) {
                             Location loc = armorStand.getLocation();
-                            EnumParticle particleType = isDescending ? EnumParticle.DRIP_WATER : EnumParticle.CLOUD;
+                            EnumParticle particleType = isDescending ? Particle.DRIPPING_WATER : Particle.CLOUD;
 
                             PacketPlayOutWorldParticles trailPacket = new PacketPlayOutWorldParticles(
                                     particleType, true,
@@ -403,13 +403,13 @@ public class PlayerMoveHandler implements MovementHandler, Listener {
                     if (player.isOnline()) {
                         player.setPassenger(null);
                         try {
-                            player.playSound(player.getLocation(), Sound.FALL_BIG, 0.8f, 1.0f);
+                            player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_BIG_FALL, 0.8f, 1.0f);
                         } catch (Exception e) {
                         }
 
                         try {
                             PacketPlayOutWorldParticles landingPacket = new PacketPlayOutWorldParticles(
-                                    EnumParticle.CLOUD, true,
+                                    Particle.CLOUD, true,
                                     (float) safeLandingLoc.getX(), (float) safeLandingLoc.getY(), (float) safeLandingLoc.getZ(),
                                     0.5F, 0.1F, 0.5F, 0, 8
                             );

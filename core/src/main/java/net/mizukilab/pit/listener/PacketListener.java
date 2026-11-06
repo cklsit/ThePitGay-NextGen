@@ -151,9 +151,9 @@ public class PacketListener extends PacketAdapter {
                 for (Player target : Bukkit.getOnlinePlayers()) {
                     if (target.getEntityId() == (int) a.get(packet)) {
                         if (activeEpicEvent.getRedTeam().contains(target.getUniqueId())) {
-                            c.set(packet, CraftItemStack.asNMSCopy(new ItemBuilder(Material.WOOL).durability(14).build()));
+                            c.set(packet, CraftItemStack.asNMSCopy(new ItemBuilder(Material.WHITE_WOOL).durability(14).build()));
                         } else if (activeEpicEvent.getBlueTeam().contains(target.getUniqueId())) {
-                            c.set(packet, CraftItemStack.asNMSCopy(new ItemBuilder(Material.WOOL).durability(11).build()));
+                            c.set(packet, CraftItemStack.asNMSCopy(new ItemBuilder(Material.WHITE_WOOL).durability(11).build()));
                         }
                         break;
                     }

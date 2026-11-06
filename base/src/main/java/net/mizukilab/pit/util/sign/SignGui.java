@@ -67,7 +67,7 @@ public class SignGui {
 
     public void open(Player player, String[] messages, SignGUIListener response) {
         Location loc = new Location(player.getWorld(), 0, 1, 0);
-        player.sendBlockChange(loc, Material.SIGN_POST, (byte) 0);
+        player.sendBlockChange(loc, Material.OAK_SIGN_POST, (byte) 0);
         player.sendSignChange(loc, messages);
 
         try {
