@@ -63,10 +63,9 @@ class JewelSword : IMythicItem(), Listener {
         val itemStack = super.toItemStack()
 
         if (killed >= KILL_TARGET) {
-            val nmsCopy = Utils.toNMStackQuick(itemStack)
-            nmsCopy?.tag?.getCompound("extra")?.setString("internal", "mythic_sword")
-
-            return CraftItemStack.asCraftMirror(nmsCopy)
+            // 1.21：内部名写 PDC，不再操作 NMS tag
+            cn.charlotte.pit.compat.item.ItemData.set(itemStack, "internal", "mythic_sword")
+            return itemStack
         }
 
         val lore = arrayListOf(
@@ -87,7 +86,7 @@ class JewelSword : IMythicItem(), Listener {
     }
 
     override fun loadFromItemStack(item: ItemStack) {
-        Utils.toNMStackQuick(item)?.tag?.getCompound("extra")?.getInt("killed")?.let {
+        cn.charlotte.pit.compat.item.ItemData.getInt(item, "killed")?.let {
             killed = it
         }
 
@@ -194,7 +193,7 @@ class JewelSword : IMythicItem(), Listener {
             }
 
             val itemStack = newSword.toItemStack()
-            killer.itemInHand = itemStack
+            killer.inventory.setItemInMainHand(itemStack)
 
             if (enchantment.rarity == EnchantmentRarity.RARE) {
                 val nms = Utils.toNMStackQuick(itemStack)
@@ -221,7 +220,7 @@ class JewelSword : IMythicItem(), Listener {
             ThePit.getInstance().soundFactory.playSound("successfully", killer)
             killer.sendMessage(CC.translate("&d晋升! &7经过坚持与努力, 您的 &d宝石之剑 &7获得了附魔!"))
         } else {
-            killer.itemInHand = sword.toItemStack()
+            killer.inventory.setItemInMainHand(sword.toItemStack())
         }
     }
 }

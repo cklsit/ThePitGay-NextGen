@@ -161,7 +161,7 @@ object NewConfiguration {
             cleanupConfig()
         }
 
-        serverId = config.getString("server-id", null)
+        serverId = config.getString("server-id", null) ?: ""
         rapidEnchanting = config.getBoolean("rapid-enchanting", false)
         repairFeatures = config.getBoolean("repair-features", false)
         luckGem = config.getDouble("luck-gem", 0.30)
@@ -169,10 +169,10 @@ object NewConfiguration {
 
         vipPrice = config.getInt("vip-price", 500)
         sewersSpawn = config.getInt("sewers-spawn", 60)
-        priceName = config.getString("price-name", "点券")
-        lobbyCommand = config.getString("lobby-command", "hub")
+        priceName = config.getString("price-name", "点券") ?: ""
+        lobbyCommand = config.getString("lobby-command", "hub") ?: ""
 
-        dateFormat = config.getString("dateFormat", "MM/dd HH:mm")
+        dateFormat = config.getString("dateFormat", "MM/dd HH:mm") ?: ""
         alwaysT2Enchant = config.getBoolean("alwaysT2Enchant", false)
         noobProtect = config.getBoolean("noob-protect.enable")
         noobProtectLevel = config.getInt("noob-protect.level")
@@ -182,7 +182,7 @@ object NewConfiguration {
         CombatListener.eventBoost = config.getDouble("boost")
 
         customChatFormatEnable = config.getBoolean("custom-chat-format.enable", false)
-        customChatFormat = config.getString("custom-chat-format.format", "%pit_level_tag_roman% %s&f: %s")
+        customChatFormat = config.getString("custom-chat-format.format", "%pit_level_tag_roman% %s&f: %s") ?: ""
 
         PrestigeStatusButton.limit = config.getInt("highest-prestige")
         patchCaches()
@@ -195,7 +195,7 @@ object NewConfiguration {
 
         ThePunchEnchant.PUNCH_Y = config.getDouble("punch_y", 4.0)
         alwaysCheckNPC = config.getBoolean("alwaysCheckNPC",false);
-        pitSupportPermission = config.getString("pitSupportPermission", pitSupportPermission)
+        pitSupportPermission = config.getString("pitSupportPermission", pitSupportPermission) ?: ""
         removeSupportWhenNoPermission = config.getBoolean("removeSupportWhenNoPermission", false)
 
         scoreboardShowtime = config.getBoolean("scoreboard-showtime")
@@ -237,15 +237,15 @@ object NewConfiguration {
         }
 
         rareRate.clear()
-        var configurationSection = config.getConfigurationSection("rate")
+        var configurationSection = config.getConfigurationSection("rate")!!
         for (i in 1..3) {
-            var configElf = configurationSection.getConfigurationSection(i.toString());
+            var configElf = configurationSection.getConfigurationSection(i.toString())!!;
             rareRate[i] = HashMap();
             rareRate[i]?.put(MythicColor.DARK, ArrayList<Rate>().apply {
-                val darkRateSection = configElf.getConfigurationSection("dark")
+                val darkRateSection = configElf.getConfigurationSection("dark")!!
 
                 for (key in darkRateSection.getKeys(false)) {
-                    val permission = darkRateSection.getString("${key}.permission", "pit.enchant.${key}")
+                    val permission = darkRateSection.getString("${key}.permission", "pit.enchant.${key}") ?: ""
                     val chance = darkRateSection.getDouble("${key}.value", 0.02)
 
                     this += Rate(permission, chance)
@@ -288,7 +288,7 @@ object NewConfiguration {
         scoreBoardAnimation = expandScoreboardAnimation(config.getStringList("scoreboard.animation"))
         loadingBoardTips = config.getList("scoreboard.loading", loadingBoardTips) as List<String>
         bountyTickInterval = config.getInt("bounty.updateInterval", bountyTickInterval);
-        watermarks = config.getString("water-marks", watermarks)
+        watermarks = config.getString("water-marks", watermarks) ?: ""
         epicEventTitleAnimation = config.getList("title.event.epic.animation", epicEventTitleAnimation) as List<String>
 
         epicTitleUpdateInterval = config.getInt("title.event.epic.interval", epicTitleUpdateInterval)

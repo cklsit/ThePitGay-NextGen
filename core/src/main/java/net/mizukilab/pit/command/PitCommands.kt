@@ -803,7 +803,7 @@ class PitCommands {
             player.sendMessage(CC.translate("&c你输入的价格有误!"))
             return
         }
-        if (Bukkit.getPlayer(targetPlayer) == null || !Bukkit.getPlayer(targetPlayer).isOnline || PlayerUtil.isVanished(
+        if (Bukkit.getPlayer(targetPlayer) == null || !Bukkit.getPlayer(targetPlayer)!!.isOnline || PlayerUtil.isVanished(
                 Bukkit.getPlayer(targetPlayer)
             )
         ) {
@@ -889,7 +889,7 @@ class PitCommands {
 
             //todo: create offer
             profile.offerData.createOffer(target.uniqueId, player.itemInHand, price.toInt().toDouble())
-            player.itemInHand = ItemStack(Material.AIR)
+            player.inventory.setItemInMainHand(ItemStack(Material.AIR))
             if (!targetProfile.playerOption.isTradeNotify && !player.hasPermission(PlayerUtil.getStaffPermission())) {
                 player.sendMessage(CC.translate("&c对方在游戏选项之后中设置了不接受交易请求,因此无法查看你的请求提示."))
                 player.sendMessage(CC.translate("&c但对方仍可以通过使用 &e/viewOffer " + player.name + " &c以同意你的请求."))
@@ -961,7 +961,7 @@ class PitCommands {
                     remove(VollewyA())
                 }
 
-                player.itemInHand = mythicItem.toItemStack()
+                player.inventory.setItemInMainHand(mythicItem.toItemStack())
                 player.sendMessage(CC.translate("&a已将连射附魔切换为 B 类型！"))
             }
             volleyBLevel >= 1 -> {
@@ -971,7 +971,7 @@ class PitCommands {
                     remove(Volley_B())
                 }
 
-                player.itemInHand = mythicItem.toItemStack()
+                player.inventory.setItemInMainHand(mythicItem.toItemStack())
                 player.sendMessage(CC.translate("&a已将连射附魔切换为 A 类型！"))
             }
         }
@@ -1041,7 +1041,7 @@ class PitCommands {
         } else {
             mythicItem.customName = name
         }
-        player.itemInHand = ItemBuilder(mythicItem.toItemStack())
+        player.inventory.setItemInMainHand(ItemBuilder(mythicItem.toItemStack()))
             .forceCanTrade(false)
             .build()
         return "§a已重命名"
@@ -1057,7 +1057,7 @@ class PitCommands {
             return "§c咦...这个物品似乎没有被重命名呢!"
         }
         mythicItem.customName = null;
-        player.itemInHand = ItemBuilder(mythicItem.toItemStack())
+        player.inventory.setItemInMainHand(ItemBuilder(mythicItem.toItemStack()))
             .customName(null)
             .unsetForceCanTrade()
             .build()
