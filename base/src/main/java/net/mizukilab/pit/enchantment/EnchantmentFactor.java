@@ -2,7 +2,6 @@ package net.mizukilab.pit.enchantment;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 import net.mizukilab.pit.parm.listener.*;
 import net.mizukilab.pit.util.PublicUtil;
 
@@ -17,8 +16,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * @Date: 2020/12/30 21:49
  */
 @Getter
-@Slf4j
 public class EnchantmentFactor {
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(EnchantmentFactor.class);
 
 
     private final Collection<AbstractEnchantment> enchantments;

@@ -1,7 +1,6 @@
 package net.mizukilab.pit.quest;
 
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 import net.mizukilab.pit.parm.listener.*;
 
 import java.util.*;
@@ -11,8 +10,9 @@ import java.util.*;
  * @Date: 2021/1/19 16:43
  */
 @Getter
-@Slf4j
 public class QuestFactory {
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(QuestFactory.class);
 
     private final List<AbstractQuest> quests;
     private final Map<String, AbstractQuest> questMap;
