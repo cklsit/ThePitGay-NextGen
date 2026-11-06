@@ -654,7 +654,7 @@ class PitAdminCommands {
                 val mmItem = ThePit.getInstance().itemFactory.getItemFromStack(itemStack)
                 if (mmItem != null) {
                     inventory.remove(index)
-                    inventory.setItem(index, mmItem.toItemStack())
+                    mmItem.toItemStack()?.let { inventory.setItem(index, it) }
                 }
             }
             player1.updateInventory()

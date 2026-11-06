@@ -163,11 +163,11 @@ class PitCommands {
                                     player.sendMessage(CC.translate("&c疑? 为什么要查看自己档案?"))
                                     return@Runnable
                                 }*/
-                Bukkit.getScheduler().runTask(ThePit.getInstance()) {
+                Bukkit.getScheduler().runTask(ThePit.getInstance(), Runnable {
                     StatusViewerMenu(lookupStrict.profile()).openMenu(
                         player
                     )
-                }
+                })
             })
         } catch (e: Exception) {
             if (player.hasPermission("pit.admin")) {
@@ -213,12 +213,8 @@ class PitCommands {
             return
         }
         COOLDOWN_SHOW.put(player.uniqueId, Cooldown(60, TimeUnit.SECONDS))
-        val nms = Utils.toNMStackQuick(player.itemInHand)
-        val tag = NBTTagCompound()
-        nms.save(tag)
-        val hoverEventComponents = arrayOf<BaseComponent>(
-            TextComponent(tag.toString())
-        )
+        val hoverText = player.itemInHand.itemMeta?.displayName
+            ?: net.kyori.adventure.text.Component.text(player.itemInHand.type.name)
         var showPlayers = Bukkit.getOnlinePlayers()
         if (player.isSpecial) {
             showPlayers = buildSet {
@@ -233,7 +229,7 @@ class PitCommands {
         for (p in showPlayers) {
             p.spigot().sendMessage(
                 *ChatComponentBuilder(CC.translate("&a&l物品展示! &7" + profile.formattedName + " &7正在展示物品: &f" + (if (player.itemInHand.itemMeta.displayName == null) player.itemInHand.type.name else player.itemInHand.itemMeta.displayName) + " &e[查看]"))
-                    .setCurrentHoverEvent(HoverEvent(HoverEvent.Action.SHOW_ITEM, hoverEventComponents)).create()
+                    .setCurrentHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, arrayOf<BaseComponent>(TextComponent(CC.translate("&7" + player.itemInHand.type.name))))).create()
             )
         }
     }
