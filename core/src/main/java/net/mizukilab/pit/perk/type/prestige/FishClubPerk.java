@@ -7,7 +7,7 @@ import cn.charlotte.pit.data.sub.PerkData;
 import cn.charlotte.pit.perk.AbstractPerk;
 import cn.charlotte.pit.perk.PerkType;
 import net.minecraft.server.v1_8_R3.EntityPlayer;
-import net.minecraft.server.v1_8_R3.MathHelper;
+import cn.charlotte.pit.compat.math.MathHelper;
 import net.mizukilab.pit.item.MythicColor;
 import net.mizukilab.pit.item.type.mythic.MythicLeggingsItem;
 import net.mizukilab.pit.parm.AutoRegister;

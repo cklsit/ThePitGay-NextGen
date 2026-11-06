@@ -153,7 +153,6 @@ public class ThePit extends JavaPlugin implements PluginMessageListener {
     @Setter
     @Getter
     private String serverId;
-    @Getter
     @Setter
     @Getter
     private IActionBarManager actionBarManager;

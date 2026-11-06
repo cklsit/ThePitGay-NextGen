@@ -2,7 +2,7 @@ package net.mizukilab.pit.fishing;
 
 import cn.charlotte.pit.ThePit;
 import net.minecraft.server.v1_8_R3.EntityItem;
-import net.minecraft.server.v1_8_R3.MathHelper;
+import cn.charlotte.pit.compat.math.MathHelper;
 import net.minecraft.server.v1_8_R3.WorldServer;
 import net.mizukilab.pit.parm.AutoRegister;
 import net.mizukilab.pit.util.PublicUtil;

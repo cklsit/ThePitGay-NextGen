@@ -5,7 +5,7 @@ import cn.charlotte.pit.data.PlayerProfile;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AtomicDouble;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectArrayMap;
-import net.minecraft.server.v1_8_R3.MathHelper;
+import cn.charlotte.pit.compat.math.MathHelper;
 import net.mizukilab.pit.enchantment.AbstractEnchantment;
 import net.mizukilab.pit.enchantment.IActionDisplayEnchant;
 import net.mizukilab.pit.enchantment.param.event.PlayerOnly;

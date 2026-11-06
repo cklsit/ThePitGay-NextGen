@@ -22,7 +22,7 @@ import com.sk89q.worldedit.patterns.SingleBlockPattern;
 import com.sk89q.worldedit.regions.CuboidRegion;
 import com.sk89q.worldedit.schematic.MCEditSchematicFormat;
 import com.sk89q.worldedit.schematic.SchematicFormat;
-import net.minecraft.server.v1_8_R3.MathHelper;
+import cn.charlotte.pit.compat.math.MathHelper;
 import net.mizukilab.pit.config.NewConfiguration;
 import net.mizukilab.pit.item.type.SpireArmor;
 import net.mizukilab.pit.item.type.SpireSword;

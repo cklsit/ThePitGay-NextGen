@@ -1,7 +1,7 @@
 package net.mizukilab.pit.util;
 
 
-import net.minecraft.server.v1_8_R3.MathHelper;
+import cn.charlotte.pit.compat.math.MathHelper;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;

@@ -12,7 +12,7 @@ import com.google.common.util.concurrent.AtomicDouble;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.minecraft.server.v1_8_R3.ItemArmor;
-import net.minecraft.server.v1_8_R3.MathHelper;
+import cn.charlotte.pit.compat.math.MathHelper;
 import net.mizukilab.pit.UtilKt;
 import net.mizukilab.pit.config.NewConfiguration;
 import net.mizukilab.pit.data.operator.PackedOperator;

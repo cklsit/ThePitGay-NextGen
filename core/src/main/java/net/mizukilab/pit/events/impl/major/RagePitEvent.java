@@ -17,7 +17,7 @@ import com.sk89q.worldedit.bukkit.BukkitWorld;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
-import net.minecraft.server.v1_8_R3.MathHelper;
+import cn.charlotte.pit.compat.math.MathHelper;
 import net.mizukilab.pit.config.NewConfiguration;
 import net.mizukilab.pit.item.type.mythic.MythicLeggingsItem;
 import net.mizukilab.pit.medal.impl.challenge.RagePitTopMedal;

@@ -8,7 +8,6 @@ import cn.charlotte.pit.event.PitRegainHealthEvent;
 import cn.charlotte.pit.events.trigger.type.IEpicEvent;
 import cn.charlotte.pit.perk.AbstractPerk;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.minecraft.server.v1_8_R3.*;
 import net.mizukilab.pit.UtilKt;
 import net.mizukilab.pit.item.AbstractPitItem;
 import net.mizukilab.pit.util.chat.CC;
@@ -17,9 +16,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.v1_8_R3.CraftWorld;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftEntity;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
+import org.bukkit.Particle;
 import org.bukkit.entity.Chicken;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -27,6 +24,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.metadata.MetadataValue;
 import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.Collection;
 import java.util.List;
@@ -54,20 +52,15 @@ public class PlayerUtil {
     }
 
     public static void addAbsorptionHearts(Player player, float extraHearts) {
-        if (player instanceof CraftPlayer) {
-            CraftPlayer craftPlayer = (CraftPlayer) player;
-            float currentHearts = craftPlayer.getHandle().getAbsorptionHearts();
-            if (currentHearts < 40) {
-                craftPlayer.getHandle().setAbsorptionHearts(currentHearts + extraHearts);
-            }
+        // 1.21：吸收伤害由 Bukkit 抽象，不再需要 CraftPlayer#getHandle
+        double currentHearts = player.getAbsorptionAmount();
+        if (currentHearts < 40) {
+            player.setAbsorptionAmount(currentHearts + extraHearts);
         }
     }
 
     public static void clearAbsorptionHearts(Player player) {
-        if (player instanceof CraftPlayer) {
-            CraftPlayer craftPlayer = (CraftPlayer) player;
-            craftPlayer.getHandle().setAbsorptionHearts(0);
-        }
+        player.setAbsorptionAmount(0);
     }
 
     public static boolean isEquippingSomber(Player player) {
@@ -76,8 +69,12 @@ public class PlayerUtil {
     }
 
     public static boolean isCritical(Player player) {
-        final EntityPlayer entityPlayer = ((CraftPlayer) player).getHandle();
-        return entityPlayer.fallDistance > 0.0F && !entityPlayer.onGround && !entityPlayer.k_() && !entityPlayer.V() && !entityPlayer.hasEffect(MobEffectList.BLINDNESS) && entityPlayer.vehicle == null;
+        // 对应旧实现的 fallDistance/onGround/eyesInWater/vehicle/失明 判定
+        return player.getFallDistance() > 0.0F
+                && !((org.bukkit.entity.Entity) player).isOnGround()
+                && !player.isInWater()
+                && !player.isInsideVehicle()
+                && player.getPotionEffect(PotionEffectType.BLINDNESS) == null;
     }
 
     //如果自身穿着黑裤/被毒则无法使用附魔 (适用于无目标附魔)
@@ -142,7 +139,8 @@ public class PlayerUtil {
         if(entity.getName().equals("666")){
             return true;
         }
-        return ((CraftEntity) entity).getHandle().getClass().getSuperclass().equals(EntityPlayer.class);
+        // 1.21：NPC 以真实实体表示，按实体类型与标签判定
+        return entity instanceof Player || entity.hasMetadata("pit_npc");
     }
 
 
@@ -436,10 +434,8 @@ public class PlayerUtil {
         }
         player.setGameMode(GameMode.SURVIVAL);
 
-        EntityPlayer entityPlayer = ((CraftPlayer) player).getHandle();
-        entityPlayer.getDataWatcher().watch(9, (byte) 0);
-        entityPlayer.removeAllEffects();
-        entityPlayer.setAbsorptionHearts(0.0F);
+        player.setAbsorptionAmount(0.0F);
+        player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
         //temp disable
         player.setWalkSpeed(0.2F);
 
@@ -528,14 +524,11 @@ public class PlayerUtil {
     }
 
     public static void playThunderEffect(Location thunderLocation) {
-        EntityLightning lightning = new EntityLightning(
-                ((CraftWorld) thunderLocation.getWorld()).getHandle(), thunderLocation.getX(), thunderLocation.getY(), thunderLocation.getZ(), true, true
-        );
-
-        PacketPlayOutSpawnEntityWeather packet = new PacketPlayOutSpawnEntityWeather(lightning);
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            ((CraftPlayer) player).getHandle().playerConnection.sendPacket(packet);
+        if (thunderLocation.getWorld() == null) {
+            return;
         }
+        // strikeLightningEffect 只播放视觉与音效，不造成伤害/点燃
+        thunderLocation.getWorld().strikeLightningEffect(thunderLocation);
     }
 
     public static void addPotionEffect(Player player, PotionEffect effect) {
@@ -551,7 +544,7 @@ public class PlayerUtil {
         event.getPlayer().addPotionEffect(event.getPotionEffect(), force);
     }
 
-    public static void sendParticle(Location location, EnumParticle particle, int count) {
+    public static void sendParticle(Location location, Particle particle, int count) {
         new ParticleBuilder(location, particle).setCount(count).play();
     }
 
