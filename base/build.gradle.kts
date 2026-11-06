@@ -37,6 +37,8 @@ tasks.named<ShadowJar>("shadowJar") {
     relocate("net.jodah","net.mizukilab.pit.libs")
     relocate("net.jitse","net.mizukilab.pit.libs")
     relocate("xyz.upperlevel.spigot","net.mizukilab.pit.libs")
+    relocate("io.github.retrooper.packetevents","net.mizukilab.pit.libs.packetevents")
+    relocate("com.github.retrooper.packetevents","net.mizukilab.pit.libs.packetevents")
     exclude("kotlin/**","junit/**", "org/junit/**")
     from("build/tmp/processed-resources")
     mergeServiceFiles()
@@ -73,6 +75,8 @@ dependencies {
 
     compileOnly("us.crazycrew.crazycrates:api:0.7")
     compileOnly(libs.paper.api)
+    // 发包层：PacketEvents 支持被插件 shade，用于玩家模型 Bot 与 NPC
+    implementation(libs.packetevents)
     compileOnly(libs.luckperms)
     compileOnly(libs.playerpoints)
     compileOnly(libs.decentholograms)

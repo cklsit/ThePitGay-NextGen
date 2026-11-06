@@ -6,5 +6,16 @@ authors: [ KleeLoveLife, Rabbit0w0 ]
 api-version: 1.8
 main: cn.charlotte.pit.ThePit
 load: POSTWORLD
-depend: [ LuckPerms, ProtocolLib ]
+softdepend: [ LuckPerms, ProtocolLib, PlayerPoints, WorldEdit, FastAsyncWorldEdit ]
 softdepend: [ PlayerPoints, WorldEdit, FastAsyncWorldEdit ]
+
+commands:
+  bot:
+    description: 管理玩家模型假人
+    usage: /bot {add|remove|skin} {name} [x] [y] [z]
+    permission: thepit.bot
+
+permissions:
+  thepit.bot:
+    description: 允许使用 /bot
+    default: op

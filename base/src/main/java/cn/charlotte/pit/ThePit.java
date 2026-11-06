@@ -1,6 +1,9 @@
 package cn.charlotte.pit;
 
 import cn.charlotte.pit.api.PitInternalHook;
+import cn.charlotte.pit.bot.BotManager;
+import com.github.retrooper.packetevents.PacketEvents;
+import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
 import cn.charlotte.pit.api.PointsAPI;
 import cn.charlotte.pit.buff.BuffFactory;
 import cn.charlotte.pit.data.FixedRewardData;
@@ -113,6 +116,8 @@ public class ThePit extends JavaPlugin implements PluginMessageListener {
     private NametagHandler nametagHandler;
     private IItemFactory factory;
     @Getter
+    private BotManager botManager;
+    @Getter
     private MedalFactory medalFactory;
     @Getter
     private PerkFactory perkFactory;
@@ -184,6 +189,14 @@ public class ThePit extends JavaPlugin implements PluginMessageListener {
         bungeeServerName = name;
     }
 
+
+    @Override
+    public void onLoad() {
+        // PacketEvents 需在 onLoad 阶段完成通道注入；随插件 shade 内置，无需服务端另装
+        PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this));
+        PacketEvents.getAPI().getSettings().checkForUpdates(false).bStats(false);
+        PacketEvents.getAPI().load();
+    }
 
     @Override
     public void onEnable() {
@@ -267,6 +280,14 @@ public class ThePit extends JavaPlugin implements PluginMessageListener {
         this.rebootRunnable = new RebootRunnable();
         this.rebootRunnable.runTaskTimerAsynchronously(this, 20, 20);
 
+        this.botManager = new BotManager(this);
+        this.botManager.spawnAll();
+        if (getCommand("bot") != null) {
+            BotManager.Command executor = new BotManager.Command(this.botManager);
+            getCommand("bot").setExecutor(executor);
+            getCommand("bot").setTabCompleter(executor);
+        }
+
         this.miniGameController = new MiniGameController();
         this.miniGameController.runTaskTimerAsynchronously(this, 1, 1);
         new DayNightCycleRunnable().runTaskTimer(this, 20, 20);
@@ -321,6 +342,14 @@ public class ThePit extends JavaPlugin implements PluginMessageListener {
 
     @Override
     public void onDisable() {
+        if (this.botManager != null) {
+            this.botManager.despawnAll();
+            this.botManager.save();
+        }
+        try {
+            PacketEvents.getAPI().terminate();
+        } catch (Throwable ignored) {
+        }
         PacketHologramRunnable.deSpawnAll();
         synchronized (Bukkit.getOnlinePlayers()) {
             CC.boardCast0("&6&l公告! &7正在执行关闭服务器...");
