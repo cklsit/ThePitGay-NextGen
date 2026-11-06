@@ -7,7 +7,6 @@ import net.mizukilab.pit.enchantment.rarity.EnchantmentRarity;
 import net.mizukilab.pit.parm.listener.IAttackEntity;
 import net.mizukilab.pit.util.cooldown.Cooldown;
 import com.google.common.util.concurrent.AtomicDouble;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
@@ -55,7 +54,7 @@ public class AntiAbsorptionEnchant extends AbstractEnchantment implements IAttac
     @Override
     @PlayerOnly
     public void handleAttackEntity(int enchantLevel, Player attacker, Entity target, double damage, AtomicDouble finalDamage, AtomicDouble boostDamage, AtomicBoolean cancel) {
-        float heart = (((CraftPlayer) attacker).getHandle()).getAbsorptionHearts();
+        float heart = (((org.bukkit.entity.Player) attacker)).getAbsorptionAmount();
         if (heart > 0) {
             boostDamage.getAndAdd(0.05 * enchantLevel);
         }

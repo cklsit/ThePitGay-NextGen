@@ -1,8 +1,5 @@
 package net.mizukilab.pit.enchantment.type.rare;
 
-import net.minecraft.server.v1_8_R3.EntityPlayer;
-import net.minecraft.server.v1_8_R3.ItemBow;
-import net.minecraft.server.v1_8_R3.ItemStack;
 import net.mizukilab.pit.enchantment.AbstractEnchantment;
 import net.mizukilab.pit.enchantment.IActionDisplayEnchant;
 import net.mizukilab.pit.enchantment.param.item.BowOnly;
@@ -14,7 +11,6 @@ import net.mizukilab.pit.util.chat.RomanUtil;
 import net.mizukilab.pit.util.cooldown.Cooldown;
 import net.mizukilab.pit.util.time.TimeUtil;
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -89,7 +85,7 @@ public class MegaLongBowEnchant extends AbstractEnchantment implements Listener,
                 cooldown.put(player.getUniqueId(), new Cooldown(1, TimeUnit.SECONDS));
                 player.addPotionEffect(new PotionEffect(PotionEffectType.JUMP_BOOST, 2 * 20, level), false);
                 event.setCancelled(true);
-                final EntityPlayer ePlayer = ((CraftPlayer) player).getHandle();
+                final EntityPlayer ePlayer = ((org.bukkit.entity.Player) player);
                 final ItemStack itemStack = Utils.toNMStackQuick(itemInHand);
                 final ItemBow bow = (ItemBow) itemStack.getItem();
                 bow.a(itemStack, ePlayer.world, ePlayer, 0);

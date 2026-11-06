@@ -11,7 +11,6 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
-import net.minecraft.server.v1_8_R3.NBTTagCompound;
 import net.mizukilab.pit.config.NewConfiguration;
 import net.mizukilab.pit.enchantment.AbstractEnchantment;
 import net.mizukilab.pit.enchantment.menu.MythicWellMenu;

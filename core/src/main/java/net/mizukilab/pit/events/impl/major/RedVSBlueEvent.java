@@ -9,8 +9,6 @@ import cn.charlotte.pit.events.AbstractEvent;
 import cn.charlotte.pit.events.trigger.type.IEpicEvent;
 import cn.charlotte.pit.events.trigger.type.addon.IScoreBoardInsert;
 import lombok.Getter;
-import net.minecraft.server.v1_8_R3.PacketPlayOutEntityEquipment;
-import net.minecraft.server.v1_8_R3.PlayerConnection;
 import net.mizukilab.pit.config.NewConfiguration;
 import net.mizukilab.pit.item.type.mythic.MythicLeggingsItem;
 import net.mizukilab.pit.util.PlayerUtil;
@@ -22,7 +20,6 @@ import net.mizukilab.pit.util.level.LevelUtil;
 import net.mizukilab.pit.util.time.TimeUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
@@ -308,7 +305,7 @@ public class RedVSBlueEvent extends AbstractEvent implements IEpicEvent, Listene
         }
         for (Player target : Bukkit.getOnlinePlayers()) {
             if (target.equals(player)) continue;
-            ((CraftPlayer) target).getHandle()
+            ((org.bukkit.entity.Player) target)
                     .playerConnection
                     .sendPacket(packet);
         }
@@ -316,7 +313,7 @@ public class RedVSBlueEvent extends AbstractEvent implements IEpicEvent, Listene
 
     private void resetArmor() {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            PlayerConnection connection = ((CraftPlayer) player).getHandle().playerConnection;
+            PlayerConnection connection = ((org.bukkit.entity.Player) player).playerConnection;
             for (Player target : Bukkit.getOnlinePlayers()) {
                 if (player.equals(target)) continue;
                 connection.sendPacket(new PacketPlayOutEntityEquipment(target.getEntityId(), 4, Utils.toNMStackQuick(target.getInventory().getHelmet())));

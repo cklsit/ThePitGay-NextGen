@@ -11,7 +11,6 @@ import net.mizukilab.pit.parm.listener.IPlayerShootEntity;
 import net.mizukilab.pit.util.Utils;
 import net.mizukilab.pit.util.cooldown.Cooldown;
 import com.google.common.util.concurrent.AtomicDouble;
-import net.minecraft.server.v1_8_R3.ItemArmor;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;

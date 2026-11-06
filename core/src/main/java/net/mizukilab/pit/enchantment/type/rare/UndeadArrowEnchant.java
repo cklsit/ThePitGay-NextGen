@@ -1,9 +1,6 @@
 package net.mizukilab.pit.enchantment.type.rare;
 
 import com.google.common.util.concurrent.AtomicDouble;
-import net.minecraft.server.v1_8_R3.BlockPosition;
-import net.minecraft.server.v1_8_R3.PacketPlayOutWorldEvent;
-import net.minecraft.server.v1_8_R3.PlayerConnection;
 import net.mizukilab.pit.enchantment.AbstractEnchantment;
 import net.mizukilab.pit.enchantment.param.item.BowOnly;
 import net.mizukilab.pit.enchantment.rarity.EnchantmentRarity;
@@ -11,7 +8,6 @@ import net.mizukilab.pit.parm.listener.IPlayerShootEntity;
 import net.mizukilab.pit.util.cooldown.Cooldown;
 import org.bukkit.Location;
 import org.bukkit.Sound;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
@@ -64,7 +60,7 @@ public class UndeadArrowEnchant extends AbstractEnchantment implements IPlayerSh
             PacketPlayOutWorldEvent packetA = new PacketPlayOutWorldEvent(2001, new BlockPosition(deathLoc.getBlockX(), deathLoc.getBlockY(), deathLoc.getBlockZ()), 152, false);
             PacketPlayOutWorldEvent packetB = new PacketPlayOutWorldEvent(2001, new BlockPosition(deathLoc.getBlockX(), deathLoc.getBlockY() - 1, deathLoc.getBlockZ()), 152, false);
 
-            PlayerConnection connection = ((CraftPlayer) attacker).getHandle().playerConnection;
+            PlayerConnection connection = ((org.bukkit.entity.Player) attacker).playerConnection;
             connection.sendPacket(packetA);
             connection.sendPacket(packetB);
         }

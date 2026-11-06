@@ -13,10 +13,6 @@ import cn.charlotte.pit.perk.PerkFactory;
 import com.google.common.util.concurrent.AtomicDouble;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import lombok.SneakyThrows;
-import net.minecraft.server.v1_8_R3.EnchantmentManager;
-import net.minecraft.server.v1_8_R3.EntityPlayer;
-import net.minecraft.server.v1_8_R3.GenericAttributes;
-import net.minecraft.server.v1_8_R3.MobEffectList;
 import net.mizukilab.pit.config.NewConfiguration;
 import net.mizukilab.pit.enchantment.AbstractEnchantment;
 import net.mizukilab.pit.enchantment.EnchantmentFactor;
@@ -37,8 +33,6 @@ import net.mizukilab.pit.util.Utils;
 import net.mizukilab.pit.util.chat.CC;
 import net.mizukilab.pit.util.item.ItemUtil;
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftLivingEntity;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -173,7 +167,7 @@ public class GameEffectListener implements Listener {
                     || itemInHand.getType() == Material.FISHING_ROD) {
                 event.setDamage(1);
             } else {
-                final EntityPlayer entityPlayer = ((CraftPlayer) attacker).getHandle();
+                final EntityPlayer entityPlayer = ((org.bukkit.entity.Player) attacker);
                 float f = (float) entityPlayer.getAttributeInstance(GenericAttributes.ATTACK_DAMAGE).getValue();
                 if (f > 9) {
                     event.setDamage(9);
@@ -356,7 +350,7 @@ public class GameEffectListener implements Listener {
             //mirror enchant code end
             player.setLastDamageCause(event);
             if (damager != null) {
-                ((CraftPlayer) player).getHandle().killer = ((CraftPlayer) damager).getHandle();
+                ((org.bukkit.entity.Player) player).killer = ((org.bukkit.entity.Player) damager);
             }
 
             if (player.getHealth() < finalDamage.get()) {
@@ -370,7 +364,7 @@ public class GameEffectListener implements Listener {
                     } catch (Exception ex) {
                         // 如果setHealth也失败，尝试使用更底层的方式
                         try {
-                            ((CraftPlayer) player).getHandle().setHealth(0.0f);
+                            ((org.bukkit.entity.Player) player).setHealth(0.0f);
                         } catch (Exception ignored) {
                             // 最后的安全网，静默忽略
                         }
@@ -397,7 +391,7 @@ public class GameEffectListener implements Listener {
                     } catch (Exception e) {
                         // 如果setHealth失败，尝试使用底层API
                         try {
-                            ((CraftPlayer) player).getHandle().setHealth(0.0f);
+                            ((org.bukkit.entity.Player) player).setHealth(0.0f);
                         } catch (Exception ignored) {
                             // 最后的安全网，静默忽略
                         }
@@ -429,7 +423,7 @@ public class GameEffectListener implements Listener {
             PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
             if (profile.getPlayerOption().isDebugDamageMessage()) {
                 player.sendMessage(CC.translate("&7造成伤害(Damage/Final Damage): &c" + numFormatTwo.format(event.getDamage()) + "&7/&c" + numFormatTwo.format(event.getFinalDamage())));
-                final EntityPlayer entityPlayer = ((CraftPlayer) player).getHandle();
+                final EntityPlayer entityPlayer = ((org.bukkit.entity.Player) player);
                 final double value = entityPlayer.getAttributeInstance(GenericAttributes.ATTACK_DAMAGE).getValue();
                 final float enchantDamage = EnchantmentManager.a(entityPlayer.bA(), ((CraftLivingEntity) event.getEntity()).getHandle().getMonsterType());
                 final boolean critical = entityPlayer.fallDistance > 0.0F && !entityPlayer.onGround && !entityPlayer.k_() && !entityPlayer.V() && !entityPlayer.hasEffect(MobEffectList.BLINDNESS) && entityPlayer.vehicle == null;

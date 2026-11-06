@@ -11,7 +11,6 @@ import net.mizukilab.pit.parm.listener.IPlayerShootEntity
 import net.mizukilab.pit.util.cooldown.Cooldown
 import org.bukkit.Material
 import org.bukkit.Sound
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
 import org.bukkit.metadata.FixedMetadataValue

@@ -9,7 +9,6 @@ import cn.charlotte.pit.events.trigger.type.addon.IPreparative
 import cn.charlotte.pit.events.trigger.type.addon.IScoreBoardInsert
 import cn.charlotte.pit.events.trigger.type.addon.ISortable
 import org.bukkit.Particle
-import net.minecraft.server.v1_8_R3.PacketPlayOutWorldParticles
 import net.mizukilab.pit.Util.Companion.chatColorToColor
 import net.mizukilab.pit.Util.Companion.chatColorToData
 import net.mizukilab.pit.enchantment.type.auction.rare.PaparazziEnchant
@@ -21,8 +20,6 @@ import net.mizukilab.pit.util.cooldown.Cooldown
 import net.mizukilab.pit.util.time.TimeUtil
 import org.bukkit.*
 import org.bukkit.block.Banner
-import org.bukkit.craftbukkit.v1_8_R3.CraftWorld
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer
 import org.bukkit.entity.Firework
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler

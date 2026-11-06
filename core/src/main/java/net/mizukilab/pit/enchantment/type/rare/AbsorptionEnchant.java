@@ -7,7 +7,6 @@ import net.mizukilab.pit.enchantment.param.item.ArmorOnly;
 import net.mizukilab.pit.enchantment.rarity.EnchantmentRarity;
 import net.mizukilab.pit.parm.listener.IPlayerKilledEntity;
 import net.mizukilab.pit.util.cooldown.Cooldown;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
@@ -53,8 +52,8 @@ public class AbsorptionEnchant extends AbstractEnchantment implements IPlayerKil
     @PlayerOnly
     public void handlePlayerKilled(int enchantLevel, Player myself, Entity target, AtomicDouble coins, AtomicDouble experience) {
 
-        float heart = (((CraftPlayer) myself).getHandle()).getAbsorptionHearts();
-        (((CraftPlayer) myself).getHandle()).setAbsorptionHearts(Math.min(heart + (enchantLevel + (enchantLevel >= 3 ? 1 : 0)), (2 * enchantLevel + 6)));
+        float heart = (((org.bukkit.entity.Player) myself)).getAbsorptionAmount();
+        (((org.bukkit.entity.Player) myself)).setAbsorptionAmount(Math.min(heart + (enchantLevel + (enchantLevel >= 3 ? 1 : 0)), (2 * enchantLevel + 6)));
     }
 
 }

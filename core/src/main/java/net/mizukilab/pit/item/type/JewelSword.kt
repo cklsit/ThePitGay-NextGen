@@ -8,7 +8,6 @@ import cn.charlotte.pit.event.PitProfileLoadedEvent
 import net.md_5.bungee.api.chat.BaseComponent
 import net.md_5.bungee.api.chat.HoverEvent
 import net.md_5.bungee.api.chat.TextComponent
-import net.minecraft.server.v1_8_R3.NBTTagCompound
 import net.mizukilab.pit.enchantment.param.item.WeaponOnly
 import net.mizukilab.pit.enchantment.rarity.EnchantmentRarity
 import net.mizukilab.pit.getPitProfile
@@ -24,7 +23,6 @@ import net.mizukilab.pit.util.item.ItemUtil
 import net.mizukilab.pit.util.random.RandomUtil
 import org.bukkit.Bukkit
 import org.bukkit.Material
-import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority

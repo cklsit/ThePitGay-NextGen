@@ -10,12 +10,8 @@ import net.mizukilab.pit.util.PlayerUtil
 import net.mizukilab.pit.util.cooldown.Cooldown
 import net.mizukilab.pit.util.item.ItemBuilder
 
-import net.minecraft.server.v1_8_R3.EntityHuman
-import net.minecraft.server.v1_8_R3.ItemBow
 import net.mizukilab.pit.parm.AutoRegister
 import org.bukkit.Material
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer
-import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener

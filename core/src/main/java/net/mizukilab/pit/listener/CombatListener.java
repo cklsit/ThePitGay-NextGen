@@ -11,7 +11,6 @@ import cn.charlotte.pit.perk.PerkFactory;
 import com.google.common.util.concurrent.AtomicDouble;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
-import net.minecraft.server.v1_8_R3.ItemArmor;
 import cn.charlotte.pit.compat.math.MathHelper;
 import net.mizukilab.pit.UtilKt;
 import net.mizukilab.pit.config.NewConfiguration;
@@ -45,7 +44,6 @@ import net.mizukilab.pit.util.item.ItemUtil;
 import net.mizukilab.pit.util.random.RandomUtil;
 import net.mizukilab.pit.util.rank.RankUtil;
 import org.bukkit.*;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -691,7 +689,7 @@ public class CombatListener implements Listener {
             });
         }
         if (shouldRespawn) {
-            ((CraftPlayer) player).getHandle().invulnerableTicks = 40;
+            ((org.bukkit.entity.Player) player).setNoDamageTicks(40);
 
             if (playerProfile.getRespawnTime() <= 1.5) {
                 playerProfile.setRespawnTime(0.1d);
@@ -758,7 +756,7 @@ public class CombatListener implements Listener {
         PlayerUtil.postResetPlayer(player);
         player.setGameMode(GameMode.SURVIVAL);
         player.setNoDamageTicks(40);
-        ((CraftPlayer) player).getHandle().invulnerableTicks = 40;
+        ((org.bukkit.entity.Player) player).setNoDamageTicks(40);
 
         PlayerProfile.getPlayerProfileByUuid(player.getUniqueId())
                 .applyExperienceToPlayer(player);

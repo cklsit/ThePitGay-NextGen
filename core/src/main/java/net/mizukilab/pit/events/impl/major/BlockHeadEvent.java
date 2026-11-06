@@ -9,12 +9,9 @@ import cn.charlotte.pit.events.AbstractEvent;
 import cn.charlotte.pit.events.trigger.type.IEpicEvent;
 import cn.charlotte.pit.events.trigger.type.addon.IPreparative;
 import cn.charlotte.pit.events.trigger.type.addon.IScoreBoardInsert;
-import com.mojang.authlib.GameProfile;
-import com.mojang.authlib.properties.Property;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
-import net.minecraft.server.v1_8_R3.PacketPlayOutEntityEquipment;
 import net.mizukilab.pit.config.NewConfiguration;
 import net.mizukilab.pit.util.PlayerUtil;
 import net.mizukilab.pit.util.chat.CC;
@@ -23,8 +20,6 @@ import net.mizukilab.pit.util.inventory.InventoryUtil;
 import net.mizukilab.pit.util.item.ItemUtil;
 import net.mizukilab.pit.util.time.TimeUtil;
 import org.bukkit.*;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
-import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
@@ -308,7 +303,7 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
             if (target.equals(player)) {
                 continue;
             }
-            ((CraftPlayer) target).getHandle()
+            ((org.bukkit.entity.Player) target)
                     .playerConnection
                     .sendPacket(packet);
         }

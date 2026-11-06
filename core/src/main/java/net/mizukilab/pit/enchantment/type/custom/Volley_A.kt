@@ -4,8 +4,6 @@ package net.mizukilab.pit.enchantment.type.custom
 import cn.charlotte.pit.ThePit
 import cn.charlotte.pit.data.PlayerProfile
 
-import net.minecraft.server.v1_8_R3.EntityHuman
-import net.minecraft.server.v1_8_R3.ItemBow
 import net.mizukilab.pit.enchantment.AbstractEnchantment
 import net.mizukilab.pit.enchantment.param.item.BowOnly
 import net.mizukilab.pit.enchantment.rarity.EnchantmentRarity
@@ -14,8 +12,6 @@ import net.mizukilab.pit.util.PlayerUtil
 import net.mizukilab.pit.util.cooldown.Cooldown
 import net.mizukilab.pit.util.item.ItemBuilder
 import org.bukkit.Material
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer
-import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener

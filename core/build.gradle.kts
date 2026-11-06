@@ -14,6 +14,7 @@ buildscript {
 plugins {
     kotlin("plugin.lombok")
     id("io.freefair.lombok")
+    id("java")
     kotlin("jvm")
     alias(libs.plugins.shadow)
 }

@@ -10,7 +10,6 @@ import cn.charlotte.pit.event.PitKillEvent;
 import cn.charlotte.pit.event.PitProfileLoadedEvent;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
-import net.minecraft.server.v1_8_R3.*;
 import net.mizukilab.pit.data.operator.PackedOperator;
 import net.mizukilab.pit.data.operator.ProfileOperator;
 import net.mizukilab.pit.enchantment.AbstractEnchantment;
@@ -37,8 +36,6 @@ import net.mizukilab.pit.util.time.TimeUtil;
 import org.bukkit.*;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.craftbukkit.v1_8_R3.CraftWorld;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TNTPrimed;
@@ -449,7 +446,7 @@ public class PlayerListener implements Listener {
             player.removePotionEffect(PotionEffectType.REGENERATION);
             player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 140, 0), true);
             player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 80, 1), true);
-            (((CraftPlayer) player).getHandle()).setAbsorptionHearts(6.0F);
+            (((org.bukkit.entity.Player) player)).setAbsorptionAmount(6.0F);
             if (PlayerUtil.isPlayerUnlockedPerk(player, "yummy_perk")) {
                 PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
                 profile.setCoins(profile.getCoins() + 3);
@@ -466,7 +463,7 @@ public class PlayerListener implements Listener {
                 PlayerUtil.takeOneItemInHand(player);
                 player.removePotionEffect(PotionEffectType.REGENERATION);
                 player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 80, 1), true);
-                (((CraftPlayer) player).getHandle()).setAbsorptionHearts(4.0F);
+                (((org.bukkit.entity.Player) player)).setAbsorptionAmount(4.0F);
             }
         } else if (item.getType() == Material.MAGMA_CREAM) {
             if ("broken_soul".equals(ItemUtil.getInternalName(item))) {
@@ -481,7 +478,7 @@ public class PlayerListener implements Listener {
                 PlayerUtil.heal(player, 8);
                 player.removePotionEffect(PotionEffectType.RESISTANCE);
                 player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 60, 1), true);
-                (((CraftPlayer) player).getHandle()).setAbsorptionHearts(6.0F);
+                (((org.bukkit.entity.Player) player)).setAbsorptionAmount(6.0F);
             }
         } else if (item.getType() == Material.MONSTER_EGG) {
             if ("first_aid_egg".equals(ItemUtil.getInternalName(item))) {
@@ -510,7 +507,7 @@ public class PlayerListener implements Listener {
                 PlayerUtil.heal(player, 2);
                 player.removePotionEffect(PotionEffectType.SPEED);
                 player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20 * 7, 0), true);
-                (((CraftPlayer) player).getHandle()).setAbsorptionHearts(Math.min(8F, ((CraftPlayer) player).getHandle().getAbsorptionHearts() + 2F));
+                (((org.bukkit.entity.Player) player)).setAbsorptionAmount(Math.min(8F, ((org.bukkit.entity.Player) player).getAbsorptionAmount() + 2F));
             }
             if ("perk_tasty_soup_assist".equals(ItemUtil.getInternalName(item))) {
                 e.setCancelled(true);
@@ -525,7 +522,7 @@ public class PlayerListener implements Listener {
                 player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 20 * 5, 1), true);
                 player.removePotionEffect(PotionEffectType.SPEED);
                 player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20 * 7, 0), true);
-                (((CraftPlayer) player).getHandle()).setAbsorptionHearts(Math.min(8F, ((CraftPlayer) player).getHandle().getAbsorptionHearts() + 2F));
+                (((org.bukkit.entity.Player) player)).setAbsorptionAmount(Math.min(8F, ((org.bukkit.entity.Player) player).getAbsorptionAmount() + 2F));
             }
         } else if (item.getType() == Material.CACTUS) {
             if ("cactus".equals(ItemUtil.getInternalName(item))) {
@@ -552,7 +549,7 @@ public class PlayerListener implements Listener {
         Player player = event.getPlayer();
 
         if (event.getItem() != null && event.getItem().getType() == Material.GOLDEN_APPLE) {
-            (((CraftPlayer) event.getPlayer()).getHandle()).setAbsorptionHearts(8.0F);
+            (((org.bukkit.entity.Player) event.getPlayer())).setAbsorptionAmount(8.0F);
             PlayerUtil.takeOneItemInHand(player);
             player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EAT, 1F, 1F);
             player.removePotionEffect(PotionEffectType.REGENERATION);
@@ -765,7 +762,7 @@ public class PlayerListener implements Listener {
 
                 for (Player player : PlayerUtil.getNearbyPlayers(event.getLocation(), 30)) {
                     players.add(player);
-                    EntityPlayer entityPlayer = ((CraftPlayer) player).getHandle();
+                    EntityPlayer entityPlayer = ((org.bukkit.entity.Player) player);
                     entityPlayer.playerConnection.sendPacket(spawnPacket);
                     entityPlayer.playerConnection.sendPacket(vectorPacket);
                 }
@@ -791,7 +788,7 @@ public class PlayerListener implements Listener {
                     e.printStackTrace();
                 }
                 for (Player player : players) {
-                    ((CraftPlayer) player).getHandle().playerConnection.sendPacket(packet);
+                    ((org.bukkit.entity.Player) player).playerConnection.sendPacket(packet);
                 }
 
             }, 20 * 5);

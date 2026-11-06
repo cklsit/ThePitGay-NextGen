@@ -3,7 +3,6 @@ package net.mizukilab.pit.enchantment.type.rare;
 import cn.charlotte.pit.ThePit;
 import io.irina.backports.utils.SWMRHashTable;
 import lombok.SneakyThrows;
-import net.minecraft.server.v1_8_R3.*;
 import net.mizukilab.pit.enchantment.AbstractEnchantment;
 import net.mizukilab.pit.enchantment.param.item.BowOnly;
 import net.mizukilab.pit.enchantment.rarity.EnchantmentRarity;
@@ -14,8 +13,6 @@ import net.mizukilab.pit.util.chat.CC;
 import net.mizukilab.pit.util.cooldown.Cooldown;
 import net.mizukilab.pit.util.item.ItemBuilder;
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftEntity;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -127,7 +124,7 @@ public class VolleyEnchant extends AbstractEnchantment implements Listener {
                     final ItemStack item = Utils.toNMStackQuick(itemInHand);
                     final ItemBow bow = (ItemBow) item.getItem();
 
-                    final EntityPlayer entityPlayer = ((CraftPlayer) player).getHandle();
+                    final EntityPlayer entityPlayer = ((org.bukkit.entity.Player) player);
 
                     final int value;
                     if (unreflected != null) {

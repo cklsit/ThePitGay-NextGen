@@ -1,7 +1,6 @@
 package net.mizukilab.pit.item.factory;
 
 import com.google.common.annotations.Beta;
-import net.minecraft.server.v1_8_R3.NBTTagCompound;
 import net.mizukilab.pit.item.AbstractPitItem;
 import net.mizukilab.pit.item.IItemFactory;
 import net.mizukilab.pit.item.IMythicItem;

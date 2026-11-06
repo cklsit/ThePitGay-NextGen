@@ -15,8 +15,8 @@ JDK = os.path.expanduser(r"~/.gradle/jdks/eclipse_adoptium-21-amd64-windows/jdk-
 LOMBOK = os.path.expanduser(
     r"~/.gradle/caches/modules-2/files-2.1/org.projectlombok/lombok/1.18.34/"
     r"ec547ef414ab1d2c040118fb9c1c265ada63af14/lombok-1.18.34.jar")
-CP_FILE = os.path.join(ROOT, "tools", "base_cp.txt")
-CP_OVERRIDE = {"core": os.path.join(ROOT, "tools", "core_cp.txt")}
+CP_FILE = os.path.join(ROOT, "build", "cp-base.txt")
+CP_OVERRIDE = {"core": os.path.join(ROOT, "build", "cp-core.txt")}
 
 
 def collect_sources(module):
@@ -42,7 +42,7 @@ def main():
 
     cmd = [
         os.path.join(JDK, "bin", "javac.exe"),
-        "-nowarn", "-encoding", "UTF-8",
+        "-nowarn", "-encoding", "UTF-8", "-Xmaxerrs", "5000",
         "-processorpath", LOMBOK,
         "-cp", full_cp,
         "-d", out_dir,

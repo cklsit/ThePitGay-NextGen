@@ -1,10 +1,6 @@
 package net.mizukilab.pit.util
 
-import net.minecraft.server.v1_8_R3.EntityFireworks
-import net.minecraft.server.v1_8_R3.PacketPlayOutEntityStatus
-import net.minecraft.server.v1_8_R3.World
 import org.bukkit.Bukkit
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer
 
 class BoomFirework(world: World) :
     EntityFireworks(world) {

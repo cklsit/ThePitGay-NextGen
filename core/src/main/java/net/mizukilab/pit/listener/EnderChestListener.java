@@ -8,14 +8,10 @@ import net.mizukilab.pit.parm.AutoRegister;
 import net.mizukilab.pit.util.chat.CC;
 import net.mizukilab.pit.util.cooldown.Cooldown;
 import net.mizukilab.pit.util.item.ItemUtil;
-import net.minecraft.server.v1_8_R3.BlockPosition;
-import net.minecraft.server.v1_8_R3.Blocks;
-import net.minecraft.server.v1_8_R3.PacketPlayOutBlockAction;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
@@ -80,7 +76,7 @@ public class EnderChestListener implements Listener {
 
                 BlockPosition pos = new BlockPosition(location.getBlockX(), location.getBlockY(), location.getBlockZ());
                 PacketPlayOutBlockAction packet = new PacketPlayOutBlockAction(pos, Blocks.ENDER_CHEST, (byte) 1, (byte) 0);
-                ((CraftPlayer) event.getPlayer()).getHandle().playerConnection.sendPacket(packet);
+                ((org.bukkit.entity.Player) event.getPlayer()).playerConnection.sendPacket(packet);
             }
         }
     }
@@ -142,7 +138,7 @@ public class EnderChestListener implements Listener {
 
             BlockPosition pos = new BlockPosition(location.getBlockX(), location.getBlockY(), location.getBlockZ());
             PacketPlayOutBlockAction packet = new PacketPlayOutBlockAction(pos, Blocks.ENDER_CHEST, (byte) 1, (byte) 1);
-            ((CraftPlayer) player).getHandle().playerConnection.sendPacket(packet);
+            ((org.bukkit.entity.Player) player).playerConnection.sendPacket(packet);
         }
     }
 

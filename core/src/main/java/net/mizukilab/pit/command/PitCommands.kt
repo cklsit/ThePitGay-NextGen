@@ -24,7 +24,6 @@ import net.md_5.bungee.api.chat.BaseComponent
 import net.md_5.bungee.api.chat.ClickEvent
 import net.md_5.bungee.api.chat.HoverEvent
 import net.md_5.bungee.api.chat.TextComponent
-import net.minecraft.server.v1_8_R3.NBTTagCompound
 import net.mizukilab.pit.Util
 import net.mizukilab.pit.audience
 import net.mizukilab.pit.command.handler.HandHasItem
@@ -152,17 +151,17 @@ class PitCommands {
                 val lookupStrict = ThePit.getInstance()?.profileOperator?.namedIOperator(name)
                 if (lookupStrict == null || lookupStrict.profile().playerName == "NotLoadPlayer") {
                     player.sendMessage(CC.translate("&c此玩家的档案不存在,请检查输入是否有误."))
-                    return@runTaskAsynchronously
+                    return@Runnable
                 }
                 if (!player.hasPermission("pit.admin") || player.isSpecial) {
                     if (!name.equals(player.name, ignoreCase = true) && lookupStrict.profile().isSpecial) {
                         player.sendMessage(CC.translate("&c此玩家的档案不存在,请检查输入是否有误."))
-                        return@runTaskAsynchronously
+                        return@Runnable
                     }
                 }
                 /*                if (lookupStrict.profile().playerUuid == player.uniqueId) {
                                     player.sendMessage(CC.translate("&c疑? 为什么要查看自己档案?"))
-                                    return@runTaskAsynchronously
+                                    return@Runnable
                                 }*/
                 Bukkit.getScheduler().runTask(ThePit.getInstance()) {
                     StatusViewerMenu(lookupStrict.profile()).openMenu(
@@ -404,7 +403,7 @@ class PitCommands {
         //player.sendMessage(CC.translate("&c&l即将传送,请保持脱战状态并不要移动位置..."));
         player.setMetadata("backing", FixedMetadataValue(ThePit.getInstance(), true))
 
-        Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), Runnable Runnable {
+        Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), Runnable {
             if (player.isOnline) {
                 if (player.hasMetadata("backing")) {
                     val location = ThePit.getInstance().pitConfig

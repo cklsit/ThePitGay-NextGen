@@ -2,7 +2,6 @@ package net.mizukilab.pit.runnable
 
 import cn.charlotte.pit.ThePit
 import cn.charlotte.pit.data.PlayerProfile
-import net.minecraft.server.v1_8_R3.MinecraftServer
 import net.mizukilab.pit.item.AbstractPitItem
 import net.mizukilab.pit.util.chat.ActionBarUtil
 import net.mizukilab.pit.util.chat.CC
@@ -20,12 +19,12 @@ object ActionBarDisplayRunnable {
     @JvmStatic
     val shutdownStr: String = CC.translate("&c&l服务器关闭中 ")
     fun start() {
-        Bukkit.getScheduler().runTaskTimerAsynchronously(ThePit.getInstance(), Runnable Runnable {
+        Bukkit.getScheduler().runTaskTimerAsynchronously(ThePit.getInstance(), Runnable {
             if (!MinecraftServer.getServer().isRunning) {
                 for (player in Bukkit.getOnlinePlayers()) {
                     ActionBarUtil.sendActionBar1(player, "system", shutdownStr, 20);
                 }
-                return@runTaskTimerAsynchronously
+                return@RunnableTimerAsynchronously
             }
             val now = System.currentTimeMillis()
 

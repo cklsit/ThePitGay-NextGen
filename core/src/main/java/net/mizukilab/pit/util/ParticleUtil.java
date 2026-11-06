@@ -1,8 +1,6 @@
 package net.mizukilab.pit.util;
 
-import net.minecraft.server.v1_8_R3.*;
 import org.bukkit.Location;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
@@ -25,7 +23,7 @@ public class ParticleUtil {
             (float) speed, count
         );
         
-        ((CraftPlayer) player).getHandle().playerConnection.sendPacket(packet);
+        ((org.bukkit.entity.Player) player).playerConnection.sendPacket(packet);
     }
 
     /**
@@ -122,7 +120,7 @@ public class ParticleUtil {
             1.0f, 0
         );
         
-        ((CraftPlayer) player).getHandle().playerConnection.sendPacket(packet);
+        ((org.bukkit.entity.Player) player).playerConnection.sendPacket(packet);
     }
 
     /**
