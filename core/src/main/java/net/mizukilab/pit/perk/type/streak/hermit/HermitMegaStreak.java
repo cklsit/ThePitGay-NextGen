@@ -132,10 +132,10 @@ public class HermitMegaStreak extends AbstractPerk implements Listener, IPlayerD
             Bukkit.getOnlinePlayers().forEach(player -> {
                 player.playSound(player.getLocation(), Sound.ENTITY_WITHER_SPAWN, 0.8F, 1.5F);
             });
-            myself.getInventory().addItem(new ItemBuilder(Material.RED_BEDROCK).canDrop(false).removeOnJoin(true).canSaveToEnderChest(false).deathDrop(true).internalName("perk_hermit").amount(32).build());
+            myself.getInventory().addItem(new ItemBuilder(Material.BEDROCK).canDrop(false).removeOnJoin(true).canSaveToEnderChest(false).deathDrop(true).internalName("perk_hermit").amount(32).build());
         }
         if (event.getFrom() > trigger && Math.floor(event.getFrom() / 10) != Math.floor(event.getTo() / 10)) {
-            myself.getInventory().addItem(new ItemBuilder(Material.RED_BEDROCK).canDrop(false).removeOnJoin(true).canSaveToEnderChest(false).deathDrop(true).internalName("perk_hermit").amount(32).build());
+            myself.getInventory().addItem(new ItemBuilder(Material.BEDROCK).canDrop(false).removeOnJoin(true).canSaveToEnderChest(false).deathDrop(true).internalName("perk_hermit").amount(32).build());
         }
     }
 

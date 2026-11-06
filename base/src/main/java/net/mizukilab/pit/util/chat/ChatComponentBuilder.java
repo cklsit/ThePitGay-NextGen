@@ -6,215 +6,117 @@ package net.mizukilab.pit.util.chat;
  */
 
 import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.chat.*;
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.TextComponent;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.regex.Pattern;
 
-public class ChatComponentBuilder extends ComponentBuilder {
+/**
+ * 文本组件构建器。
+ * <p>
+ * 1.21 适配：Paper 内置的 {@code ComponentBuilder} 已改为 final（Adventure 桥接实现），无法再继承，
+ * 这里改为<strong>组合</strong>方式，对外 API 与原实现保持一致。
+ */
+public class ChatComponentBuilder {
 
-    private static Field partsField;
-    private static Field currField;
-
-    static {
-        try {
-            currField = ComponentBuilder.class.getDeclaredField("current");
-            partsField = ComponentBuilder.class.getDeclaredField("parts");
-            currField.setAccessible(true);
-            partsField.setAccessible(true);
-        } catch (NoSuchFieldException var1) {
-            var1.printStackTrace();
-        }
-
-    }
+    private final List<BaseComponent> parts = new ArrayList<>();
+    private TextComponent current = new TextComponent("");
 
     public ChatComponentBuilder(String text) {
-        super("");
         this.parse(text);
     }
 
     public TextComponent getCurrent() {
-        try {
-            return (TextComponent) currField.get(this);
-        } catch (IllegalAccessException var2) {
-            var2.printStackTrace();
-            return null;
-        }
+        return current;
     }
 
     public void setCurrent(TextComponent tc) {
-        try {
-            currField.set(this, tc);
-        } catch (IllegalAccessException var3) {
-            var3.printStackTrace();
-        }
-
+        this.current = tc;
     }
 
+    @SuppressWarnings("rawtypes")
     public List getParts() {
-        try {
-            return (List) partsField.get(this);
-        } catch (IllegalAccessException var2) {
-            var2.printStackTrace();
-            return null;
-        }
+        return parts;
     }
 
     public ChatComponentBuilder setCurrentHoverEvent(HoverEvent hoverEvent) {
-        this.getCurrent().setHoverEvent(hoverEvent);
+        this.current.setHoverEvent(hoverEvent);
         return this;
     }
 
     public ChatComponentBuilder setCurrentClickEvent(ClickEvent clickEvent) {
-        this.getCurrent().setClickEvent(clickEvent);
+        this.current.setClickEvent(clickEvent);
         return this;
     }
 
     public ChatComponentBuilder attachToEachPart(HoverEvent hoverEvent) {
-
-        for (Object part : this.getParts()) {
-            TextComponent component = (TextComponent) part;
-            if (component.getHoverEvent() == null) {
-                component.setHoverEvent(hoverEvent);
+        for (BaseComponent part : parts) {
+            if (part instanceof TextComponent text && text.getHoverEvent() == null) {
+                text.setHoverEvent(hoverEvent);
             }
         }
-
-        this.getCurrent().setHoverEvent(hoverEvent);
+        this.current.setHoverEvent(hoverEvent);
         return this;
     }
 
     public ChatComponentBuilder attachToEachPart(ClickEvent clickEvent) {
-
-        for (Object part : this.getParts()) {
-            TextComponent component = (TextComponent) part;
-            if (component.getClickEvent() == null) {
-                component.setClickEvent(clickEvent);
+        for (BaseComponent part : parts) {
+            if (part instanceof TextComponent text && text.getClickEvent() == null) {
+                text.setClickEvent(clickEvent);
             }
         }
-
-        this.getCurrent().setClickEvent(clickEvent);
+        this.current.setClickEvent(clickEvent);
         return this;
     }
 
-    static Pattern pattern = Pattern.compile("[&ยง]{1}([a-fA-Fl-oL-O0-9-r]){1}");
-
     public ChatComponentBuilder parse(String text) {
-
-        text = pattern.matcher(text).replaceAll("ยง$1");
-        if (!pattern.matcher(text).find()) {
-            if (this.getParts().isEmpty() && this.getCurrent() != null && this.getCurrent().getText().isEmpty()) {
-                this.getCurrent().setText(text);
-            } else {
-                this.append(text);
-            }
-
-            return this;
-        } else {
-            String[] words = pattern.split(text);
-            int index = words[0].length();
-            int var6 = words.length;
-
-            for (String word : words) {
-                try {
-                    if (index != words[0].length()) {
-                        if (this.getParts().isEmpty() && this.getCurrent() != null && this.getCurrent().getText().isEmpty()) {
-                            this.getCurrent().setText(word);
-                        } else {
-                            this.append(word);
-                        }
-
-                        ChatColor color = ChatColor.getByChar(text.charAt(index - 1));
-                        if (color == ChatColor.BOLD) {
-                            this.bold(true);
-                        } else if (color == ChatColor.STRIKETHROUGH) {
-                            this.strikethrough(true);
-                        } else if (color == ChatColor.MAGIC) {
-                            this.obfuscated(true);
-                        } else if (color == ChatColor.UNDERLINE) {
-                            this.underlined(true);
-                        } else if (color == ChatColor.RESET) {
-                            this.bold(false);
-                            this.strikethrough(false);
-                            this.obfuscated(false);
-                            this.underlined(false);
-                        } else {
-                            this.color(color);
-                        }
-                    }
-                } catch (Exception var10) {
-                    var10.printStackTrace();
-                }
-
-                index += word.length() + 2;
-            }
-
+        if (text == null || text.isEmpty()) {
             return this;
         }
+        BaseComponent[] parsed = TextComponent.fromLegacyText(text);
+        for (BaseComponent component : parsed) {
+            parts.add(component);
+            if (component instanceof TextComponent textComponent) {
+                current = textComponent;
+            }
+        }
+        return this;
     }
 
     public ChatComponentBuilder append(BaseComponent[] components) {
-        BaseComponent[] var2 = components;
-        int var3 = components.length;
-
-        for (int var4 = 0; var4 < var3; ++var4) {
-            BaseComponent component = var2[var4];
-            this.append((TextComponent) component);
+        for (BaseComponent component : components) {
+            parts.add(component);
+            if (component instanceof TextComponent textComponent) {
+                current = textComponent;
+            }
         }
-
         return this;
     }
 
     public ChatComponentBuilder append(TextComponent textComponent) {
-        if (textComponent == null) {
-            return this;
-        } else {
-            String text = textComponent.getText();
-            ChatColor color = textComponent.getColor();
-            boolean bold = textComponent.isBold();
-            boolean underline = textComponent.isUnderlined();
-            boolean italic = textComponent.isUnderlined();
-            boolean strike = textComponent.isStrikethrough();
-            HoverEvent he = textComponent.getHoverEvent();
-            ClickEvent ce = textComponent.getClickEvent();
-            this.append(text);
-            this.color(color);
-            this.underlined(underline);
-            this.italic(italic);
-            this.strikethrough(strike);
-            this.event(he);
-            this.event(ce);
-            if (textComponent.getExtra() != null) {
-                Iterator var10 = textComponent.getExtra().iterator();
-
-                while (var10.hasNext()) {
-                    BaseComponent bc = (BaseComponent) var10.next();
-                    if (bc instanceof TextComponent) {
-                        this.append((TextComponent) bc);
-                    }
-                }
-            }
-
-            return this;
-        }
+        parts.add(textComponent);
+        current = textComponent;
+        return this;
     }
 
     public BaseComponent[] create() {
-        List<TextComponent> components = new ArrayList(this.getParts());
-        components.add(this.getCurrent());
-        TextComponent first = components.get(0);
-        if (first.getText().isEmpty()) {
-            components.remove(0);
-        }
+        return parts.toArray(new BaseComponent[0]);
+    }
 
-        TextComponent last = components.get(components.size() - 1);
-        if (last.getText().isEmpty()) {
-            components.remove(components.size() - 1);
-        }
+    /**
+     * 保留旧实现的颜色常量入口，避免调用方改动。
+     */
+    public static String color(String text) {
+        return ChatColor.translateAlternateColorCodes('&', text);
+    }
 
-        return components.toArray(new BaseComponent[components.size()]);
+    /**
+     * 兼容旧代码中的链式构建：{@code new ChatComponentBuilder(text).append(...)}。
+     */
+    public ChatComponentBuilder append(String text) {
+        return parse(text);
     }
 }
-

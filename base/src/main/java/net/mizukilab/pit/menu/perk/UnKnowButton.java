@@ -15,7 +15,7 @@ public class UnKnowButton extends Button {
 
     @Override
     public ItemStack getButtonItem(Player player) {
-        return new ItemBuilder(Material.RED_BEDROCK)
+        return new ItemBuilder(Material.BEDROCK)
                 .name("&c&l锁定中")
                 .lore(" ", "&7&o前面的区域,以后再来探索吧!")
                 .build();

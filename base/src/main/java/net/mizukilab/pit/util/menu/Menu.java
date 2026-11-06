@@ -61,7 +61,7 @@ public abstract class Menu {
                 } else {
                     int previousSize = player.getOpenInventory().getTopInventory().getSize();
 
-                    if (previousSize == size && player.getOpenInventory().getTopInventory().getTitle().equals(title)) {
+                    if (previousSize == size && player.getOpenInventory().getTitle().equals(title)) {
                         inventory = player.getOpenInventory().getTopInventory();
                         update = true;
                     } else {

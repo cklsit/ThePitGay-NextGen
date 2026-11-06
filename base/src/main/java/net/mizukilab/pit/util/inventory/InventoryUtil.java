@@ -545,7 +545,7 @@ public class InventoryUtil {
 
     private static int firstPartial(PlayerInventory playerInv, ItemStack item) {
         ItemStack[] inventory = playerInv.getContents();
-        ItemStack filteredItem = CraftItemStack.asCraftCopy(item);
+        ItemStack filteredItem = item.clone();
         for (int i = 35; i > -1; i--) {
             ItemStack cItem = inventory[i];
             if (cItem != null && cItem.getAmount() < cItem.getMaxStackSize() && cItem.isSimilar(filteredItem)) {
@@ -580,7 +580,7 @@ public class InventoryUtil {
                 } else {
                     // More than a single stack!
                     if (item.getAmount() > inventory.getMaxStackSize()) {
-                        CraftItemStack stack = CraftItemStack.asCraftCopy(item);
+                        ItemStack stack = item.clone();
                         stack.setAmount(inventory.getMaxStackSize());
                         inventory.setItem(firstFree, stack);
                         item.setAmount(item.getAmount() - inventory.getMaxStackSize());

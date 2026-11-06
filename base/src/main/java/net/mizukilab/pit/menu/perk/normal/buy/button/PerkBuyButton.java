@@ -89,9 +89,9 @@ public class PerkBuyButton extends Button {
                     lore.add("&c请先在精通商店中解锁此%type%的购买权!".replace("%type%", perkType.getDisplayName()));
                 }
                 if (special) {
-                    return new ItemBuilder(Material.RED_BEDROCK).name("&c" + perk.getDisplayName()).lore(lore).shiny().build();
+                    return new ItemBuilder(Material.BEDROCK).name("&c" + perk.getDisplayName()).lore(lore).shiny().build();
                 } else {
-                    return new ItemBuilder(Material.RED_BEDROCK).name("&c" + perk.getDisplayName()).lore(lore).build();
+                    return new ItemBuilder(Material.BEDROCK).name("&c" + perk.getDisplayName()).lore(lore).build();
                 }
             }
         }
@@ -107,14 +107,14 @@ public class PerkBuyButton extends Button {
         if (perk.requireLevel() > profile.getLevel()) {
             if (!PlayerUtil.isPlayerUnlockedPerk(player, "the_way_perk")) {
                 lore.add("&c等级不足: " + LevelUtil.getLevelTag(profile.getPrestige(), perk.requireLevel()));
-                return new ItemBuilder(Material.RED_BEDROCK)
+                return new ItemBuilder(Material.BEDROCK)
                         .name("&c" + perk.getDisplayName())
                         .lore(lore)
                         .build();
             } else {
                 if (perk.getPerkType() != PerkType.PERK) {
                     lore.add("&c等级不足: " + LevelUtil.getLevelTag(profile.getPrestige(), perk.requireLevel()));
-                    return new ItemBuilder(Material.RED_BEDROCK)
+                    return new ItemBuilder(Material.BEDROCK)
                             .name("&c" + perk.getDisplayName())
                             .lore(lore)
                             .build();
@@ -145,14 +145,14 @@ public class PerkBuyButton extends Button {
             if (perk.requireLevel() > profile.getLevel()) {
                 if (!PlayerUtil.isPlayerUnlockedPerk(player, "the_way_perk")) {
                     lore.add("&c等级不足: " + LevelUtil.getLevelTag(profile.getPrestige(), perk.requireLevel()));
-                    return new ItemBuilder(Material.RED_BEDROCK)
+                    return new ItemBuilder(Material.BEDROCK)
                             .name("&c" + perk.getDisplayName())
                             .lore(lore)
                             .build();
                 } else {
                     if (perk.getPerkType() != PerkType.PERK) {
                         lore.add("&c等级不足: " + LevelUtil.getLevelTag(profile.getPrestige(), perk.requireLevel()));
-                        return new ItemBuilder(Material.RED_BEDROCK)
+                        return new ItemBuilder(Material.BEDROCK)
                                 .name("&c" + perk.getDisplayName())
                                 .lore(lore)
                                 .build();

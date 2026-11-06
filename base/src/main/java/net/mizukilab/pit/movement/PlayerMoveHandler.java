@@ -358,7 +358,7 @@ public class PlayerMoveHandler implements MovementHandler, Listener {
                     try {
                         if (ticks % 3 == 0) {
                             Location loc = armorStand.getLocation();
-                            EnumParticle particleType = isDescending ? Particle.DRIPPING_WATER : Particle.CLOUD;
+                            org.bukkit.Particle particleType = isDescending ? Particle.DRIPPING_WATER : Particle.CLOUD;
 
                             player.spawnParticle(particleType, loc, isDescending ? 1 : 2, 0.2, 0.2, 0.2, 0);
                         }

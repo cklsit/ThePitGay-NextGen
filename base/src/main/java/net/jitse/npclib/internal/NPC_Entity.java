@@ -39,7 +39,7 @@ public class NPC_Entity extends NPCBase {
     @Override
     public void createPackets() {
         if (!Bukkit.isPrimaryThread()) {
-            Bukkit.getScheduler().runTask(getPlugin(), this::createPackets);
+            Bukkit.getScheduler().runTask(getPlugin(), (Runnable) this::createPackets);
             return;
         }
         Location spawn = getLocation();

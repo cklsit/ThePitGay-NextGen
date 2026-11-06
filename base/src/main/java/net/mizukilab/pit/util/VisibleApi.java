@@ -42,7 +42,7 @@ public class VisibleApi {
                 continue;
             }
             for (EquipmentSlot slot : new EquipmentSlot[]{EquipmentSlot.BOOTS, EquipmentSlot.LEGGINGS,
-                    EquipmentSlot.CHESTPLATE, EquipmentSlot.HELMET}) {
+                    EquipmentSlot.CHEST_PLATE, EquipmentSlot.HELMET}) {
                 sendEquipment(player, target, slot, new ItemStack(Material.AIR));
             }
         }
@@ -89,7 +89,7 @@ public class VisibleApi {
         List<Equipment> equipment = new ArrayList<>(4);
         equipment.add(new Equipment(EquipmentSlot.BOOTS, SpigotConversionUtil.fromBukkitItemStack(player.getInventory().getBoots())));
         equipment.add(new Equipment(EquipmentSlot.LEGGINGS, SpigotConversionUtil.fromBukkitItemStack(player.getInventory().getLeggings())));
-        equipment.add(new Equipment(EquipmentSlot.CHESTPLATE, SpigotConversionUtil.fromBukkitItemStack(player.getInventory().getChestplate())));
+        equipment.add(new Equipment(EquipmentSlot.CHEST_PLATE, SpigotConversionUtil.fromBukkitItemStack(player.getInventory().getChestplate())));
         equipment.add(new Equipment(EquipmentSlot.HELMET, SpigotConversionUtil.fromBukkitItemStack(player.getInventory().getHelmet())));
 
         showNameTag(player);

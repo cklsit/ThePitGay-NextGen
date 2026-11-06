@@ -51,7 +51,7 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
     private final Map<UUID, PlayerBlockHeadData> dataMap = new HashMap<>();
     private final Map<UUID, Integer> rankMap = new HashMap<>();
     public final Map<UUID, PowerUP> pup = new HashMap<>();
-    private static final List<Material> canBeUsed = Arrays.asList(Material.STONE, Material.SHORT_GRASS, Material.DIRT, Material.COBBLESTONE, Material.OAK_PLANKS, Material.RED_BEDROCK
+    private static final List<Material> canBeUsed = Arrays.asList(Material.STONE, Material.SHORT_GRASS, Material.DIRT, Material.COBBLESTONE, Material.OAK_PLANKS, Material.BEDROCK
             , Material.GOLD_ORE, Material.IRON_ORE, Material.COAL_ORE
             , Material.OAK_LOG, Material.LAPIS_ORE,
             Material.LAPIS_BLOCK, Material.SANDSTONE, Material.NOTE_BLOCK, Material.RED_BED_BLOCK, Material.STICKY_PISTON

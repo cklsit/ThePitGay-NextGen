@@ -213,3 +213,7 @@ tasks.withType<Javadoc> {
 tasks.build {
     dependsOn(tasks.shadowJar)
 }
+
+tasks.register("printCp") {
+    doLast { println("CP=" + sourceSets["main"].compileClasspath.asPath) }
+}

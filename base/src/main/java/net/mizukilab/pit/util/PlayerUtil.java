@@ -18,6 +18,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.entity.Chicken;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -176,7 +177,7 @@ public class PlayerUtil {
      * @param canImmune  此伤害能否被免疫 / 降低
      * @return 此伤害是否被免疫
      */
-    public static boolean damage(Player victim, DamageType damageType, Double damage, boolean canImmune) {
+    public static boolean damage(Player victim, DamageType damageType, double damage, boolean canImmune) {
         boolean immune = false;
         if (victim.getInventory().getLeggings() != null && victim.getInventory().getLeggings().getType() != Material.AIR) {
             immune = canImmune && ThePit.getApi().getItemEnchantLevel(victim.getInventory().getLeggings(), "Mirror") >= 1;
@@ -199,7 +200,7 @@ public class PlayerUtil {
         return false;
     }
 
-    public static void damage(Entity victim, DamageType damageType, Double damage, Boolean canImmune) {
+    public static void damage(Entity victim, DamageType damageType, double damage, Boolean canImmune) {
 
     }
 

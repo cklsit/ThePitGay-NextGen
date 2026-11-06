@@ -244,7 +244,7 @@ public class EventFactory {
 
         this.activeEpicEvent = null;
         AbstractEvent iEvent = (AbstractEvent) event;
-        Bukkit.getOnlinePlayers().forEach(player -> player.playSound(player.getLocation(), BURP, 1, 0.72F));
+        Bukkit.getOnlinePlayers().forEach(player -> player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_BURP, 1, 0.72F));
         iEvent.setActive(false);
         iEvent.onInactive();
     }

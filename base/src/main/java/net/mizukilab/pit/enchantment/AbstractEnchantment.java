@@ -76,7 +76,7 @@ public abstract class AbstractEnchantment {
         if (cn.charlotte.pit.compat.item.ItemTypes.isArmor(item)) {
             return this.getClass().isAnnotationPresent(ArmorOnly.class);
         }
-        if (nmsItem.getItem() instanceof ItemFishingRod) {
+        if (item.getType() == org.bukkit.Material.FISHING_ROD) {
             return this.getClass().isAnnotationPresent(RodOnly.class);
         }
         return false;

@@ -38,7 +38,7 @@ public class PerkButton extends Button {
         PerkData data = profile.getChosePerk().get(page);
         if (page == 2) {
             if (profile.getLevel() < 35) {
-                return new ItemBuilder(Material.RED_BEDROCK)
+                return new ItemBuilder(Material.BEDROCK)
                         .name("&c天赋栏 #" + page)
                         .lore("&7解锁等级: " + LevelUtil.getLevelTag(profile.getPrestige(), 35))
                         .amount(page)
@@ -47,7 +47,7 @@ public class PerkButton extends Button {
         }
         if (page == 3) {
             if (profile.getLevel() < 70) {
-                return new ItemBuilder(Material.RED_BEDROCK)
+                return new ItemBuilder(Material.BEDROCK)
                         .name("&c天赋栏 #" + page)
                         .lore("&7解锁等级: " + LevelUtil.getLevelTag(profile.getPrestige(), 70))
                         .amount(page)
@@ -56,7 +56,7 @@ public class PerkButton extends Button {
         }
         if (page == 4) {
             if (profile.getLevel() < 100) {
-                return new ItemBuilder(Material.RED_BEDROCK)
+                return new ItemBuilder(Material.BEDROCK)
                         .name("&c天赋栏 #" + page)
                         .lore("&7解锁等级: " + LevelUtil.getLevelTag(profile.getPrestige(), 100))
                         .amount(page)
@@ -113,7 +113,7 @@ public class PerkButton extends Button {
 
             return perk.getIconWithNameAndLore("&e" + type + "栏 " + (page != 5 ? "#" + slot : ""), lines, 0, 1);
         } else {
-            return new ItemBuilder(Material.RED_BEDROCK)
+            return new ItemBuilder(Material.BEDROCK)
                     .name("&c&l错误!")
                     .lore("&c加载此天赋栏失败,", "&c请联系管理员反馈此问题.")
                     .amount(page)

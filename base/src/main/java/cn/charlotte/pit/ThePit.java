@@ -191,7 +191,6 @@ public class ThePit extends JavaPlugin implements PluginMessageListener {
 
 
     @Override
-    @Override
     public void onEnable() {
         BASE_VERSION = this.getDescription().getVersion();
         BannerUtil.printFileContent("banner.txt");

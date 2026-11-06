@@ -57,7 +57,7 @@ public class PublicUtil {
         HEX_VALUES['F'] = 0xf;
     }
     public static void processActionBar(Player victim, Player damager, int damage,double finalDamage) {
-        int absorptionHearts1 = (int) ((CraftPlayer) victim).getHandle().getAbsorptionHearts();
+        int absorptionHearts1 = (int) victim.getAbsorptionAmount();
         int absorptionHearts = (int) (absorptionHearts1 / 2);
         int totalHearts = (int) victim.getMaxHealth() / 2;
         int nowHearts = (int) Math.ceil(victim.getHealth() / 2D);

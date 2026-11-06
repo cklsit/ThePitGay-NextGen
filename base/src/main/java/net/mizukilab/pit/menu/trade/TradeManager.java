@@ -358,4 +358,22 @@ public class TradeManager {
     public String toString() {
         return "TradeManager(playerA=" + this.getPlayerA() + ", playerB=" + this.getPlayerB() + ", aItems=" + this.getAItems() + ", bItems=" + this.getBItems() + ", aCoins=" + this.getACoins() + ", bCoins=" + this.getBCoins() + ", aConfirm=" + this.isAConfirm() + ", bConfirm=" + this.isBConfirm() + ", aEditingCoins=" + this.isAEditingCoins() + ", bEditingCoins=" + this.isBEditingCoins() + ", aPutCooldown=" + this.getAPutCooldown() + ", bPutCooldown=" + this.getBPutCooldown() + ", end=" + this.isEnd() + ")";
     }
+
+    /**
+     * 1.21：SHOW_ITEM 悬停改为 Adventure 的 ItemStack 悬停。
+     */
+    private static net.kyori.adventure.text.Component itemName(ItemStack item) {
+        if (item.getItemMeta() != null && item.getItemMeta().hasDisplayName()) {
+            return item.getItemMeta().displayName();
+        }
+        return net.kyori.adventure.text.Component.text(item.getType().name());
+    }
+
+    private static void sendItemHover(org.bukkit.entity.Player player, String message, ItemStack item) {
+        net.kyori.adventure.text.Component component = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
+                .legacySection()
+                .deserialize(CC.translate(message))
+                .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(itemName(item)));
+        player.sendMessage(component);
+    }
 }

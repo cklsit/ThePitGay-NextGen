@@ -17,10 +17,6 @@ public class PitGainCoinsEvent extends PitEvent {
     private final Player player;
     private final double coins;
 
-    public PitGainCoinsEvent(Player player, double coins) {
-        this.player = player;
-        this.coins = coins;
-    }
 
 
 }

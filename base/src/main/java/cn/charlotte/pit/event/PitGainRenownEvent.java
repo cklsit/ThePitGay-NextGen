@@ -17,9 +17,5 @@ public class PitGainRenownEvent extends PitEvent {
     private final Player player;
     private final int renown;
 
-    public PitGainRenownEvent(Player player, int renown) {
-        this.player = player;
-        this.renown = renown;
-    }
 
 }
