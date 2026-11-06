@@ -8,7 +8,6 @@ import net.jitse.npclib.NPCLibOptions.MovementHandling;
 import net.jitse.npclib.api.NPC;
 import net.jitse.npclib.api.utilities.Logger;
 import net.jitse.npclib.listeners.*;
-import net.jitse.npclib.nms.v1_8_R3.NPC_v1_8_R3;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -28,7 +27,7 @@ public final class NPCLib {
 
         String versionName = plugin.getServer().getClass().getPackage().getName().split("\\.")[3];
 
-        Class<?> npcClass = NPC_v1_8_R3.class;
+        Class<?> npcClass = net.jitse.npclib.internal.NPC_Entity.class;
 
         this.npcClass = npcClass;
 

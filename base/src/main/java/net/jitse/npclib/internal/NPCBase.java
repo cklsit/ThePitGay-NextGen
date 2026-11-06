@@ -4,8 +4,6 @@
 
 package net.jitse.npclib.internal;
 
-import com.mojang.authlib.GameProfile;
-import com.mojang.authlib.properties.Property;
 import net.jitse.npclib.NPCLib;
 import net.jitse.npclib.api.NPC;
 import net.jitse.npclib.api.events.NPCHideEvent;
@@ -16,12 +14,13 @@ import net.jitse.npclib.api.state.NPCSlot;
 import net.jitse.npclib.api.state.NPCState;
 import net.jitse.npclib.hologram.Hologram;
 import net.jitse.npclib.utilities.MathUtil;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.Vector;
 
 import java.util.*;
@@ -40,7 +39,7 @@ public abstract class NPCBase implements NPC, NPCPacketHandler {
     // This gives a format similar to: 528086a2-4f5f-2ec2-0000-000000000000
     protected UUID uuid = new UUID(new Random().nextLong(), 0);
     protected String name = uuid.toString().replace("-", "").substring(0, 10);
-    protected GameProfile gameProfile = new GameProfile(uuid, name);
+    private static JavaPlugin plugin;
     protected boolean created = false;
 
     protected NPCLib instance;
@@ -58,6 +57,7 @@ public abstract class NPCBase implements NPC, NPCPacketHandler {
 
     public NPCBase(NPCLib instance, List<String> text) {
         this.instance = instance;
+        plugin = instance.getPlugin();
         this.text = text != null ? text : Collections.emptyList();
 
         NPCManager.add(this);
@@ -67,10 +67,16 @@ public abstract class NPCBase implements NPC, NPCPacketHandler {
         return instance;
     }
 
+    public static JavaPlugin getPlugin() {
+        return plugin;
+    }
+
     // Unique per-player hologram by Gatt, modifications and refactoring done by Jitse (JMB - 23rd Jan. 2021).
     protected Hologram getHologram(Player player) {
         Validate.notNull(player, "Player cannot be null.");
-        return playerHologram.getOrDefault(player.getUniqueId(), null); // If null, NMS version will return new hologram instance.
+        // 1.21：不再由 NMS 子类创建全息，缺失时直接按当前文本构建真实 TextDisplay
+        return playerHologram.computeIfAbsent(player.getUniqueId(),
+                key -> new Hologram(getText(player), getLocation()));
     }
 
     @Override
@@ -136,10 +142,6 @@ public abstract class NPCBase implements NPC, NPCPacketHandler {
     @Override
     public NPC setSkin(Skin skin) {
         this.skin = skin;
-
-        gameProfile.getProperties().get("textures").clear();
-        if (skin != null)
-            gameProfile.getProperties().put("textures", new Property("textures", skin.getValue(), skin.getSignature()));
 
         return this;
     }
