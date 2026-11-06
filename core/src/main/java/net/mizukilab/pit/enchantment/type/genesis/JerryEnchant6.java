@@ -13,7 +13,6 @@ import net.mizukilab.pit.util.music.PositionSongPlayer;
 import net.mizukilab.pit.util.music.Song;
 import lombok.SneakyThrows;
 import org.bukkit.Particle;
-import net.minecraft.server.v1_8_R3.PacketPlayInFlying;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -151,7 +150,7 @@ public class JerryEnchant6 extends AbstractEnchantment implements ITickTask, Mov
     }
 
     @Override
-    public void handleUpdateLocation(Player player, Location from, Location to, PacketPlayInFlying packet) {
+    public void handleUpdateLocation(Player player, Location from, Location to, Object packet) {
         PositionSongPlayer songPlayer = playerMap.get(player.getUniqueId());
         if (songPlayer != null) {
             songPlayer.setTargetLocation(player.getLocation());
@@ -159,6 +158,6 @@ public class JerryEnchant6 extends AbstractEnchantment implements ITickTask, Mov
     }
 
     @Override
-    public void handleUpdateRotation(Player player, Location from, Location to, PacketPlayInFlying packet) {
+    public void handleUpdateRotation(Player player, Location from, Location to, Object packet) {
     }
 }

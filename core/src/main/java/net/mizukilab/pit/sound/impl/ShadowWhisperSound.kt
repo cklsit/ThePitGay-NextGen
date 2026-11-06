@@ -27,7 +27,7 @@ object ShadowWhisperSound : AbstractPitSound() {
             9 -> player.playSound(player.location, Sound.ENTITY_WITHER_AMBIENT, 0.5f, 0.4f)
             12 -> {
                 player.playSound(player.location, Sound.ENTITY_GHAST_AMBIENT, 0.7f, 0.3f)
-                player.playSound(player.location, Sound.BLOCK_PORTAL_AMBIENT_TRIGGER, 0.2f, 2.0f)
+                player.playSound(player.location, Sound.BLOCK_PORTAL_TRIGGER, 0.2f, 2.0f)
             }
             15 -> player.playSound(player.location, Sound.ENTITY_ENDERMAN_TELEPORT, 0.4f, 0.8f)
         }

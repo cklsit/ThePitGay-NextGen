@@ -4,7 +4,6 @@ import cn.charlotte.pit.ThePit;
 import cn.charlotte.pit.util.hologram.Hologram;
 import cn.charlotte.pit.util.hologram.HologramAPI;
 import lombok.SneakyThrows;
-import net.minecraft.server.v1_8_R3.MinecraftServer;
 import net.mizukilab.pit.util.chat.CC;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -29,7 +28,7 @@ public class HologramRunnable extends BukkitRunnable {
     @Override
     @SneakyThrows
     public void run() {
-        if (!MinecraftServer.getServer().isRunning()) {
+        if (cn.charlotte.pit.ThePit.getInstance() == null || !cn.charlotte.pit.ThePit.getInstance().isEnabled()) {
             this.cancel();
         }
         for (Player player : Bukkit.getOnlinePlayers()) {

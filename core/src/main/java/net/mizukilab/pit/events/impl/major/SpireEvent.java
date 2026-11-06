@@ -237,10 +237,10 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
         final int floor = data.floor;
 
         if (floor == 0) {
-            final SpireSword sword = new SpireSword(Material.OAK_PLANKS_SWORD);
+            final SpireSword sword = new SpireSword(Material.WOODEN_SWORD);
             player.getInventory().addItem(sword.toItemStack());
         } else if (floor == 1 || floor == 2) {
-            player.getInventory().addItem(SpireArmor.toItemStack(Material.OAK_PLANKS_SWORD));
+            player.getInventory().addItem(SpireArmor.toItemStack(Material.WOODEN_SWORD));
             player.getInventory().setChestplate(SpireArmor.toItemStack(Material.LEATHER_CHESTPLATE));
 
             player.getInventory().setLeggings(SpireArmor.toItemStack(Material.CHAINMAIL_LEGGINGS));

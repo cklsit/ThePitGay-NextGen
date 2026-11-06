@@ -34,8 +34,8 @@ object MythicAscensionSound : AbstractPitSound() {
                 player.playSound(player.location, Sound.ENTITY_PLAYER_LEVELUP, 2.0f, 1.5f)
                 player.playSound(player.location, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 2.0f)
             }
-            21 -> player.playSound(player.location, Sound.BLOCK_FIRE_AMBIENTWORK_BLAST, 1.5f, 1.8f)
-            24 -> player.playSound(player.location, Sound.BLOCK_FIRE_AMBIENTWORK_LARGE_BLAST, 1.0f, 2.0f)
+            21 -> player.playSound(player.location, Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1.5f, 1.8f)
+            24 -> player.playSound(player.location, Sound.ENTITY_FIREWORK_ROCKET_LARGE_BLAST, 1.0f, 2.0f)
         }
 
         if (tick > 28) {

@@ -10,7 +10,6 @@ import net.mizukilab.pit.npc.events.CustomEntityNPCInteractEvent;
 import net.mizukilab.pit.util.chat.CC;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftLivingEntity;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -155,13 +154,10 @@ public class CustomEntityNPCFactory implements Listener {
                     Bat bat = (Bat) entity;
                     bat.setAwake(true);
                     
-                    net.minecraft.server.v1_8_R3.Entity nmsEntity = ((CraftLivingEntity) livingEntity).getHandle();
-                    net.minecraft.server.v1_8_R3.NBTTagCompound nbt = new net.minecraft.server.v1_8_R3.NBTTagCompound();
-                    nmsEntity.c(nbt);
-                    nbt.setInt("NoAI", 1);
-                    nbt.setInt("Silent", 1);
-                    nbt.setByte("BatFlags", (byte) 1);
-                    nmsEntity.f(nbt);
+                    // 1.21：NoAI/Silent 直接走实体 API
+                    livingEntity.setAI(false);
+                    livingEntity.setSilent(true);
+                    bat.setAwake(true);
                     
 
                     final Location fixedLocation = entity.getLocation();
@@ -182,12 +178,8 @@ public class CustomEntityNPCFactory implements Listener {
                 }
             } else if (!npc.canMove()) {
                 try {
-                    net.minecraft.server.v1_8_R3.Entity nmsEntity = ((CraftLivingEntity) livingEntity).getHandle();
-                    net.minecraft.server.v1_8_R3.NBTTagCompound nbt = new net.minecraft.server.v1_8_R3.NBTTagCompound();
-                    nmsEntity.c(nbt);
-                    nbt.setInt("NoAI", 1);
-                    nbt.setInt("Silent", 1);
-                    nmsEntity.f(nbt);
+                    livingEntity.setAI(false);
+                    livingEntity.setSilent(true);
                 } catch (Exception e) {
                     Bukkit.getLogger().warning("失败: " + e.getMessage());
                 }

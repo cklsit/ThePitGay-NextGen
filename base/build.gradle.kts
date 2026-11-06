@@ -88,6 +88,7 @@ kotlin {
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
     options.release.set(21)
+    options.annotationProcessorPath = configurations.annotationProcessor.get()
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {

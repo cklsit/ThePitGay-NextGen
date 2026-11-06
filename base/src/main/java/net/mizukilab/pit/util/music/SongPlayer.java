@@ -1,7 +1,6 @@
 package net.mizukilab.pit.util.music;
 
 import cn.charlotte.pit.ThePit;
-import net.minecraft.server.v1_8_R3.MinecraftServer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
@@ -84,7 +83,7 @@ public abstract class SongPlayer {
     protected void createThread() { //答辩了... 切个虚拟线程plz
 
         playerThread = Bukkit.getScheduler().runTaskAsynchronously(ThePit.getInstance(), () -> {
-            while (!destroyed && MinecraftServer.getServer().isRunning()) {
+            while (!destroyed && cn.charlotte.pit.ThePit.getInstance() != null && cn.charlotte.pit.ThePit.getInstance().isEnabled()) {
                 long startTime = System.currentTimeMillis();
                 synchronized (SongPlayer.this) {
                     if (playing) {

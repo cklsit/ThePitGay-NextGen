@@ -38,7 +38,7 @@ public class EffectUtil {
         effectMap.put(PotionEffectType.SPEED.getName(), "&b速度");
         effectMap.put(PotionEffectType.REGENERATION.getName(), "&c生命恢复");
         effectMap.put(PotionEffectType.RESISTANCE.getName(), "&3抗性提升");
-        effectMap.put(PotionEffectType.SLOWNESS_DIGGING.getName(), "&7挖掘疲劳");
+        effectMap.put(PotionEffectType.MINING_FATIGUE.getName(), "&7挖掘疲劳");
         effectMap.put(PotionEffectType.SLOWNESS.getName(), "&7缓慢");
         effectMap.put(PotionEffectType.JUMP_BOOST.getName(), "&a跳跃提升");
         effectMap.put(PotionEffectType.WITHER.getName(), "&4凋零");

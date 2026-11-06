@@ -2,7 +2,6 @@ package net.mizukilab.pit.enchantment.type.limit.xzq
 
 import cn.charlotte.pit.ThePit
 import com.google.common.util.concurrent.AtomicDouble
-import net.minecraft.server.v1_8_R3.PacketPlayInFlying
 import net.mizukilab.pit.enchantment.AbstractEnchantment
 import net.mizukilab.pit.enchantment.param.event.PlayerOnly
 import net.mizukilab.pit.enchantment.param.item.ArmorOnly
@@ -96,7 +95,7 @@ class LimitXZQ1Ench : AbstractEnchantment(), ITickTask, MovementHandler, IPlayer
     }
 
     override fun handleUpdateLocation(
-        player: Player, location: Location?, location1: Location?, packetPlayInFlying: PacketPlayInFlying?
+        player: Player, location: Location?, location1: Location?, packetPlayInFlying: Any?
     ) {
         val songPlayer: PositionSongPlayer? = playerMap.get(player.uniqueId)
         if (songPlayer != null) {
@@ -104,7 +103,7 @@ class LimitXZQ1Ench : AbstractEnchantment(), ITickTask, MovementHandler, IPlayer
         }
     }
 
-    override fun handleUpdateRotation(var1: Player?, var2: Location?, var3: Location?, var4: PacketPlayInFlying?) {
+    override fun handleUpdateRotation(var1: Player?, var2: Location?, var3: Location?, var4: Any?) {
     }
 
     override fun getUsefulnessLore(enchantLevel: Int): String {

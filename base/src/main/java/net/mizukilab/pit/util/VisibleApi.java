@@ -1,13 +1,14 @@
 package net.mizukilab.pit.util;
 
-import net.minecraft.server.v1_8_R3.ItemStack;
-import net.minecraft.server.v1_8_R3.Packet;
-import net.minecraft.server.v1_8_R3.PacketPlayOutEntityEquipment;
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.protocol.player.Equipment;
+import com.github.retrooper.packetevents.protocol.player.EquipmentSlot;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityEquipment;
+import io.github.retrooper.packetevents.util.SpigotConversionUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
-import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.scoreboard.NameTagVisibility;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
@@ -16,27 +17,35 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * 装备伪装：让其他客户端把目标玩家的盔甲看成空，或回滚为真实装备。
+ * <p>
+ * 1.21 适配：原先手写 {@code PacketPlayOutEntityEquipment} 并强转 CraftPlayer，
+ * 现改为 PacketEvents 的装备包（已内置），不再依赖 NMS。
+ *
  * @author Araykal
  * @since 2025/1/17
  */
 public class VisibleApi {
-    private static void sendPacket(Player player, Packet<?> packet) {
-        ((CraftPlayer)player).getHandle().playerConnection.sendPacket(packet);
+
+    private static void sendEquipment(Player target, Player viewer, EquipmentSlot slot, ItemStack item) {
+        WrapperPlayServerEntityEquipment packet = new WrapperPlayServerEntityEquipment(
+                target.getEntityId(),
+                List.of(new Equipment(slot, SpigotConversionUtil.fromBukkitItemStack(
+                        item == null ? new ItemStack(Material.AIR) : item))));
+        PacketEvents.getAPI().getPlayerManager().sendPacket(viewer, packet);
     }
 
     public static void hideArmor(Player player) {
-        ItemStack nmsCopy = CraftItemStack.asNMSCopy(new org.bukkit.inventory.ItemStack(Material.AIR));
         hideNameTag(player);
-        for(int i = 1; i <= 4; ++i) {
-            PacketPlayOutEntityEquipment packet = new PacketPlayOutEntityEquipment(player.getEntityId(), i, nmsCopy);
-
-            for(Player target : Bukkit.getOnlinePlayers()) {
-                if (!target.equals(player)) {
-                    sendPacket(target, packet);
-                }
+        for (Player target : Bukkit.getOnlinePlayers()) {
+            if (target.equals(player)) {
+                continue;
+            }
+            for (EquipmentSlot slot : new EquipmentSlot[]{EquipmentSlot.BOOTS, EquipmentSlot.LEGGINGS,
+                    EquipmentSlot.CHESTPLATE, EquipmentSlot.HELMET}) {
+                sendEquipment(player, target, slot, new ItemStack(Material.AIR));
             }
         }
-
     }
 
     public static void hidePlayerFromAll(Player target) {
@@ -54,6 +63,7 @@ public class VisibleApi {
             }
         }
     }
+
     private static void hideNameTag(Player player) {
         Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
         Team team = scoreboard.getTeam("hiddenNameTags");
@@ -66,7 +76,6 @@ public class VisibleApi {
         team.addEntry(player.getName());
     }
 
-
     private static void showNameTag(Player player) {
         Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
         Team team = scoreboard.getTeam("hiddenNameTags");
@@ -75,21 +84,20 @@ public class VisibleApi {
             team.removeEntry(player.getName());
         }
     }
+
     public static void showArmor(Player player) {
-        List<PacketPlayOutEntityEquipment> packets = new ArrayList();
-        packets.add(new PacketPlayOutEntityEquipment(player.getEntityId(), 1, CraftItemStack.asNMSCopy(player.getEquipment().getBoots())));
-        packets.add(new PacketPlayOutEntityEquipment(player.getEntityId(), 2, CraftItemStack.asNMSCopy(player.getEquipment().getLeggings())));
-        packets.add(new PacketPlayOutEntityEquipment(player.getEntityId(), 3, CraftItemStack.asNMSCopy(player.getEquipment().getChestplate())));
-        packets.add(new PacketPlayOutEntityEquipment(player.getEntityId(), 4, CraftItemStack.asNMSCopy(player.getEquipment().getHelmet())));
+        List<Equipment> equipment = new ArrayList<>(4);
+        equipment.add(new Equipment(EquipmentSlot.BOOTS, SpigotConversionUtil.fromBukkitItemStack(player.getInventory().getBoots())));
+        equipment.add(new Equipment(EquipmentSlot.LEGGINGS, SpigotConversionUtil.fromBukkitItemStack(player.getInventory().getLeggings())));
+        equipment.add(new Equipment(EquipmentSlot.CHESTPLATE, SpigotConversionUtil.fromBukkitItemStack(player.getInventory().getChestplate())));
+        equipment.add(new Equipment(EquipmentSlot.HELMET, SpigotConversionUtil.fromBukkitItemStack(player.getInventory().getHelmet())));
+
         showNameTag(player);
-        for(Player target : Bukkit.getOnlinePlayers()) {
+        WrapperPlayServerEntityEquipment packet = new WrapperPlayServerEntityEquipment(player.getEntityId(), equipment);
+        for (Player target : Bukkit.getOnlinePlayers()) {
             if (!target.equals(player)) {
-                for(PacketPlayOutEntityEquipment packet : packets) {
-                    sendPacket(target, packet);
-                }
+                PacketEvents.getAPI().getPlayerManager().sendPacket(target, packet);
             }
         }
-
     }
-
 }

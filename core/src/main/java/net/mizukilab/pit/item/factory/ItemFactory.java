@@ -10,7 +10,7 @@ import net.mizukilab.pit.util.Log;
 import net.mizukilab.pit.util.PublicUtil;
 import net.mizukilab.pit.util.Utils;
 import net.mizukilab.pit.util.item.ItemUtil;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.inventory.ItemStack;
 

@@ -667,7 +667,7 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
         }
         stand.setCustomNameVisible(true);
         stand.setGravity(false);
-        ItemStack is = new ItemStack(Material.SKELETON_SKULL_ITEM, 1, (short) 3);
+        ItemStack is = new ItemStack(Material.PLAYER_HEAD, 1, (short) 3);
         SkullMeta sm = (SkullMeta) is.getItemMeta();
         GameProfile profile = new GameProfile(UUID.randomUUID(), "");
         switch (type) {

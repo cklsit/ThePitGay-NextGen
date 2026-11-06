@@ -30,7 +30,7 @@ public class ChessButton extends Button {
     public ItemStack getButtonItem(Player player) {
 
         if (posInfo.getMarkedInfo() == FourInARow.Marked.NULL) {
-            final ItemBuilder builder = new ItemBuilder(canPlay ? Material.OAK_PLANKS_BUTTON : Material.STONE_BUTTON)
+            final ItemBuilder builder = new ItemBuilder(canPlay ? Material.OAK_BUTTON : Material.STONE_BUTTON)
                     .name(canPlay ? "&a点击落子" : "&c等待对手下棋...");
 
             if (canPlay) {
@@ -40,7 +40,7 @@ public class ChessButton extends Button {
             return builder.build();
         }
 
-        final ItemBuilder builder = new ItemBuilder(Material.SKELETON_SKULL_ITEM);
+        final ItemBuilder builder = new ItemBuilder(Material.PLAYER_HEAD);
 
         builder.durability(3)
                 .setSkullProperty(posInfo.getMarkedInfo() == FourInARow.Marked.WHITE ? "ewogICJ0aW1lc3RhbXAiIDogMTYwMjYxOTc3MTM1NCwKICAicHJvZmlsZUlkIiA6ICJkNjBmMzQ3MzZhMTI0N2EyOWI4MmNjNzE1YjAwNDhkYiIsCiAgInByb2ZpbGVOYW1lIiA6ICJCSl9EYW5pZWwiLAogICJzaWduYXR1cmVSZXF1aXJlZCIgOiB0cnVlLAogICJ0ZXh0dXJlcyIgOiB7CiAgICAiU0tJTiIgOiB7CiAgICAgICJ1cmwiIDogImh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvOWFiNjE2OTZjOTZiM2U3ODczMDk1OTc5MTkyNDYzNWQxMTM4ODM0YTJmMDFiNWQzMzNkNTNhY2JmYzUxYWExMSIKICAgIH0KICB9Cn0" :

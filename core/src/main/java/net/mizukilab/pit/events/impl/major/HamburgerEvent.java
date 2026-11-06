@@ -91,7 +91,7 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
         this.pizzaDataMap = new HashMap<>();
         this.villagerDataMap = new HashMap<>();
         this.spawnedLocations = new ArrayList<>();
-        this.pizza = new ItemBuilder(Material.SKELETON_SKULL_ITEM)
+        this.pizza = new ItemBuilder(Material.PLAYER_HEAD)
                 .durability(3)
                 .internalName("ham")
                 .removeOnJoin(true)

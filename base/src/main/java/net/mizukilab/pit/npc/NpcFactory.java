@@ -9,7 +9,7 @@ import net.jitse.npclib.api.NPC;
 import net.jitse.npclib.api.events.NPCInteractEvent;
 import net.jitse.npclib.api.state.NPCAnimation;
 import net.jitse.npclib.api.state.NPCSlot;
-import net.jitse.npclib.nms.v1_8_R3.NPC_v1_8_R3;
+import net.jitse.npclib.internal.NPC_Entity;
 import net.mizukilab.pit.npc.runnable.NpcRunnable;
 import net.mizukilab.pit.parm.AutoRegister;
 import org.bukkit.Bukkit;
@@ -33,7 +33,7 @@ public class NpcFactory implements Listener {
     private final List<AbstractPitNPC> pitNpc = new ArrayList<>();
     public boolean hasNPC(Entity e) {
         for (AbstractPitNPC abstractPitNPC : pitNpc) {
-            NPC_v1_8_R3 npc = (NPC_v1_8_R3) abstractPitNPC.getNpc();
+            NPC_Entity npc = (NPC_Entity) abstractPitNPC.getNpc();
             if (npc.getEntityId() ==e.getEntityId()) {
                 return true;
             }
@@ -44,7 +44,7 @@ public class NpcFactory implements Listener {
     public void reload(){
         pitNpc.forEach(i -> {
             initNpc(i.getNpc(),i);
-            ((NPC_v1_8_R3)i.getNpc()).createPackets();
+            ((NPC_Entity)i.getNpc()).createPackets();
         });
         Bukkit.getOnlinePlayers().forEach(this::show);
     }

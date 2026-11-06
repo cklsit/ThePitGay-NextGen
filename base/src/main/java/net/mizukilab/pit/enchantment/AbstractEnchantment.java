@@ -4,7 +4,6 @@ import cn.charlotte.pit.ThePit;
 import cn.charlotte.pit.data.PlayerProfile;
 import it.unimi.dsi.fastutil.objects.Object2BooleanOpenHashMap;
 import lombok.Getter;
-import net.minecraft.server.v1_8_R3.*;
 import net.mizukilab.pit.enchantment.param.item.ArmorOnly;
 import net.mizukilab.pit.enchantment.param.item.BowOnly;
 import net.mizukilab.pit.enchantment.param.item.RodOnly;
@@ -68,14 +67,13 @@ public abstract class AbstractEnchantment {
     }
 
     public boolean canApply(ItemStack item) {
-        net.minecraft.server.v1_8_R3.ItemStack nmsItem = PublicUtil.toNMStackQuick(item);
-        if (nmsItem.getItem() instanceof ItemSword) {
+        if (cn.charlotte.pit.compat.item.ItemTypes.isSword(item)) {
             return this.getClass().isAnnotationPresent(WeaponOnly.class);
         }
-        if (nmsItem.getItem() instanceof ItemBow) {
+        if (cn.charlotte.pit.compat.item.ItemTypes.isBow(item)) {
             return this.getClass().isAnnotationPresent(BowOnly.class);
         }
-        if (nmsItem.getItem() instanceof ItemArmor) {
+        if (cn.charlotte.pit.compat.item.ItemTypes.isArmor(item)) {
             return this.getClass().isAnnotationPresent(ArmorOnly.class);
         }
         if (nmsItem.getItem() instanceof ItemFishingRod) {

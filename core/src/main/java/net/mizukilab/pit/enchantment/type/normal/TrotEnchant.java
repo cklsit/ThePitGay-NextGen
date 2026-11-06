@@ -2,7 +2,6 @@ package net.mizukilab.pit.enchantment.type.normal;
 
 import cn.charlotte.pit.data.PlayerProfile;
 import lombok.SneakyThrows;
-import net.minecraft.server.v1_8_R3.PacketPlayInFlying;
 import net.mizukilab.pit.enchantment.AbstractEnchantment;
 import net.mizukilab.pit.enchantment.param.item.ArmorOnly;
 import net.mizukilab.pit.enchantment.rarity.EnchantmentRarity;
@@ -62,7 +61,7 @@ public class TrotEnchant extends AbstractEnchantment implements MovementHandler 
     }
 
     @Override
-    public void handleUpdateLocation(Player player, Location location, Location location1, PacketPlayInFlying packetPlayInFlying) {
+    public void handleUpdateLocation(Player player, Location location, Location location1, Object packetPlayInFlying) {
         IMythicItem leggings = (IMythicItem) PlayerProfile.getPlayerProfileByUuid(player.getUniqueId()).leggings;
         float walkSpeed = player.getWalkSpeed();
         boolean b = PlayerUtil.shouldIgnoreEnchant(player);
@@ -96,7 +95,7 @@ public class TrotEnchant extends AbstractEnchantment implements MovementHandler 
     }
 
     @Override
-    public void handleUpdateRotation(Player player, Location location, Location location1, PacketPlayInFlying packetPlayInFlying) {
+    public void handleUpdateRotation(Player player, Location location, Location location1, Object packetPlayInFlying) {
 
     }
 }

@@ -271,7 +271,7 @@ public class AnimationRunnable extends BukkitRunnable {
         int[] rgb = ParticleUtil.getColorFromMythicColor(color.getInternalName());
 
         ParticleUtil.createSpiralParticles(player, center, rgb[0], rgb[1], rgb[2]);
-        player.playSound(player.getLocation(), Sound.BLOCK_FIRE_AMBIENTWORK_TWINKLE, 1.0F, 1.5F);
+        player.playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_TWINKLE, 1.0F, 1.5F);
     }
 
 
@@ -279,8 +279,8 @@ public class AnimationRunnable extends BukkitRunnable {
         Location center = player.getLocation().add(0, 1, 0);
         int[] rgb = ParticleUtil.getColorFromMythicColor(color.getInternalName());
         ParticleUtil.createFinalBurstParticles(player, center, rgb[0], rgb[1], rgb[2]);
-        player.playSound(player.getLocation(), Sound.BLOCK_FIRE_AMBIENTWORK_LARGE_BLAST, 1.0F, 1.0F);
-        player.playSound(player.getLocation(), Sound.BLOCK_FIRE_AMBIENTWORK_TWINKLE, 1.0F, 1.5F);
+        player.playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_LARGE_BLAST, 1.0F, 1.0F);
+        player.playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_TWINKLE, 1.0F, 1.5F);
     }
 
 

@@ -436,7 +436,7 @@ public class PlayerListener implements Listener {
         if (item == null || item.getType() == Material.AIR) {
             return;
         }
-        if (player.getGameMode() != GameMode.CREATIVE && item.getType() == Material.SKELETON_SKULL_ITEM && item.getDurability() == 3 && (e.getAction() == Action.RIGHT_CLICK_AIR || e.getAction() == Action.RIGHT_CLICK_BLOCK) && "golden_head".equals(ItemUtil.getInternalName(item))) {
+        if (player.getGameMode() != GameMode.CREATIVE && item.getType() == Material.PLAYER_HEAD && item.getDurability() == 3 && (e.getAction() == Action.RIGHT_CLICK_AIR || e.getAction() == Action.RIGHT_CLICK_BLOCK) && "golden_head".equals(ItemUtil.getInternalName(item))) {
             e.setCancelled(true);
             if (System.currentTimeMillis() - goldenAppleCooldown.getOrDefault(player.getUniqueId(), 0L) <= 1000L) {
                 e.setUseItemInHand(Event.Result.DENY);

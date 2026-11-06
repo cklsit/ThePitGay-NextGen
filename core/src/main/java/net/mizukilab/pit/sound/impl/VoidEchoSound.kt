@@ -27,7 +27,7 @@ object VoidEchoSound : AbstractPitSound() {
             9 -> player.playSound(player.location, Sound.BLOCK_PORTAL_AMBIENT, 0.9f, 0.4f)
             12 -> {
                 player.playSound(player.location, Sound.ENTITY_ENDERMAN_TELEPORT, 0.8f, 0.8f)
-                player.playSound(player.location, Sound.BLOCK_PORTAL_AMBIENT_TRIGGER, 0.3f, 1.5f)
+                player.playSound(player.location, Sound.BLOCK_PORTAL_TRIGGER, 0.3f, 1.5f)
             }
             15 -> player.playSound(player.location, Sound.BLOCK_PORTAL_AMBIENT, 0.6f, 0.6f)
             18 -> player.playSound(player.location, Sound.BLOCK_PORTAL_AMBIENT, 0.4f, 0.8f)

@@ -7,7 +7,6 @@ import cn.charlotte.pit.data.sub.PlayerInv;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
-import net.minecraft.server.v1_8_R3.NBTTagCompound;
 import net.mizukilab.pit.medal.impl.challenge.FirstTradeMedal;
 import net.mizukilab.pit.util.PublicUtil;
 import net.mizukilab.pit.util.chat.CC;
@@ -159,14 +158,7 @@ public class TradeManager {
         if (bItems.size() > 0) {
             for (ItemStack item : bItems) {
                 String message = "&a&l+ &7" + item.getAmount() + "x &f" + (item.getItemMeta() != null && item.getItemMeta().getDisplayName() != null ? item.getItemMeta().getDisplayName() : item.getType().toString().toUpperCase());
-                net.minecraft.server.v1_8_R3.ItemStack nms = PublicUtil.toNMStackQuick(item);
-                NBTTagCompound tag = new NBTTagCompound();
-                nms.save(tag);
-                BaseComponent[] hoverEventComponents = new BaseComponent[]{
-                        new TextComponent(tag.toString())
-                };
-                playerA.spigot().sendMessage(new ChatComponentBuilder(CC.translate(message))
-                        .setCurrentHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, hoverEventComponents)).create());
+                sendItemHover(playerA, message, item);
             }
         }
         if (bCoins > 0) {
@@ -176,14 +168,7 @@ public class TradeManager {
         if (aItems.size() > 0) {
             for (ItemStack item : aItems) {
                 String message = "&c&l- &7" + item.getAmount() + "x &f" + (item.getItemMeta() != null && item.getItemMeta().getDisplayName() != null ? item.getItemMeta().getDisplayName() : item.getType().toString().toUpperCase());
-                net.minecraft.server.v1_8_R3.ItemStack nms = PublicUtil.toNMStackQuick(item);
-                NBTTagCompound tag = new NBTTagCompound();
-                nms.save(tag);
-                BaseComponent[] hoverEventComponents = new BaseComponent[]{
-                        new TextComponent(tag.toString())
-                };
-                playerA.spigot().sendMessage(new ChatComponentBuilder(CC.translate(message))
-                        .setCurrentHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, hoverEventComponents)).create());
+                sendItemHover(playerA, message, item);
             }
         }
         if (aCoins > 0) {

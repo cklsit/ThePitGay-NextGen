@@ -133,7 +133,7 @@ public class EmergencyColonyEnchant extends AbstractEnchantment implements ITick
                 p.damage(20, player);
                 p.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 3 * 20, 20));
                 p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 3 * 20, 20));
-                p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS_DIGGING, 3 * 20, 20));
+                p.addPotionEffect(new PotionEffect(PotionEffectType.MINING_FATIGUE, 3 * 20, 20));
                 p.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, 3 * 20, 20));
             }
         }

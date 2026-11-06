@@ -3,7 +3,6 @@ package cn.charlotte.pit.bot;
 import cn.charlotte.pit.ThePit;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
@@ -233,7 +232,7 @@ public final class BotManager {
         }
 
         @Override
-        public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        public boolean onCommand(CommandSender sender, org.bukkit.command.Command command, String label, String[] args) {
             if (!sender.hasPermission("thepit.bot")) {
                 sender.sendMessage("§c无权限。");
                 return true;
@@ -304,7 +303,7 @@ public final class BotManager {
         }
 
         @Override
-        public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        public List<String> onTabComplete(CommandSender sender, org.bukkit.command.Command command, String alias, String[] args) {
             if (args.length == 1) {
                 return filter(List.of("add", "remove", "skin"), args[0]);
             }
