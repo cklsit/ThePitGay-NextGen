@@ -280,6 +280,11 @@ public class PlayerListener implements Listener {
         // 退出时立刻落盘：否则重连会按「旧存档」覆盖，丢弃本次会话新获得的物品。
         try {
             PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(event.getPlayer().getUniqueId());
+            org.bukkit.inventory.ItemStack leggings = event.getPlayer().getInventory().getLeggings();
+            ThePit.getInstance().getLogger().info("[QuitDebug] 退出保存触发 玩家=" + event.getPlayer().getName()
+                    + " profile=" + (profile != null)
+                    + " loaded=" + (profile != null && profile.isLoaded())
+                    + " 护腿=" + (leggings == null ? "null" : leggings.getType().name()));
             if (profile != null && profile.isLoaded()) {
                 profile.save(event.getPlayer());
             }
