@@ -2,18 +2,20 @@ package cn.charlotte.pit.bot;
 
 import cn.charlotte.pit.ThePit;
 import cn.charlotte.pit.data.PlayerProfile;
+import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.events.PacketAdapter;
+import com.comphenix.protocol.events.PacketEvent;
+import com.comphenix.protocol.wrappers.WrappedEnumEntityUseAction;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Zombie;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
 
 import java.io.File;
 import java.io.IOException;
@@ -56,7 +58,7 @@ public final class BotManager {
         this.plugin = plugin;
         this.storageFile = new File(plugin.getDataFolder(), "bots.yml");
         load();
-        Bukkit.getPluginManager().registerEvents(new BotCombatListener(), plugin);
+        new BotCombatListener().start();
     }
 
     public Collection<PlayerBotRenderer> getBots() {
@@ -226,9 +228,9 @@ public final class BotManager {
         }
     }
 
-    public PlayerBotRenderer findBotByHitbox(Zombie zombie) {
+    public PlayerBotRenderer findBotByEntityId(int entityId) {
         for (PlayerBotRenderer bot : bots.values()) {
-            if (bot.getHitbox() == zombie) {
+            if (bot.getEntityId() == entityId) {
                 return bot;
             }
         }
@@ -238,33 +240,51 @@ public final class BotManager {
     /**
      * Bot 战斗监听：Bot 是给玩家刷金币/经验的沙袋。
      * <p>
-     * 命中不可见的命中框实体时按次结算奖励，并把血量回满（Bot 永不死亡）。
+     * Bot 是假玩家（无真实实体），攻击只能通过拦截 {@code USE_ENTITY} 包判定。
      */
-    private final class BotCombatListener implements Listener {
+    private final class BotCombatListener {
 
         private static final double COINS_PER_HIT = 2.0;
         private static final double XP_PER_HIT = 5.0;
 
-        @EventHandler
-        public void onHit(EntityDamageByEntityEvent event) {
-            if (!(event.getEntity() instanceof Zombie zombie) || !(event.getDamager() instanceof Player player)) {
-                return;
-            }
-            PlayerBotRenderer bot = findBotByHitbox(zombie);
+        public void start() {
+            ProtocolLibrary.getProtocolManager().addPacketListener(
+                    new PacketAdapter(plugin, PacketType.Play.Client.USE_ENTITY) {
+                        @Override
+                        public void onPacketReceiving(PacketEvent event) {
+                            if (event.getPacketType() != PacketType.Play.Client.USE_ENTITY) {
+                                return;
+                            }
+                            int entityId = event.getPacket().getIntegers().read(0);
+                            WrappedEnumEntityUseAction action = event.getPacket().getEnumEntityUseActions().read(0);
+                            if (action == null || !"ATTACK".equals(action.getAction().name())) {
+                                return;
+                            }
+                            handleAttack(event.getPlayer(), entityId);
+                        }
+                    });
+        }
+
+        private void handleAttack(Player player, int entityId) {
+            PlayerBotRenderer bot = findBotByEntityId(entityId);
             if (bot == null) {
                 return;
             }
-            // 吃掉伤害，Bot 作为沙袋不回血死亡
-            event.setCancelled(true);
-            zombie.setHealth(zombie.getMaxHealth());
-
             PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
-            if (profile == null) {
-                return;
+            if (profile != null) {
+                profile.setCoins(profile.getCoins() + COINS_PER_HIT);
+                profile.grindCoins(COINS_PER_HIT);
+                profile.setExperience(profile.getExperience() + XP_PER_HIT);
             }
-            profile.setCoins(profile.getCoins() + COINS_PER_HIT);
-            profile.grindCoins(COINS_PER_HIT);
-            profile.setExperience(profile.getExperience() + XP_PER_HIT);
+            double damage = 1.0;
+            if (player.getAttribute(Attribute.ATTACK_DAMAGE) != null) {
+                damage = player.getAttribute(Attribute.ATTACK_DAMAGE).getValue();
+            }
+            boolean dead = bot.damage(damage);
+            if (dead) {
+                // 死亡后 0.1 秒原地重生
+                Bukkit.getScheduler().runTaskLater(plugin, bot::respawn, 2L);
+            }
         }
     }
 

@@ -1,6 +1,8 @@
 package net.jitse.npclib.internal;
 
 import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
+import com.github.retrooper.packetevents.protocol.entity.data.EntityDataTypes;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
 import com.github.retrooper.packetevents.protocol.player.TextureProperty;
@@ -8,6 +10,7 @@ import com.github.retrooper.packetevents.protocol.player.UserProfile;
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDestroyEntities;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityHeadLook;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityMetadata;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfoRemove;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfoUpdate;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSpawnEntity;
@@ -171,9 +174,15 @@ public class NPC_Entity extends NPCBase {
 
         WrapperPlayServerEntityHeadLook head = new WrapperPlayServerEntityHeadLook(entityId, location.getYaw());
 
+        // 皮肤各层（头发/外套/袖/裤）需通过元数据显式开启，否则客户端只渲染基础层导致"没头发"
+        WrapperPlayServerEntityMetadata metadata = new WrapperPlayServerEntityMetadata(
+                entityId,
+                List.of(new EntityData(17, EntityDataTypes.BYTE, (byte) 0x7F)));
+
         PacketEvents.getAPI().getPlayerManager().sendPacket(player, info);
         PacketEvents.getAPI().getPlayerManager().sendPacket(player, spawn);
         PacketEvents.getAPI().getPlayerManager().sendPacket(player, head);
+        PacketEvents.getAPI().getPlayerManager().sendPacket(player, metadata);
     }
 
     private void sendRemove(Player player) {

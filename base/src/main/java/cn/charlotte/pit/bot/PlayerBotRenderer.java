@@ -1,6 +1,8 @@
 package cn.charlotte.pit.bot;
 
 import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
+import com.github.retrooper.packetevents.protocol.entity.data.EntityDataTypes;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
 import com.github.retrooper.packetevents.protocol.player.TextureProperty;
@@ -8,6 +10,7 @@ import com.github.retrooper.packetevents.protocol.player.UserProfile;
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDestroyEntities;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityHeadLook;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityMetadata;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfoRemove;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfoUpdate;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSpawnEntity;
@@ -15,7 +18,6 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Zombie;
 
 import java.util.EnumSet;
 import java.util.List;
@@ -26,23 +28,25 @@ import java.util.UUID;
  * 玩家模型的 Bot 渲染器（发包实现）。
  * <p>
  * Bukkit/Paper 没有提供生成玩家实体的 API，客户端只认玩家信息包 + 实体生成包，
- * 因此这里用 PacketEvents（随插件 shade 内置，无需服务端额外安装插件）完成：
+ * 因此这里用 PacketEvents（随插件 shade 内置）完成：
  * <ol>
- *   <li>{@code PLAYER_INFO_UPDATE(ADD_PLAYER)} —— 写入名字与皮肤纹理，同时进入 Tab 列表</li>
- *   <li>{@code SPAWN_ENTITY(type=PLAYER)} —— 生成实体，客户端按玩家模型渲染</li>
+ *   <li>{@code PLAYER_INFO_UPDATE(ADD_PLAYER)} —— 写入名字与皮肤纹理</li>
+ *   <li>{@code SPAWN_ENTITY(type=PLAYER)} —— 客户端按玩家模型渲染</li>
  *   <li>{@code ENTITY_HEAD_ROTATION} —— 头部朝向</li>
  * </ol>
- * 移除时按相反顺序发送 {@code PLAYER_INFO_REMOVE} 与 {@code DESTROY_ENTITIES}。
+ * Bot 的血量在内存中维护（默认 20），攻击由 {@link BotManager} 拦截
+ * {@code USE_ENTITY} 包判定并结算。
  */
 public final class PlayerBotRenderer {
+
+    public static final double DEFAULT_HEALTH = 20.0;
 
     private final int entityId;
     private final UUID uuid;
     private final String name;
     private volatile BotSkin skin;
     private volatile Location location;
-    // 真实（不可见）实体，作为可被攻击的命中框；客户端看到的玩家模型由发包渲染
-    private Zombie hitbox;
+    private volatile double health = DEFAULT_HEALTH;
 
     public PlayerBotRenderer(String name, BotSkin skin, Location location) {
         this.name = name;
@@ -61,8 +65,16 @@ public final class PlayerBotRenderer {
         return uuid;
     }
 
+    public int getEntityId() {
+        return entityId;
+    }
+
     public Location getLocation() {
         return location.clone();
+    }
+
+    public double getHealth() {
+        return health;
     }
 
     public BotSkin getSkin() {
@@ -85,8 +97,26 @@ public final class PlayerBotRenderer {
         }
     }
 
+    /**
+     * 结算一次攻击造成的伤害，血量归零返回 true。
+     */
+    public boolean damage(double amount) {
+        this.health = Math.max(0.0, this.health - amount);
+        return this.health <= 0.0;
+    }
+
+    /**
+     * 原地重生：血量回满并重发包。
+     */
+    public void respawn() {
+        this.health = DEFAULT_HEALTH;
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            sendRemove(player);
+            sendSpawn(player);
+        }
+    }
+
     public void spawnFor(Player player) {
-        ensureHitbox();
         sendSpawn(player);
     }
 
@@ -95,7 +125,6 @@ public final class PlayerBotRenderer {
     }
 
     public void spawnAll() {
-        ensureHitbox();
         for (Player player : Bukkit.getOnlinePlayers()) {
             sendSpawn(player);
         }
@@ -104,46 +133,6 @@ public final class PlayerBotRenderer {
     public void despawnAll() {
         for (Player player : Bukkit.getOnlinePlayers()) {
             sendRemove(player);
-        }
-        removeHitbox();
-    }
-
-    public Zombie getHitbox() {
-        return hitbox;
-    }
-
-    /**
-     * 生成真实实体命中框：不可见、无 AI、可被攻击、不自然消亡。
-     * 客户端看到的玩家模型由 {@link #sendSpawn} 发包渲染，两者位置一致。
-     */
-    public void ensureHitbox() {
-        if (hitbox != null && hitbox.isValid()) {
-            return;
-        }
-        if (location.getWorld() == null) {
-            return;
-        }
-        hitbox = location.getWorld().spawn(location, Zombie.class, zombie -> {
-            zombie.setPersistent(false);
-            zombie.setSilent(true);
-            zombie.setInvisible(true);
-            zombie.setAI(false);
-            zombie.setInvulnerable(false);
-            zombie.setAdult();
-            zombie.setCollidable(false);
-            zombie.setRemoveWhenFarAway(false);
-            zombie.setShouldBurnInDay(false);
-            zombie.setCustomNameVisible(false);
-            // Paper 1.21 上限为 2048，不能设 10000
-            zombie.setMaxHealth(2048.0);
-            zombie.setHealth(2048.0);
-        });
-    }
-
-    public void removeHitbox() {
-        if (hitbox != null) {
-            hitbox.remove();
-            hitbox = null;
         }
     }
 
@@ -190,9 +179,15 @@ public final class PlayerBotRenderer {
         WrapperPlayServerEntityHeadLook head = new WrapperPlayServerEntityHeadLook(
                 entityId, location.getYaw());
 
+        // 皮肤各层（头发等）显式开启
+        WrapperPlayServerEntityMetadata metadata = new WrapperPlayServerEntityMetadata(
+                entityId,
+                List.of(new EntityData(17, EntityDataTypes.BYTE, (byte) 0x7F)));
+
         PacketEvents.getAPI().getPlayerManager().sendPacket(player, info);
         PacketEvents.getAPI().getPlayerManager().sendPacket(player, spawn);
         PacketEvents.getAPI().getPlayerManager().sendPacket(player, head);
+        PacketEvents.getAPI().getPlayerManager().sendPacket(player, metadata);
     }
 
     private void sendRemove(Player player) {
