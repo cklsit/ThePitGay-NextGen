@@ -91,15 +91,11 @@ public class RankUtil {
 
     public static String getPlayerRealColoredName(String name) {
 
-        try {
-            UUID uuid = LuckPermsUtil.userManager.lookupUniqueId(name).get();
-            if (uuid == null) {
-                return name;
-            }
-            return getNameFormat(uuid);
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
+        UUID uuid = LuckPermsUtil.lookupUniqueId(name);
+        if (uuid == null) {
+            return name;
         }
+        return getNameFormat(uuid);
 
     }
 

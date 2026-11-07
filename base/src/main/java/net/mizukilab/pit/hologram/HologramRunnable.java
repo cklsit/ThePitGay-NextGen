@@ -22,7 +22,8 @@ public class HologramRunnable extends BukkitRunnable {
 
     private long tick = 0;
     public HologramRunnable() {
-        Bukkit.getScheduler().runTaskTimerAsynchronously(ThePit.getInstance(), this, 0, 2L);
+        // Paper 要求 BukkitRunnable 走自身方法，否则抛 UnsupportedOperationException
+        this.runTaskTimerAsynchronously(ThePit.getInstance(), 0L, 2L);
     }
 
     @Override

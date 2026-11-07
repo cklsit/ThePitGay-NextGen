@@ -45,6 +45,10 @@ class TabHandle {
     }
 
     private fun updatePlayerTabList(player: Player) {
+        // ProtocolLib 未安装时无法下发 header/footer，直接跳过
+        if (!Bukkit.getPluginManager().isPluginEnabled("ProtocolLib")) {
+            return
+        }
         val currentValues = mutableMapOf<String, String>()
 
         for ((key, values) in animation) {
@@ -62,19 +66,27 @@ class TabHandle {
             packet.chatComponents.write(
                 0,
                 WrappedChatComponent.fromText(
-                    PlaceholderAPI.setPlaceholders(player, headerText.replace("&", "§").replace("/s", "§r"))
+                    applyPlaceholders(player, headerText.replace("&", "§").replace("/s", "§r"))
                 )
             )
             packet.chatComponents.write(
                 1,
                 WrappedChatComponent.fromText(
-                    PlaceholderAPI.setPlaceholders(player, footerText.replace("&", "§").replace("/s", "§r"))
+                    applyPlaceholders(player, footerText.replace("&", "§").replace("/s", "§r"))
                 )
             )
             ProtocolLibrary.getProtocolManager().sendServerPacket(player, packet)
         } catch (e: Exception) {
             player.sendMessage("Error: §${e.message}")
             e.printStackTrace()
+        }
+    }
+
+    private fun applyPlaceholders(player: Player, text: String): String {
+        return if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+            PlaceholderAPI.setPlaceholders(player, text)
+        } else {
+            text
         }
     }
 

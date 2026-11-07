@@ -555,11 +555,20 @@ public class ThePit extends JavaPlugin implements PluginMessageListener {
     }
 
     private boolean hookLuckPerms() {
-        RegisteredServiceProvider<LuckPerms> provider = Bukkit.getServicesManager().getRegistration(LuckPerms.class);
-        if (provider != null) {
-            luckPerms = provider.getProvider();
-        } else {
-            luckPerms = LuckPermsProvider.get();
+        // LuckPerms 是可选依赖，先做字符串层面的存在性检查，
+        // 避免 LuckPerms 缺失时直接引用 LuckPerms.class 触发 NoClassDefFoundError。
+        if (!Bukkit.getPluginManager().isPluginEnabled("LuckPerms")) {
+            return false;
+        }
+        try {
+            RegisteredServiceProvider<LuckPerms> provider = Bukkit.getServicesManager().getRegistration(LuckPerms.class);
+            if (provider != null) {
+                luckPerms = provider.getProvider();
+            } else {
+                luckPerms = LuckPermsProvider.get();
+            }
+        } catch (Throwable throwable) {
+            return false;
         }
         return luckPerms != null;
     }

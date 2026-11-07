@@ -16,7 +16,7 @@ public class NametagThread extends BukkitRunnable {
      */
     public NametagThread(NametagHandler handler) {
         this.handler = handler;
-        Bukkit.getScheduler().runTaskTimerAsynchronously(ThePit.getInstance(), this, 0, 20);
+        this.runTaskTimerAsynchronously(ThePit.getInstance(), 0L, 20L);
     }
 
     @Override

@@ -25,8 +25,6 @@ public final class NPCLib {
         this.plugin = plugin;
         this.logger = new Logger("NPCLib");
 
-        String versionName = plugin.getServer().getClass().getPackage().getName().split("\\.")[3];
-
         Class<?> npcClass = net.jitse.npclib.internal.NPC_Entity.class;
 
         this.npcClass = npcClass;

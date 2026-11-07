@@ -816,8 +816,11 @@ private fun registerListeners() {
         }
     }
 
-    ProtocolLibrary.getProtocolManager().asynchronousManager
-        .registerAsyncHandler(PacketListener()).start()
+    // ProtocolLib 是可选依赖：未安装时跳过其异步监听注册
+    if (Bukkit.getPluginManager().isPluginEnabled("ProtocolLib")) {
+        ProtocolLibrary.getProtocolManager().asynchronousManager
+            .registerAsyncHandler(PacketListener()).start()
+    }
 
     if (Bukkit.getPluginManager().getPlugin("MythicMobs") != null) {
         Bukkit.getPluginManager().registerEvents(MythicMobListener, ThePit.getInstance());
