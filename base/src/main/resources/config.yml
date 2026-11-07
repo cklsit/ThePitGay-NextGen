@@ -10,6 +10,9 @@
 #
 #没有非必要的定制功能 不需要填!
 eigenToken: ""
+#存储方式: sqlite(默认, 单 jar 免部署) / mongodb
+storage:
+  type: sqlite
 service:
   mongodb:
     ip: 127.0.0.1

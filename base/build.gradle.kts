@@ -77,6 +77,8 @@ dependencies {
     compileOnly(libs.paper.api)
     // 发包层：PacketEvents 支持被插件 shade，用于玩家模型 Bot 与 NPC
     implementation(libs.packetevents)
+    // 默认存储：SQLite（单 jar 免外部依赖）
+    implementation(libs.sqlite.jdbc)
     compileOnly(libs.luckperms)
     compileOnly(libs.playerpoints)
     compileOnly(libs.decentholograms)
