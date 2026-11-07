@@ -4,16 +4,17 @@
 
 package net.jitse.npclib.listeners;
 
+import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.events.PacketAdapter;
+import com.comphenix.protocol.events.PacketEvent;
+import com.comphenix.protocol.wrappers.WrappedEnumEntityUseAction;
 import net.jitse.npclib.NPCLib;
 import net.jitse.npclib.api.events.NPCInteractEvent;
 import net.jitse.npclib.internal.NPCBase;
 import net.jitse.npclib.internal.NPCManager;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.plugin.Plugin;
 
 import java.util.HashSet;
@@ -23,12 +24,12 @@ import java.util.UUID;
 /**
  * NPC 交互监听。
  * <p>
- * 1.21 适配：NPC 已改为真实实体，这里用 Bukkit 的实体交互/攻击事件替代
- * ProtocolLib 的 {@code USE_ENTITY} 包拦截，彻底去掉对 ProtocolLib 的依赖。
+ * NPC 是假玩家（客户端实体，无真实服务端实体），点击只能通过拦截
+ * {@code USE_ENTITY} 包捕获。这里用 ProtocolLib 拦截并匹配假玩家实体 id。
  *
  * @author Jitse Boonstra
  */
-public class PacketListener implements Listener {
+public class PacketListener {
 
     // Prevent players from clicking at very high speeds.
     private final Set<UUID> delay = new HashSet<>();
@@ -37,25 +38,23 @@ public class PacketListener implements Listener {
 
     public void start(NPCLib instance) {
         this.plugin = instance.getPlugin();
-        Bukkit.getPluginManager().registerEvents(this, plugin);
+        ProtocolLibrary.getProtocolManager().addPacketListener(
+                new PacketAdapter(instance.getPlugin(), PacketType.Play.Client.USE_ENTITY) {
+                    @Override
+                    public void onPacketReceiving(PacketEvent event) {
+                        if (event.getPacketType() != PacketType.Play.Client.USE_ENTITY) {
+                            return;
+                        }
+                        int entityId = event.getPacket().getIntegers().read(0);
+                        WrappedEnumEntityUseAction action = event.getPacket().getEnumEntityUseActions().read(0);
+                        handleInteractPacket(event.getPlayer(), entityId, action);
+                    }
+                });
     }
 
-    @EventHandler
-    public void onInteractEntity(PlayerInteractEntityEvent event) {
-        handleInteract(event.getPlayer(), event.getRightClicked().getEntityId(), NPCInteractEvent.ClickType.RIGHT_CLICK);
-    }
-
-    @EventHandler
-    public void onDamageEntity(EntityDamageByEntityEvent event) {
-        if (event.getDamager() instanceof Player player) {
-            handleInteract(player, event.getEntity().getEntityId(), NPCInteractEvent.ClickType.LEFT_CLICK);
-        }
-    }
-
-    private void handleInteract(Player player, int packetEntityId, NPCInteractEvent.ClickType clickType) {
+    private void handleInteractPacket(Player player, int packetEntityId, WrappedEnumEntityUseAction action) {
         NPCBase npc = null;
 
-        // Not using streams here is an intentional choice.
         for (NPCBase testNPC : NPCManager.getAllNPCs()) {
             if (testNPC.isCreated() && testNPC.isShown(player) && testNPC.getEntityId() == packetEntityId) {
                 npc = testNPC;
@@ -64,13 +63,15 @@ public class PacketListener implements Listener {
         }
 
         if (npc == null) {
-            // Default entity, not doing magic.
             return;
         }
 
         if (delay.contains(player.getUniqueId())) {
             return;
         }
+
+        NPCInteractEvent.ClickType clickType = "ATTACK".equals(action.getAction().name())
+                ? NPCInteractEvent.ClickType.LEFT_CLICK : NPCInteractEvent.ClickType.RIGHT_CLICK;
 
         delay.add(player.getUniqueId());
         Bukkit.getScheduler().runTask(plugin, new TaskCallNpcInteractEvent(new NPCInteractEvent(player, clickType, npc), this));

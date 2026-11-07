@@ -1,36 +1,42 @@
 package net.jitse.npclib.internal;
 
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
+import com.github.retrooper.packetevents.protocol.player.GameMode;
+import com.github.retrooper.packetevents.protocol.player.TextureProperty;
+import com.github.retrooper.packetevents.protocol.player.UserProfile;
+import com.github.retrooper.packetevents.util.Vector3d;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDestroyEntities;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityHeadLook;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfoRemove;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfoUpdate;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSpawnEntity;
 import net.jitse.npclib.NPCLib;
 import net.jitse.npclib.api.skin.Skin;
 import net.jitse.npclib.api.state.NPCAnimation;
 import net.jitse.npclib.api.state.NPCSlot;
 import net.jitse.npclib.hologram.Hologram;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Zombie;
-import org.bukkit.inventory.EntityEquipment;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.SkullMeta;
-import org.bukkit.profile.PlayerProfile;
 
-import java.net.URL;
+import java.util.EnumSet;
 import java.util.List;
-import java.util.UUID;
+import java.util.Optional;
 
 /**
- * 1.21 的 NPC 实现。
+ * 1.21 的 NPC 实现：以「假玩家」呈现。
  * <p>
- * 原 {@code nms/v1_8_R3} 版本依赖 1.8 的幽灵实体与手写生成/元数据包；这里改为真实实体：
- * 僵尸作为人形主体（无 AI、无敌、静音、不持久化），玩家头颅承载皮肤，头顶文本用 {@link Hologram}（TextDisplay）。
- * 可见性通过 {@link Player#showEntity}/{@link Player#hideEntity} 按玩家控制。
+ * 客户端只认玩家信息包 + 玩家实体生成包，因此这里用 PacketEvents（随插件 shade 内置）发包：
+ * <ol>
+ *   <li>{@code PLAYER_INFO_UPDATE(ADD_PLAYER)} —— 写入名字与皮肤纹理</li>
+ *   <li>{@code SPAWN_ENTITY(type=PLAYER)} —— 客户端按玩家模型渲染（不再是僵尸）</li>
+ *   <li>{@code ENTITY_HEAD_ROTATION} —— 头部朝向</li>
+ * </ol>
+ * 点击交互由 {@link net.jitse.npclib.listeners.PacketListener}（ProtocolLib）拦截 {@code USE_ENTITY} 处理。
  */
 public class NPC_Entity extends NPCBase {
-
-    private static final String NPC_TAG = "pit_npc";
-
-    private Zombie body;
 
     public NPC_Entity(NPCLib instance, List<String> lines) {
         super(instance, lines);
@@ -38,41 +44,17 @@ public class NPC_Entity extends NPCBase {
 
     @Override
     public void createPackets() {
-        if (!Bukkit.isPrimaryThread()) {
-            Bukkit.getScheduler().runTask(getPlugin(), (Runnable) this::createPackets);
-            return;
-        }
-        Location spawn = getLocation();
-        if (spawn == null || spawn.getWorld() == null) {
-            return;
-        }
-        if (body == null || !body.isValid()) {
-            body = spawn.getWorld().spawn(spawn, Zombie.class, entity -> {
-                entity.setPersistent(false);
-                entity.setSilent(true);
-                entity.setInvulnerable(true);
-                entity.setAI(false);
-                entity.setAdult();
-                entity.setCollidable(false);
-                entity.setRemoveWhenFarAway(false);
-                entity.setShouldBurnInDay(false);
-                entity.setCustomNameVisible(false);
-                entity.addScoreboardTag(NPC_TAG);
-            });
-            applyEquipment();
-        }
+        // 无真实实体：假玩家完全由发包呈现，无需在服务端生成实体
     }
 
     @Override
     public void createPackets(Player player) {
-        createPackets();
+        // 无真实实体
     }
 
     @Override
     public void sendShowPackets(Player player) {
-        if (body != null && body.isValid()) {
-            player.showEntity(getPlugin(), body);
-        }
+        sendSpawn(player);
         Hologram hologram = getHologram(player);
         if (hologram != null) {
             hologram.show(player);
@@ -81,9 +63,7 @@ public class NPC_Entity extends NPCBase {
 
     @Override
     public void sendHidePackets(Player player) {
-        if (body != null && body.isValid()) {
-            player.hideEntity(getPlugin(), body);
-        }
+        sendRemove(player);
         Hologram hologram = getHologram(player);
         if (hologram != null) {
             hologram.hide(player);
@@ -92,113 +72,114 @@ public class NPC_Entity extends NPCBase {
 
     @Override
     public void sendMetadataPacket(Player player) {
-        if (body != null) {
-            body.setCustomNameVisible(true);
-        }
+        // 玩家模型无需额外元数据
     }
 
     @Override
     public void sendEquipmentPacket(Player player, NPCSlot slot, boolean auto) {
-        applyEquipment();
+        // 手持物/装备暂不通过实体发包
     }
 
     @Override
     public void sendAnimationPacket(Player player, NPCAnimation animation) {
-        if (body == null) {
-            return;
-        }
-        switch (animation) {
-            case SWING_MAINHAND -> body.swingMainHand();
-            case SWING_OFFHAND -> body.swingOffHand();
-            case TAKE_DAMAGE -> body.playHurtAnimation(0);
-            default -> {
-            }
-        }
+        // 动画暂不处理
     }
 
     @Override
     public void updateSkin(Skin skin) {
         this.skin = skin;
-        applyEquipment();
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (isShown(player)) {
+                sendRemove(player);
+                sendSpawn(player);
+            }
+        }
     }
 
     @Override
     public void sendHeadRotationPackets(Location location) {
-        if (body == null || location == null) {
+        if (location == null) {
             return;
         }
-        Location current = body.getLocation();
-        current.setDirection(location.toVector().subtract(current.toVector()));
-        body.teleport(current);
+        WrapperPlayServerEntityHeadLook head = new WrapperPlayServerEntityHeadLook(entityId, location.getYaw());
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (isShown(player)) {
+                PacketEvents.getAPI().getPlayerManager().sendPacket(player, head);
+            }
+        }
     }
 
     @Override
     public net.jitse.npclib.api.NPC setLocation(Location location) {
         super.setLocation(location);
-        if (body != null && body.isValid() && location != null) {
-            body.teleport(location);
-        }
         return this;
     }
 
     @Override
     public void destroy() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (isShown(player)) {
+                sendRemove(player);
+            }
+        }
         super.destroy();
-        if (body != null) {
-            body.remove();
-            body = null;
-        }
     }
 
-    private void applyEquipment() {
-        if (body == null || !body.isValid()) {
-            return;
+    private UserProfile profile() {
+        UserProfile profile = new UserProfile(uuid, name);
+        if (skin != null && skin.getValue() != null && !skin.getValue().isEmpty()) {
+            profile.setTextureProperties(List.of(
+                    new TextureProperty("textures", skin.getValue(), skin.getSignature())));
         }
-        EntityEquipment equipment = body.getEquipment();
-        if (equipment == null) {
-            return;
-        }
-        for (NPCSlot slot : NPCSlot.values()) {
-            ItemStack item = getItem(slot);
-            if (item == null) {
-                continue;
-            }
-            switch (slot) {
-                case HELMET -> equipment.setHelmet(withSkin(item));
-                case CHESTPLATE -> equipment.setChestplate(item);
-                case LEGGINGS -> equipment.setLeggings(item);
-                case BOOTS -> equipment.setBoots(item);
-                case MAINHAND -> equipment.setItemInMainHand(item);
-                case OFFHAND -> equipment.setItemInOffHand(item);
-                default -> {
-                }
-            }
-        }
-        if (getItem(NPCSlot.HELMET) == null) {
-            equipment.setHelmet(withSkin(new ItemStack(Material.PLAYER_HEAD)));
-        }
+        return profile;
     }
 
-    private ItemStack withSkin(ItemStack base) {
-        Skin current = this.skin;
-        if (current == null || current.getValue() == null || current.getValue().isEmpty()) {
-            return base;
+    private void sendSpawn(Player player) {
+        Location location = getLocation();
+        if (location == null) {
+            return;
         }
-        ItemStack stack = base.clone();
-        if (!(stack.getItemMeta() instanceof SkullMeta meta)) {
-            return base;
-        }
-        String url = cn.charlotte.pit.bot.BotSkin.extractUrl(current.getValue());
-        if (url == null) {
-            return base;
-        }
-        try {
-            PlayerProfile profile = Bukkit.createPlayerProfile(UUID.randomUUID(), "PitNpc");
-            profile.getTextures().setSkin(new URL(url));
-            meta.setOwnerProfile(profile);
-            stack.setItemMeta(meta);
-        } catch (Exception ignored) {
-        }
-        return stack;
+        UserProfile profile = profile();
+        WrapperPlayServerPlayerInfoUpdate.PlayerInfo data =
+                new WrapperPlayServerPlayerInfoUpdate.PlayerInfo(
+                        profile,
+                        true,
+                        0,
+                        GameMode.SURVIVAL,
+                        Component.text(name),
+                        null);
+
+        WrapperPlayServerPlayerInfoUpdate info = new WrapperPlayServerPlayerInfoUpdate(
+                EnumSet.of(
+                        WrapperPlayServerPlayerInfoUpdate.Action.ADD_PLAYER,
+                        WrapperPlayServerPlayerInfoUpdate.Action.UPDATE_LISTED,
+                        WrapperPlayServerPlayerInfoUpdate.Action.UPDATE_GAME_MODE,
+                        WrapperPlayServerPlayerInfoUpdate.Action.UPDATE_LATENCY,
+                        WrapperPlayServerPlayerInfoUpdate.Action.UPDATE_DISPLAY_NAME),
+                List.of(data));
+
+        WrapperPlayServerSpawnEntity spawn = new WrapperPlayServerSpawnEntity(
+                entityId,
+                Optional.of(uuid),
+                EntityTypes.PLAYER,
+                new Vector3d(location.getX(), location.getY(), location.getZ()),
+                location.getPitch(),
+                location.getYaw(),
+                location.getYaw(),
+                0,
+                Optional.empty());
+
+        WrapperPlayServerEntityHeadLook head = new WrapperPlayServerEntityHeadLook(entityId, location.getYaw());
+
+        PacketEvents.getAPI().getPlayerManager().sendPacket(player, info);
+        PacketEvents.getAPI().getPlayerManager().sendPacket(player, spawn);
+        PacketEvents.getAPI().getPlayerManager().sendPacket(player, head);
+    }
+
+    private void sendRemove(Player player) {
+        PacketEvents.getAPI().getPlayerManager().sendPacket(player,
+                new WrapperPlayServerPlayerInfoRemove(uuid));
+        PacketEvents.getAPI().getPlayerManager().sendPacket(player,
+                new WrapperPlayServerDestroyEntities(entityId));
     }
 }
