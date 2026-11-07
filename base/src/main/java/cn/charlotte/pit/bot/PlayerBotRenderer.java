@@ -134,8 +134,9 @@ public final class PlayerBotRenderer {
             zombie.setRemoveWhenFarAway(false);
             zombie.setShouldBurnInDay(false);
             zombie.setCustomNameVisible(false);
-            zombie.setMaxHealth(10000.0);
-            zombie.setHealth(10000.0);
+            // Paper 1.21 上限为 2048，不能设 10000
+            zombie.setMaxHealth(2048.0);
+            zombie.setHealth(2048.0);
         });
     }
 
