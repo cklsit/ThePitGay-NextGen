@@ -279,6 +279,11 @@ public class PlayerListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerPickupItem(PlayerPickupItemEvent event) {
+        // PlayerPickupArrowEvent 是 PlayerPickupItemEvent 的子类：箭矢拾取必须交回原版，
+        // 否则下方 setCancelled(true) 会让箭永不消失、被反复拾取，配合发箭分支无限刷箭。
+        if (event instanceof org.bukkit.event.player.PlayerPickupArrowEvent) {
+            return;
+        }
         final String internalName = ItemUtil.getInternalName(event.getItem().getItemStack());
         if (internalName != null && (internalName.contains("fish") || internalName.equals("fishing_dia_armor") || internalName.contains("mythic"))) {
             return;
@@ -362,8 +367,6 @@ public class PlayerListener implements Listener {
                 player.playSound(player.getLocation(), Sound.ITEM_ARMOR_EQUIP_GENERIC, 1F, 1F);
             }
         } else if (stack.getType() == Material.ARROW) {
-            ThePit.getInstance().getLogger().info("[ArrowDebug] 拾取箭物品 amount=" + stack.getAmount()
-                    + " entityId=" + event.getItem().getEntityId());
             ItemBuilder arrowBuilder = new ItemBuilder(Material.ARROW).internalName("default_arrow").defaultItem().canDrop(false).canSaveToEnderChest(false);
             player.getInventory().addItem(arrowBuilder.build());
             event.getItem().remove();

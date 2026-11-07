@@ -405,13 +405,6 @@ public class ProtectListener implements Listener {
 
 
     @EventHandler
-    public void onPickupArrow(org.bukkit.event.player.PlayerPickupArrowEvent event) {
-        ThePit.getInstance().getLogger().info("[ArrowDebug] PlayerPickupArrowEvent arrowId="
-                + event.getArrow().getEntityId() + " player=" + event.getPlayer().getName()
-                + " cancelled=" + event.isCancelled());
-    }
-
-    @EventHandler
     public void onShoot(ProjectileLaunchEvent event) {
         Projectile projectile = event.getEntity();
         if (projectile instanceof Arrow) {
