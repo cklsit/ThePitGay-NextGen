@@ -76,7 +76,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.messaging.Messenger;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.slf4j.Logger;
-import redis.clients.jedis.JedisPool;
 import spg.lgdev.iSpigot;
 
 import java.io.IOException;
@@ -100,10 +99,8 @@ public class ThePit extends JavaPlugin implements PluginMessageListener {
     @Getter
     private MongoDB mongoDB;
     @Getter
-    private JedisPool jedis;
     //ol
     @Setter
-    @Getter
     private PitWorldConfig pitConfig;
     @Setter
     @Getter

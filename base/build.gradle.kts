@@ -33,13 +33,13 @@ tasks.named<ShadowJar>("shadowJar") {
     relocate("panda","net.mizukilab.pit.libs")
     relocate("dev.rollczi","net.mizukilab.pit.libs")
     relocate("cn.hutool","net.mizukilab.pit.libs")
-    relocate("net.kyori","net.mizukilab.pit.libs")
+    relocate("it.unimi.dsi","net.mizukilab.pit.libs.unimi")
     relocate("net.jodah","net.mizukilab.pit.libs")
     relocate("net.jitse","net.mizukilab.pit.libs")
     relocate("xyz.upperlevel.spigot","net.mizukilab.pit.libs")
     relocate("io.github.retrooper.packetevents","net.mizukilab.pit.libs.packetevents")
     relocate("com.github.retrooper.packetevents","net.mizukilab.pit.libs.packetevents")
-    exclude("kotlin/**","junit/**", "org/junit/**")
+    exclude("junit/**", "org/junit/**")
     from("build/tmp/processed-resources")
     mergeServiceFiles()
 }
@@ -71,7 +71,7 @@ dependencies {
     compileOnly("org.mongojack:mongojack:5.0.1")
     compileOnly("org.mongodb:mongodb-driver-sync:5.2.0")
 
-    compileOnly(libs.fastutil)
+    implementation(libs.fastutil)
 
     compileOnly("us.crazycrew.crazycrates:api:0.7")
     compileOnly(libs.paper.api)
