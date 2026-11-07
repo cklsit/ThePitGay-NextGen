@@ -362,6 +362,8 @@ public class PlayerListener implements Listener {
                 player.playSound(player.getLocation(), Sound.ITEM_ARMOR_EQUIP_GENERIC, 1F, 1F);
             }
         } else if (stack.getType() == Material.ARROW) {
+            ThePit.getInstance().getLogger().info("[ArrowDebug] 拾取箭物品 amount=" + stack.getAmount()
+                    + " entityId=" + event.getItem().getEntityId());
             ItemBuilder arrowBuilder = new ItemBuilder(Material.ARROW).internalName("default_arrow").defaultItem().canDrop(false).canSaveToEnderChest(false);
             player.getInventory().addItem(arrowBuilder.build());
             event.getItem().remove();

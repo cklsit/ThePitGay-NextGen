@@ -403,6 +403,14 @@ public class ProtectListener implements Listener {
         ThePit.getInstance().getLogger().fine("chunk unload: " + e.getChunk().getX() + "," + e.getChunk().getZ());
     }
 
+
+    @EventHandler
+    public void onPickupArrow(org.bukkit.event.player.PlayerPickupArrowEvent event) {
+        ThePit.getInstance().getLogger().info("[ArrowDebug] PlayerPickupArrowEvent arrowId="
+                + event.getArrow().getEntityId() + " player=" + event.getPlayer().getName()
+                + " cancelled=" + event.isCancelled());
+    }
+
     @EventHandler
     public void onShoot(ProjectileLaunchEvent event) {
         Projectile projectile = event.getEntity();
