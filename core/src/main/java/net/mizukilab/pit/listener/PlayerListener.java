@@ -277,6 +277,15 @@ public class PlayerListener implements Listener {
     public void onQuit(PlayerQuitEvent event) {
         firstAidEggCooldown.remove(event.getPlayer().getUniqueId());
         goldenAppleCooldown.remove(event.getPlayer().getUniqueId());
+        // 退出时立刻落盘：否则重连会按「旧存档」覆盖，丢弃本次会话新获得的物品。
+        try {
+            PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(event.getPlayer().getUniqueId());
+            if (profile != null && profile.isLoaded()) {
+                profile.save(event.getPlayer());
+            }
+        } catch (Exception exception) {
+            ThePit.getInstance().getLogger().warning("退出保存失败: " + exception.getMessage());
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
