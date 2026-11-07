@@ -100,4 +100,22 @@ public class VisibleApi {
             }
         }
     }
+
+    /**
+     * 仅对其他人伪装目标玩家的头盔（本人视角不变）。
+     */
+    public static void setFakeHelmet(Player target, ItemStack helmet) {
+        if (helmet == null) {
+            return;
+        }
+        WrapperPlayServerEntityEquipment packet = new WrapperPlayServerEntityEquipment(
+                target.getEntityId(),
+                List.of(new Equipment(EquipmentSlot.HELMET, SpigotConversionUtil.fromBukkitItemStack(helmet))));
+        for (Player viewer : Bukkit.getOnlinePlayers()) {
+            if (viewer.equals(target)) {
+                continue;
+            }
+            PacketEvents.getAPI().getPlayerManager().sendPacket(viewer, packet);
+        }
+    }
 }

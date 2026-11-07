@@ -1,6 +1,8 @@
 package net.mizukilab.pit.util;
 
+import org.bukkit.Color;
 import org.bukkit.Location;
+import org.bukkit.Particle;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
@@ -17,8 +19,6 @@ public class ParticleUtil {
     public static void spawnParticle(Player player, org.bukkit.Particle particle, Location location, 
                                    int count, double offsetX, double offsetY, double offsetZ, double speed) {
         player.spawnParticle(particle, location, count, offsetX, offsetY, offsetZ, speed);
-        
-        ((org.bukkit.entity.Player) player).playerConnection.sendPacket(packet);
     }
 
     /**
@@ -108,14 +108,8 @@ public class ParticleUtil {
         float green = g / 255.0f;
         float blue = b / 255.0f;
         
-        PacketPlayOutWorldParticles packet = new PacketPlayOutWorldParticles(
-            Particle.DUST, true,
-            (float) location.getX(), (float) location.getY(), (float) location.getZ(),
-            red, green, blue,
-            1.0f, 0
-        );
-        
-        ((org.bukkit.entity.Player) player).playerConnection.sendPacket(packet);
+        player.spawnParticle(Particle.DUST, location, 1,
+                new Particle.DustOptions(Color.fromRGB(r, g, b), 1.0f));
     }
 
     /**

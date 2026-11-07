@@ -45,7 +45,8 @@ public class EnderChestListener implements Listener {
     }
     @EventHandler
     public void onInvClick(InventoryClickEvent event) {
-        if (event.getInventory().getName().equals("末影箱")) {
+        if (net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                    .serialize(event.getView().title()).equals("末影箱")) {
             if (event.getClick() == ClickType.NUMBER_KEY || event.getAction().name().contains("HOTBAR")) {
                 event.setCancelled(true);
                 return;
@@ -68,15 +69,14 @@ public class EnderChestListener implements Listener {
 
     @EventHandler
     public void onInvClose(InventoryCloseEvent event) {
-        if (event.getPlayer() instanceof Player && event.getInventory().getName().equals("末影箱")) {
+        if (event.getPlayer() instanceof Player && net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                    .serialize(event.getView().title()).equals("末影箱")) {
             final Location location = locationCache.remove(event.getPlayer().getUniqueId());
 
             if (location != null) {
                 ((Player) event.getPlayer()).playSound(event.getPlayer().getLocation(), Sound.BLOCK_CHEST_CLOSE, 1, 0.6F);
 
-                BlockPosition pos = new BlockPosition(location.getBlockX(), location.getBlockY(), location.getBlockZ());
-                PacketPlayOutBlockAction packet = new PacketPlayOutBlockAction(pos, Blocks.ENDER_CHEST, (byte) 1, (byte) 0);
-                ((org.bukkit.entity.Player) event.getPlayer()).playerConnection.sendPacket(packet);
+                // 1.21：箱子开合动画由客户端根据容器包播放，无需额外发包
             }
         }
     }
@@ -136,9 +136,7 @@ public class EnderChestListener implements Listener {
 
             this.locationCache.put(player.getUniqueId(), location);
 
-            BlockPosition pos = new BlockPosition(location.getBlockX(), location.getBlockY(), location.getBlockZ());
-            PacketPlayOutBlockAction packet = new PacketPlayOutBlockAction(pos, Blocks.ENDER_CHEST, (byte) 1, (byte) 1);
-            ((org.bukkit.entity.Player) player).playerConnection.sendPacket(packet);
+            // 1.21：箱子开合动画由客户端根据容器包播放，无需额外发包
         }
     }
 

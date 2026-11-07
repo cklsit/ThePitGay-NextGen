@@ -727,71 +727,28 @@ public class PlayerListener implements Listener {
             if (!internal.isEmpty() && (internal.get(0).asString().equalsIgnoreCase("tnt_enchant_item") || internal.get(0).asString().equalsIgnoreCase("insta_boom_enchant_item"))) {
                 return;
             }
-            List<EntityFallingBlock> fallingBlocks = new ArrayList<>();
-            List<Player> players = new ArrayList<>();
-
+            // 1.21：碎块飞散改为真实 FallingBlock 实体，客户端自动同步，无需发包
             for (Block b : event.blockList()) {
-
                 if (RandomUtil.random.nextBoolean()) {
                     continue;
                 }
-
-                double x = -2.0d + (Math.random() * 4.0d);
-
-                double y = -3.0d + (Math.random() * 6.0d);
-
-                double z = -2.0d + (Math.random() * 4.0d);
-
-                Location location = event.getLocation();
-                WorldServer world = ((CraftWorld) location.getWorld()).getHandle();
-                int blockX = location.getBlockX();
-                int blockY = location.getBlockY();
-                int blockZ = location.getBlockZ();
-
-                EntityFallingBlock fallingBlock = new EntityFallingBlock(world, blockX, blockY, blockZ, net.minecraft.server.v1_8_R3.Block.getById(b.getTypeId()).fromLegacyData(0));
-                fallingBlock.motX = x;
-                fallingBlock.motY = y;
-                fallingBlock.motZ = z;
-                fallingBlock.velocityChanged = true;
-
-                fallingBlocks.add(fallingBlock);
-
-                PacketPlayOutSpawnEntity spawnPacket = new PacketPlayOutSpawnEntity(fallingBlock, 70, net.minecraft.server.v1_8_R3.Block.getCombinedId(fallingBlock.getBlock()));
-                PacketPlayOutEntityVelocity vectorPacket = new PacketPlayOutEntityVelocity(fallingBlock);
-
-
-                for (Player player : PlayerUtil.getNearbyPlayers(event.getLocation(), 30)) {
-                    players.add(player);
-                    EntityPlayer entityPlayer = ((org.bukkit.entity.Player) player);
-                    entityPlayer.playerConnection.sendPacket(spawnPacket);
-                    entityPlayer.playerConnection.sendPacket(vectorPacket);
+                Location base = event.getLocation();
+                Location spawn = base.clone().add(
+                        -2.0d + (Math.random() * 4.0d),
+                        -3.0d + (Math.random() * 6.0d),
+                        -2.0d + (Math.random() * 4.0d));
+                if (spawn.getWorld() == null) {
+                    continue;
                 }
+                org.bukkit.entity.FallingBlock fallingBlock = spawn.getWorld()
+                        .spawnFallingBlock(spawn, b.getBlockData());
+                fallingBlock.setDropItem(false);
+                fallingBlock.setVelocity(new org.bukkit.util.Vector(
+                        -2.0d + (Math.random() * 4.0d),
+                        Math.random() * 6.0d,
+                        -2.0d + (Math.random() * 4.0d)));
+                fallingBlock.setTicksLived(1);
             }
-
-            Bukkit.getScheduler().runTaskLaterAsynchronously(ThePit.getInstance(), () -> {
-                List<Integer> list = fallingBlocks.stream()
-                        .map(Entity::getId)
-                        .collect(Collectors.toList());
-
-                PacketPlayOutEntityDestroy packet = new PacketPlayOutEntityDestroy();
-                int[] a = new int[list.size()];
-
-                for (int i = 0; i < list.size(); i++) {
-                    a[i] = list.get(i);
-                }
-
-                try {
-                    Field field = packet.getClass().getDeclaredField("a");
-                    field.setAccessible(true);
-                    field.set(packet, a);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                for (Player player : players) {
-                    ((org.bukkit.entity.Player) player).playerConnection.sendPacket(packet);
-                }
-
-            }, 20 * 5);
         }
     }
 

@@ -49,7 +49,7 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
     private static final List<Material> canBeUsed = Arrays.asList(Material.STONE, Material.SHORT_GRASS, Material.DIRT, Material.COBBLESTONE, Material.OAK_PLANKS, Material.BEDROCK
             , Material.GOLD_ORE, Material.IRON_ORE, Material.COAL_ORE
             , Material.OAK_LOG, Material.LAPIS_ORE,
-            Material.LAPIS_BLOCK, Material.SANDSTONE, Material.NOTE_BLOCK, Material.RED_BED_BLOCK, Material.STICKY_PISTON
+            Material.LAPIS_BLOCK, Material.SANDSTONE, Material.NOTE_BLOCK, Material.RED_BED, Material.STICKY_PISTON
             , Material.WHITE_WOOL, Material.GOLD_BLOCK, Material.IRON_BLOCK, Material.BRICK, Material.TNT, Material.BOOKSHELF, Material.MOSSY_COBBLESTONE, Material.OBSIDIAN,
             Material.DIAMOND_ORE, Material.DIAMOND_BLOCK, Material.FURNACE, Material.FURNACE, Material.REDSTONE_ORE, Material.ICE, Material.GLOWSTONE, Material.STONE_BRICKS, Material.MELON
             , Material.PUMPKIN_STEM, Material.MELON_STEM,
@@ -297,17 +297,9 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
     }
 
     private void sendPacket(Player player) {
-        PacketPlayOutEntityEquipment packet;
-        packet = new PacketPlayOutEntityEquipment(player.getEntityId(), 4, CraftItemStack.asNMSCopy(new ItemStack(dataMap.get(player.getUniqueId()).block)));
-        for (Player target : Bukkit.getOnlinePlayers()) {
-            if (target.equals(player)) {
-                continue;
-            }
-            ((org.bukkit.entity.Player) target)
-                    .playerConnection
-                    .sendPacket(packet);
-        }
-        //player.getInventory().setHelmet(new ItemStack(dataMap.get(player.getUniqueId()).block));
+        // 1.21：伪装头盔改由 PacketEvents 下发装备包
+        net.mizukilab.pit.util.VisibleApi.setFakeHelmet(player,
+                new ItemStack(dataMap.get(player.getUniqueId()).block));
     }
 
     @Override
@@ -450,8 +442,7 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
                 Location location = toLoc(loc);
                 BlockData blockData = oriBlock.get(loc);
                 if (oriBlock.get(loc) != null) {
-                    location.getBlock().setType(blockData.getType());
-                    location.getBlock().setData(blockData.getData());
+                    location.getBlock().setBlockData(blockData);
                 }
             }
             oriBlock.clear();
@@ -662,31 +653,18 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
         }
         stand.setCustomNameVisible(true);
         stand.setGravity(false);
-        ItemStack is = new ItemStack(Material.PLAYER_HEAD, 1, (short) 3);
-        SkullMeta sm = (SkullMeta) is.getItemMeta();
-        GameProfile profile = new GameProfile(UUID.randomUUID(), "");
+        String texture = "e3RleHR1cmVzOntTS0lOOnt1cmw6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMjBlMDFiYTI4MTNkYWJlNTVjMWM1OGYyNThiNDNlOTMxNWViYjFiZTlhZTI1NmRiZmFhYjY2YWVhZjdhODA0ZSJ9fX0=";
         switch (type) {
-            case "quicktrail":
-                profile.getProperties().put("textures", new Property("texture", "e3RleHR1cmVzOntTS0lOOnt1cmw6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMjBlMDFiYTI4MTNkYWJlNTVjMWM1OGYyNThiNDNlOTMxNWViYjFiZTlhZTI1NmRiZmFhYjY2YWVhZjdhODA0ZSJ9fX0="));
-                break;
-            case "combatboost":
-                profile.getProperties().put("textures", new Property("texture", "e3RleHR1cmVzOntTS0lOOnt1cmw6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMWIxODY4ZmFjZjQ5MTk1YWQzM2I4MTBlZDgwNmI0MTUwZmYwY2IxOTUzNDI4NTIxYTZhYzg3NjM3Y2M4NDViIn19fQ=="));
-                break;
-            case "superheal":
-                profile.getProperties().put("textures", new Property("texture", "ewogICJ0aW1lc3RhbXAiIDogMTY3MDY3MzA1NjI1NSwKICAicHJvZmlsZUlkIiA6ICI5ZTI3MGUwNzc1ZDg0OWI5Yjk2OTlmMzU3YjVlZjc4NiIsCiAgInByb2ZpbGVOYW1lIiA6ICJBcHBsaW5ncyIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS8zZTg0MDg4OWRjODM3NTc3ZjI1YTM2OWNkZmU4OTU2ZDI4ODgzYzk2NzIzYWM5OTQ5ZmMyZGExZjUwZjJhMWNhIgogICAgfQogIH0KfQ=="));
-                break;
-            case "diamondarmor":
-                profile.getProperties().put("textures", new Property("texture", "e3RleHR1cmVzOntTS0lOOnt1cmw6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNDM0M2Q2NGQ3YjYwNWQ1MWM1ZWE3Y2I0Y2M2N2NiOTQwNGM4YmU0ZGNiMjk3OWI0MmVlZDExOGFjMjg2NDJkMSJ9fX0="));
-                break;
+            case "quicktrail" -> texture = "e3RleHR1cmVzOntTS0lOOnt1cmw6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMjBlMDFiYTI4MTNkYWJlNTVjMWM1OGYyNThiNDNlOTMxNWViYjFiZTlhZTI1NmRiZmFhYjY2YWVhZjdhODA0ZSJ9fX0=";
+            case "combatboost" -> texture = "e3RleHR1cmVzOntTS0lOOnt1cmw6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMWIxODY4ZmFjZjQ5MTk1YWQzM2I4MTBlZDgwNmI0MTUwZmYwY2IxOTUzNDI4NTIxYTZhYzg3NjM3Y2M4NDViIn19fQ==";
+            case "superheal" -> texture = "ewogICJ0aW1lc3RhbXAiIDogMTY3MDY3MzA1NjI1NSwKICAicHJvZmlsZUlkIiA6ICI5ZTI3MGUwNzc1ZDg0OWI5Yjk2OTlmMzU3YjVlZjc4NiIsCiAgInByb2ZpbGVOYW1lIiA6ICJBcHBsaW5ncyIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS8zZTg0MDg4OWRjODM3NTc3ZjI1YTM2OWNkZmU4OTU2ZDI4ODgzYzk2NzIzYWM5OTQ5ZmMyZGExZjUwZjJhMWNhIgogICAgfQogIH0KfQ==";
+            case "diamondarmor" -> texture = "e3RleHR1cmVzOntTS0lOOnt1cmw6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNDM0M2Q2NGQ3YjYwNWQ1MWM1ZWE3Y2I0Y2M2N2NiOTQwNGM4YmU0ZGNiMjk3OWI0MmVlZDExOGFjMjg2NDJkMSJ9fX0=";
+            default -> {
+            }
         }
-        try {
-            Field profileField = sm.getClass().getDeclaredField("profile");
-            profileField.setAccessible(true);
-            profileField.set(sm, profile);
-        } catch (IllegalAccessException | IllegalArgumentException | NoSuchFieldException | SecurityException e) {
-            e.printStackTrace();
-        }
-        is.setItemMeta(sm);
+        ItemStack is = new net.mizukilab.pit.util.item.ItemBuilder(Material.PLAYER_HEAD)
+                .setSkullProperty(texture)
+                .build();
         if (!"diamondarmor".equals(type)) {
             stand.setHelmet(is);
         } else {

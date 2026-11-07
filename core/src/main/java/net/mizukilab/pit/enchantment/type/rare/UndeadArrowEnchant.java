@@ -57,12 +57,8 @@ public class UndeadArrowEnchant extends AbstractEnchantment implements IPlayerSh
             attacker.playSound(attacker.getLocation(), Sound.ENTITY_VILLAGER_DEATH, 1, 1F);
 
             Location deathLoc = target.getLocation();
-            PacketPlayOutWorldEvent packetA = new PacketPlayOutWorldEvent(2001, new BlockPosition(deathLoc.getBlockX(), deathLoc.getBlockY(), deathLoc.getBlockZ()), 152, false);
-            PacketPlayOutWorldEvent packetB = new PacketPlayOutWorldEvent(2001, new BlockPosition(deathLoc.getBlockX(), deathLoc.getBlockY() - 1, deathLoc.getBlockZ()), 152, false);
-
-            PlayerConnection connection = ((org.bukkit.entity.Player) attacker).playerConnection;
-            connection.sendPacket(packetA);
-            connection.sendPacket(packetB);
+            deathLoc.getWorld().playEffect(deathLoc, org.bukkit.Effect.STEP_SOUND, org.bukkit.Material.REDSTONE_BLOCK);
+            deathLoc.clone().add(0, -1, 0).getWorld().playEffect(deathLoc.clone().add(0, -1, 0), org.bukkit.Effect.STEP_SOUND, org.bukkit.Material.REDSTONE_BLOCK);
         }
     }
 }
