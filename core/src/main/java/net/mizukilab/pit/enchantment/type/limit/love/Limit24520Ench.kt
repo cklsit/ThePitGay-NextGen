@@ -93,7 +93,7 @@ class Limit24520Ench : AbstractEnchantment(), ITickTask, MovementHandler, IPlaye
             player.volume = 0.08.toInt().toByte()
             playerMap[target.uniqueId] = player
         } else {
-            target.world.playEffect(target.location.clone().add(0.0, 3.0, 0.0), Effect.NOTE, 1)
+            target.world.spawnParticle(org.bukkit.Particle.NOTE, target.location.clone().add(0.0, 3.0, 0.0), 1)
         }
     }
 
@@ -109,7 +109,7 @@ class Limit24520Ench : AbstractEnchantment(), ITickTask, MovementHandler, IPlaye
     ) {
         val songPlayer: PositionSongPlayer? = playerMap.get(player.uniqueId)
         if (songPlayer != null) {
-            songPlayer.targetLocation = player.player.location
+            songPlayer.targetLocation = player.player!!.location
         }
     }
 

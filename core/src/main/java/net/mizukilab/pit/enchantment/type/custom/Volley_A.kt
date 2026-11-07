@@ -28,12 +28,7 @@ import java.util.concurrent.ConcurrentHashMap
 @AutoRegister
 @BowOnly
 class VollewyA : AbstractEnchantment(), Listener {
-    private val playerUsingFiled: Field = EntityHuman::class.java.getDeclaredField("h")
     private val arrowBuilder: ItemBuilder = ItemBuilder(Material.ARROW).internalName("default_arrow").defaultItem().canDrop(false).canSaveToEnderChest(false)
-
-    init {
-        playerUsingFiled.isAccessible = true
-    }
 
     override fun getEnchantName(): String {
         return "连续射击"
@@ -77,17 +72,6 @@ class VollewyA : AbstractEnchantment(), Listener {
         if (isShooting.getOrDefault(player.uniqueId, false)) return
         event.isCancelled = true
 
-        val nmsItem = CraftItemStack.asNMSCopy(itemInHand)
-        val bow = nmsItem.item as ItemBow
-        val entityPlayer = (player as CraftPlayer).handle
-
-        val value: Int
-        try {
-            value = playerUsingFiled[entityPlayer] as Int
-        } catch (e: IllegalAccessException) {
-            throw RuntimeException("Failed to access player field.", e)
-        }
-
         player.inventory.addItem(arrowBuilder.amount(level + 1).build())
 
         isShooting[player.uniqueId] = true
@@ -103,7 +87,9 @@ class VollewyA : AbstractEnchantment(), Listener {
                 }
 
                 ++tick
-                bow.a(nmsItem, entityPlayer.world, entityPlayer, value)
+                // 1.21：用 Bukkit 发射箭矢替代 ItemBow.a() 的 NMS 连射
+                val arrow = player.launchProjectile(org.bukkit.entity.Arrow::class.java)
+                arrow.velocity = player.location.direction.multiply(2.5)
             }
         }.runTaskTimer(ThePit.getInstance(), 0L, 1L)
     }

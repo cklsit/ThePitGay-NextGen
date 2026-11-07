@@ -33,7 +33,7 @@ class SpeedEggs : AbstractPitItem(), Listener {
     }
 
     override fun getItemDisplayMaterial(): Material {
-        return Material.MONSTER_EGG
+        return Material.ZOMBIE_SPAWN_EGG
     }
 
     override fun toItemStack(): ItemStack {

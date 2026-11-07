@@ -134,7 +134,7 @@ class JewelSword : IMythicItem(), Listener {
                     it.loadFromItemStack(itemOnCursor)
                 }
                 jewelSword.killed = 0
-                player.itemOnCursor = jewelSword.toItemStack()
+                player.setItemOnCursor(jewelSword.toItemStack())
             }
         }
     }
@@ -196,11 +196,9 @@ class JewelSword : IMythicItem(), Listener {
             killer.inventory.setItemInMainHand(itemStack)
 
             if (enchantment.rarity == EnchantmentRarity.RARE) {
-                val nms = Utils.toNMStackQuick(itemStack)
-                val tag = NBTTagCompound()
-                nms?.save(tag)
+                // 1.21：SHOW_ITEM 悬停需要真实物品数据，这里退化为文本悬停
                 val hoverEventComponents = arrayOf<BaseComponent>(
-                    TextComponent(tag.toString())
+                    TextComponent(itemStack.type.name)
                 )
 
                 for (p in Bukkit.getOnlinePlayers()) {

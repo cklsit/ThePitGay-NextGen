@@ -25,7 +25,7 @@ object GemsSound : AbstractPitSound() {
         }
 
         pitch?.let {
-            val sound = if (tick == 8) Sound.ENTITY_CHICKEN_EGG else Sound.BLOCK_LAVA_AMBIENT_POP
+            val sound = if (tick == 8) Sound.ENTITY_CHICKEN_EGG else Sound.BLOCK_LAVA_POP
             player.playSound(player.location, sound, 2.5f, it)
         }
 

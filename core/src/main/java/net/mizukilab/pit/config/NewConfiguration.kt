@@ -242,7 +242,7 @@ object NewConfiguration {
             var configElf = configurationSection.getConfigurationSection(i.toString())!!;
             rareRate[i] = HashMap();
             rareRate[i]?.put(MythicColor.DARK, ArrayList<Rate>().apply {
-                val darkRateSection = configElf.getConfigurationSection("dark")!!
+                val darkRateSection = configElf.getConfigurationSection("dark")!!!!
 
                 for (key in darkRateSection.getKeys(false)) {
                     val permission = darkRateSection.getString("${key}.permission", "pit.enchant.${key}") ?: ""
@@ -253,10 +253,10 @@ object NewConfiguration {
             })
 
             rareRate[i]?.put(MythicColor.ORANGE, ArrayList<Rate>().apply {
-                val normalSection = configElf.getConfigurationSection("normal")
+                val normalSection = configElf.getConfigurationSection("normal")!!
 
                 for (key in normalSection.getKeys(false)) {
-                    val permission = normalSection.getString("${key}.permission", "pit.enchant.${key}")
+                    val permission = normalSection.getString("${key}.permission", "pit.enchant.${key}") ?: ""
                     val chance = normalSection.getDouble("${key}.value", 0.02)
 
                     this += Rate(permission, chance)
@@ -264,20 +264,20 @@ object NewConfiguration {
             })
 
             rareRate[i]?.put(MythicColor.DARK_GREEN, ArrayList<Rate>().apply {
-                val normalSection = configElf.getConfigurationSection("sewers")
+                val normalSection = configElf.getConfigurationSection("sewers")!!
 
                 for (key in normalSection.getKeys(false)) {
-                    val permission = normalSection.getString("${key}.permission", "pit.enchant.${key}")
+                    val permission = normalSection.getString("${key}.permission", "pit.enchant.${key}") ?: ""
                     val chance = normalSection.getDouble("${key}.value", 0.02)
 
                     this += Rate(permission, chance)
                 }
             })
             rareRate[i]?.put(MythicColor.RAGE, ArrayList<Rate>().apply {
-                val rageSection = configElf.getConfigurationSection("rage")
+                val rageSection = configElf.getConfigurationSection("rage")!!
 
                 for (key in rageSection.getKeys(false)) {
-                    val permission = rageSection.getString("${key}.permission", "pit.enchant.${key}")
+                    val permission = rageSection.getString("${key}.permission", "pit.enchant.${key}") ?: ""
                     val chance = rageSection.getDouble("${key}.value", 0.02)
 
                     this += Rate(permission, chance)

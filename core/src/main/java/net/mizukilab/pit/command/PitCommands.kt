@@ -810,7 +810,10 @@ class PitCommands {
             player.sendMessage(CC.translate("&c你选择的玩家不在线!"))
             return
         }
-        val target = Bukkit.getPlayer(targetPlayer)
+        val target = Bukkit.getPlayer(targetPlayer) ?: run {
+            player.sendMessage(CC.translate("&c目标玩家不在线"))
+            return
+        }
         ThePit.getInstance().profileOperator.ifPresentAndILoaded(target) { operator: IOperator ->
             val targetProfile = operator.profile()
             if (player.uniqueId == target.uniqueId || player.isSpecial || target.isSpecial) {
@@ -996,7 +999,7 @@ class PitCommands {
         }
         if (list.size > 0) {
             player.sendMessage(CC.translate("&b当前在线精通玩家数: &6" + list.size))
-            list.forEach { s: String? -> player.sendMessage(s) }
+            list.forEach { s: String? -> if (s != null) player.sendMessage(s) }
         } else {
             player.sendMessage(CC.translate("&c当前没有精通玩家在线!"))
         }
@@ -1041,9 +1044,11 @@ class PitCommands {
         } else {
             mythicItem.customName = name
         }
-        player.inventory.setItemInMainHand(ItemBuilder(mythicItem.toItemStack()))
-            .forceCanTrade(false)
-            .build()
+        player.inventory.setItemInMainHand(
+            ItemBuilder(mythicItem.toItemStack())
+                .forceCanTrade(false)
+                .build()
+        )
         return "§a已重命名"
     }
 
@@ -1057,10 +1062,12 @@ class PitCommands {
             return "§c咦...这个物品似乎没有被重命名呢!"
         }
         mythicItem.customName = null;
-        player.inventory.setItemInMainHand(ItemBuilder(mythicItem.toItemStack()))
-            .customName(null)
-            .unsetForceCanTrade()
-            .build()
+        player.inventory.setItemInMainHand(
+            ItemBuilder(mythicItem.toItemStack())
+                .customName(null)
+                .unsetForceCanTrade()
+                .build()
+        )
         return "§a成功取消重命名!"
     }
 

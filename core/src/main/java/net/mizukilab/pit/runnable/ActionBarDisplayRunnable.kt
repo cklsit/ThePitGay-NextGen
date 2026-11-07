@@ -20,11 +20,11 @@ object ActionBarDisplayRunnable {
     val shutdownStr: String = CC.translate("&c&l服务器关闭中 ")
     fun start() {
         Bukkit.getScheduler().runTaskTimerAsynchronously(ThePit.getInstance(), Runnable {
-            if (!MinecraftServer.getServer().isRunning) {
+            if (cn.charlotte.pit.ThePit.getInstance() == null || !cn.charlotte.pit.ThePit.getInstance().isEnabled) {
                 for (player in Bukkit.getOnlinePlayers()) {
                     ActionBarUtil.sendActionBar1(player, "system", shutdownStr, 20);
                 }
-                return@RunnableTimerAsynchronously
+                return@Runnable
             }
             val now = System.currentTimeMillis()
 

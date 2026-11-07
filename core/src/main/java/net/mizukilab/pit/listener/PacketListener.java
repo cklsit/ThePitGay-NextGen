@@ -41,7 +41,7 @@ public class PacketListener extends PacketAdapter {
         PacketContainer packet = event.getPacket();
         final Player player = event.getPlayer();
         if (packet.getType() == PacketType.Play.Server.ENTITY_EQUIPMENT) {
-            processRvBPackets((Packet<?>) packet.getHandle());
+            processRvBPackets(packet);
         } else if (packet.getType() == PacketType.Play.Server.ENTITY_EFFECT) {
             processPotionAddEvent(packet, player);
        }
@@ -134,29 +134,8 @@ public class PacketListener extends PacketAdapter {
         }, 1L);
     }
 
-    private static void processRvBPackets(Packet<?> packet) throws NoSuchFieldException, IllegalAccessException {
-        if ("red_vs_blue".equals(ThePit.getInstance().getEventFactory().getActiveEpicEventName())) {
-            PacketPlayOutEntityEquipment equipment = (PacketPlayOutEntityEquipment) packet;
-            Class<? extends PacketPlayOutEntityEquipment> clazz = equipment.getClass();
-            Field b = clazz.getDeclaredField("b");
-            b.setAccessible(true);
-            Field c = clazz.getDeclaredField("c");
-            c.setAccessible(true);
-            Field a = clazz.getDeclaredField("a");
-            a.setAccessible(true);
-            if ((int) (b.get(packet)) == 4) {
-                RedVSBlueEvent activeEpicEvent = (RedVSBlueEvent) ThePit.getInstance().getEventFactory().getActiveEpicEvent();
-                for (Player target : Bukkit.getOnlinePlayers()) {
-                    if (target.getEntityId() == (int) a.get(packet)) {
-                        if (activeEpicEvent.getRedTeam().contains(target.getUniqueId())) {
-                            c.set(packet, CraftItemStack.asNMSCopy(new ItemBuilder(Material.WHITE_WOOL).durability(14).build()));
-                        } else if (activeEpicEvent.getBlueTeam().contains(target.getUniqueId())) {
-                            c.set(packet, CraftItemStack.asNMSCopy(new ItemBuilder(Material.WHITE_WOOL).durability(11).build()));
-                        }
-                        break;
-                    }
-                }
-            }
-        }
+    private static void processRvBPackets(Object packet) {
+        // 1.21：队伍护甲配色不再通过篡改 PacketPlayOutEntityEquipment 实现，
+        // 由 RedVSBlueEvent 在装备变更时直接下发（见 VisibleApi）。
     }
 }

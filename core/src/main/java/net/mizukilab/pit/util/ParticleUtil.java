@@ -14,14 +14,9 @@ public class ParticleUtil {
     /**
      * 发送基础粒子效果
      */
-    public static void spawnParticle(Player player, EnumParticle particle, Location location, 
+    public static void spawnParticle(Player player, org.bukkit.Particle particle, Location location, 
                                    int count, double offsetX, double offsetY, double offsetZ, double speed) {
-        PacketPlayOutWorldParticles packet = new PacketPlayOutWorldParticles(
-            particle, true,
-            (float) location.getX(), (float) location.getY(), (float) location.getZ(),
-            (float) offsetX, (float) offsetY, (float) offsetZ,
-            (float) speed, count
-        );
+        player.spawnParticle(particle, location, count, offsetX, offsetY, offsetZ, speed);
         
         ((org.bukkit.entity.Player) player).playerConnection.sendPacket(packet);
     }

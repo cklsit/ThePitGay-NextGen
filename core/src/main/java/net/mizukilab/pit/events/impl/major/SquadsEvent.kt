@@ -431,7 +431,7 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
                     Bukkit.getScheduler().runTask(ThePit.getInstance(), Runnable {
                         val state = this.location.block.state
                         val banner = state as Banner
-                        banner.baseColor = DyeColor.getByDyeData(chatColorToData[capturingTeam.chatColor]!!.toByte())
+                        banner.baseColor = DyeColor.getByDyeData(chatColorToData[capturingTeam.chatColor]!!.toByte()) ?: DyeColor.WHITE
                         banner.update(true, false)
                     })
 
@@ -464,19 +464,8 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
 
                     capturingTeam.banners.add(this)
                     Bukkit.getScheduler().runTask(ThePit.getInstance(), Runnable {
-                        val firework = BoomFirework((location.world as CraftWorld).handle)
-                        val meta = (firework.bukkitEntity as Firework).fireworkMeta
-                        meta.addEffect(
-                            FireworkEffect.builder()
-                                .withColor(chatColorToColor[capturingTeam.chatColor]!!)
-                                .with(FireworkEffect.Type.BURST)
-                                .build()
-                        )
-                        (firework.bukkitEntity as Firework).fireworkMeta = meta
-                        firework.setPosition(location.x, location.y, location.z)
-                        if ((location.world as CraftWorld).handle.addEntity(firework)) {
-                            firework.isInvisible = true
-                        }
+                        // 1.21：直接用真实烟花实体
+                        BoomFirework(location.clone()).spawn(chatColorToColor[capturingTeam.chatColor])
                     })
                 }
             } else {
@@ -500,7 +489,7 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
             }
         }
 
-        private fun drawCircle(effect: EnumParticle, color: Color?) {
+        private fun drawCircle(effect: org.bukkit.Particle, color: Color?) {
             val clone = location.clone()
             for (degree in 0..359) {
                 if (degree % 3 != 0) {
@@ -511,22 +500,12 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
                 val x = cos(radians) * 3
                 val y = sin(radians) * 3
                 clone.add(x, 0.0, y)
-                val packet = PacketPlayOutWorldParticles(
-                    effect,
-                    true,
-                    clone.x.toFloat(),
-                    clone.y.toFloat(),
-                    clone.z.toFloat(),
-                    max(1 / 255F, (color?.red ?: 0) / 255F),
-                    (color?.green ?: 0) / 255F,
-                    (color?.blue ?: 0) / 255F,
-                    1f,
-                    0,
-                    0
+                clone.world?.spawnParticle(
+                    org.bukkit.Particle.DUST,
+                    clone.x, clone.y, clone.z,
+                    1, 0.0, 0.0, 0.0, 1.0,
+                    org.bukkit.Particle.DustOptions(color ?: org.bukkit.Color.WHITE, 1.0f)
                 )
-                Bukkit.getOnlinePlayers().forEach {
-                    (it as CraftPlayer).handle.playerConnection.sendPacket(packet)
-                }
                 clone.subtract(x, 0.0, y)
             }
         }

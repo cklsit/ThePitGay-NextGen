@@ -653,7 +653,7 @@ class PitAdminCommands {
             inventory.forEachIndexed { index, itemStack ->
                 val mmItem = ThePit.getInstance().itemFactory.getItemFromStack(itemStack)
                 if (mmItem != null) {
-                    inventory.remove(index)
+                    inventory.setItem(index, null)
                     mmItem.toItemStack()?.let { inventory.setItem(index, it) }
                 }
             }

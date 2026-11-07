@@ -90,8 +90,7 @@ class WitheredAndPiercingThroughTheHeart : AbstractEnchantment(), IPlayerShootEn
             attacker.playSound(attacker.location, Sound.BLOCK_ANVIL_LAND, 1f, 1f)
             victim.playSound(attacker.location, Sound.BLOCK_ANVIL_LAND, 1f, 1f)
 
-            val ePlayer = (attacker as CraftPlayer).handle
-            ePlayer.absorptionHearts = min(((1f + enchantLevel) * 2) * 2, (1f + enchantLevel) * 2)
+            attacker.absorptionAmount = min(((1f + enchantLevel) * 2) * 2, (1f + enchantLevel) * 2).toDouble()
             attacker.addPotionEffect(
                 PotionEffect(
                     PotionEffectType.REGENERATION,

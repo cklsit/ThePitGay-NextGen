@@ -42,7 +42,8 @@ public class Utils {
      *
      * @return
      */
-    public static net.minecraft.server.v1_8_R3.ItemStack toNMStackQuick(ItemStack item) {
+    public static ItemStack toNMStackQuick(ItemStack item) {
+        // 1.21：NMS ItemStack 已不存在，保留方法名以兼容调用方
         return PublicUtil.toNMStackQuick(item);
     }
     public static final long toUnsignedInt(int data){
@@ -80,28 +81,22 @@ public class Utils {
      * 原理: Enchantment NBT always prepend number at the last char
      */
     @SneakyThrows
-    public static void readEnchantments(Object2IntMap<AbstractEnchantment> ment, NBTTagList nbtTagList) {
-        for (int i = 0, size = nbtTagList.size(); i < size; i++) {
-            String s = nbtTagList.getString(i);
-            int length = s.length();
-            int splitIndex = s.lastIndexOf(':',length - 1);
-
-            if (splitIndex != -1) {
-                String enchantmentName = s.substring(0, splitIndex);
-                try {
-                    int level = IntegerUtils.fastParse0(s,splitIndex + 1,length);
-                    AbstractEnchantment enchantment = ThePit.getInstance()
-                            .getEnchantmentFactor()
-                            .getEnchantmentMap()
-                            .get(enchantmentName);
-
-                    if (enchantment != null) {
-                        ment.put(enchantment, level);
-                    }
-                } catch (NumberFormatException e) {
-                    String levelString = s.substring(splitIndex + 1);
-                    ThePit.getInstance().getLogger().warning("Can't serialize level: " + levelString);
+    public static void readEnchantments(Object2IntMap<AbstractEnchantment> ment, java.util.List<String> records) {
+        for (String s : records) {
+            if (s == null) continue;
+            int splitIndex = s.lastIndexOf(':');
+            if (splitIndex <= 0) continue;
+            String enchantmentName = s.substring(0, splitIndex);
+            try {
+                int level = Integer.parseInt(s.substring(splitIndex + 1));
+                AbstractEnchantment enchantment = ThePit.getInstance()
+                        .getEnchantmentFactor()
+                        .getEnchantmentMap()
+                        .get(enchantmentName);
+                if (enchantment != null) {
+                    ment.put(enchantment, level);
                 }
+            } catch (NumberFormatException ignored) {
             }
         }
     }

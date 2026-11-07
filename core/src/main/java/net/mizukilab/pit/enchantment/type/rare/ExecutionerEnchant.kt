@@ -77,21 +77,10 @@ class ExecutionerEnchant : AbstractEnchantment(), IAttackEntity {
             finalDamage.getAndAdd(2000.0)
             attacker.playSound(attacker.location, Sound.ENTITY_VILLAGER_DEATH, 1f, 0.5f)
             val deathLoc = target.getLocation()
-            val packetA = PacketPlayOutWorldEvent(
-                2001,
-                BlockPosition(deathLoc.blockX, deathLoc.blockY, deathLoc.blockZ),
-                152,
-                false
-            )
-            val packetB = PacketPlayOutWorldEvent(
-                2001,
-                BlockPosition(deathLoc.blockX, deathLoc.blockY - 1, deathLoc.blockZ),
-                152,
-                false
-            )
-            val connection = (attacker as CraftPlayer).handle.playerConnection
-            connection.sendPacket(packetA)
-            connection.sendPacket(packetB)
+            // 1.21：方块破坏粒子改用 Bukkit 效果（原为 WorldEvent 2001 + 方块 id 152）
+            deathLoc.world?.playEffect(deathLoc, org.bukkit.Effect.STEP_SOUND, org.bukkit.Material.REDSTONE_BLOCK)
+            val below = deathLoc.clone().add(0.0, -1.0, 0.0)
+            below.world?.playEffect(below, org.bukkit.Effect.STEP_SOUND, org.bukkit.Material.REDSTONE_BLOCK)
         }
     }
 
