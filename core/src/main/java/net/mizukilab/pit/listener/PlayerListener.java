@@ -336,6 +336,10 @@ public class PlayerListener implements Listener {
             }
             ItemStack[] armorContents = player.getInventory().getArmorContents();
             ItemStack equippedArmor = armorContents[slot];
+            if (slot == 1 && equippedArmor != null && equippedArmor.getType() != Material.AIR
+                    && "mythic_leggings".equals(ItemUtil.getInternalName(equippedArmor))) {
+                ThePit.getInstance().getLogger().info("[InvDebug] 拾取护甲将覆盖神话护腿，玩家=" + player.getName());
+            }
             String equippedArmorType = equippedArmor == null ? "" : equippedArmor.getType().name();
             if (ironArmor || chainmailArmor) {
                 if (equippedArmorType.contains("DIAMOND")) {

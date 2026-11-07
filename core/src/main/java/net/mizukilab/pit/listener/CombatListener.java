@@ -647,6 +647,8 @@ public class CombatListener implements Listener {
             inventory.setChestplate(new ItemStack(Material.AIR));
         }
         if (ItemUtil.isDeathDrop(inventory.getLeggings())) {
+            ThePit.getInstance().getLogger().info("[InvDebug] 死亡掉落护腿，玩家=" + player.getName()
+                    + " 类型=" + inventory.getLeggings().getType());
             inventory.setLeggings(new ItemStack(Material.AIR));
         }
         if (ItemUtil.isDeathDrop(inventory.getBoots())) {

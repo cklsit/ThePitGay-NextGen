@@ -426,6 +426,11 @@ public class PlayerUtil {
         player.setAllowFlight(false);
         player.setCanPickupItems(true);
         if (clearInventory) {
+            org.bukkit.inventory.ItemStack leggings = player.getInventory().getLeggings();
+            if (leggings != null && leggings.getType() != org.bukkit.Material.AIR) {
+                cn.charlotte.pit.ThePit.getInstance().getLogger().info("[InvDebug] resetPlayer 清空背包，玩家="
+                        + player.getName() + " 护腿=" + leggings.getType());
+            }
             player.getInventory().setArmorContents(null);
             player.getInventory().clear();
             player.getEnderChest().clear();
