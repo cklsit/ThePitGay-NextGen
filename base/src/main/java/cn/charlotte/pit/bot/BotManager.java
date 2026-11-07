@@ -248,6 +248,7 @@ public final class BotManager {
         private static final double XP_PER_HIT = 5.0;
 
         public void start() {
+            plugin.getLogger().info("[BotDebug] BotCombatListener 注册 USE_ENTITY 监听");
             ProtocolLibrary.getProtocolManager().addPacketListener(
                     new PacketAdapter(plugin, PacketType.Play.Client.USE_ENTITY) {
                         @Override
@@ -257,9 +258,12 @@ public final class BotManager {
                             }
                             int entityId = event.getPacket().getIntegers().read(0);
                             WrappedEnumEntityUseAction action = event.getPacket().getEnumEntityUseActions().read(0);
-                            if (action == null || !"ATTACK".equals(action.getAction().name())) {
+                            String actionName = action == null ? "null" : action.getAction().name();
+                            if (!"ATTACK".equals(actionName)) {
                                 return;
                             }
+                            plugin.getLogger().info("[BotDebug] 收到攻击包 entity=" + entityId
+                                    + " 攻击者=" + event.getPlayer().getName());
                             handleAttack(event.getPlayer(), entityId);
                         }
                     });
@@ -268,6 +272,7 @@ public final class BotManager {
         private void handleAttack(Player player, int entityId) {
             PlayerBotRenderer bot = findBotByEntityId(entityId);
             if (bot == null) {
+                plugin.getLogger().info("[BotDebug] entityId " + entityId + " 未匹配到任何 bot");
                 return;
             }
             PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());

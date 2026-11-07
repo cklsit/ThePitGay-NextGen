@@ -10,7 +10,6 @@ import it.unimi.dsi.fastutil.objects.ObjectLists;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
-import org.inventivetalent.reflection.minecraft.Minecraft;
 import org.inventivetalent.reflection.util.AccessUtil;
 
 import javax.annotation.Nonnull;
@@ -22,7 +21,8 @@ import java.util.List;
 public abstract class HologramAPI {
 
     protected static final List<Hologram> holograms = ObjectLists.synchronize(new ObjectArrayList<>());
-    protected static boolean is1_8/*Or 1.9*/ = Minecraft.VERSION.newerThan(Minecraft.Version.v1_8_R1);
+    // 1.21 适配：运行版本必然新于 1.8，且 Minecraft 反射工具在无版本后缀的 Paper 上初始化会崩
+    protected static boolean is1_8/*Or 1.9*/ = true;
     protected static boolean packetsEnabled = false;
     public static boolean isMAGA = true;
     protected static boolean useProtocolSupport = false;
