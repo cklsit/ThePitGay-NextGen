@@ -6,14 +6,6 @@ import cn.charlotte.pit.event.PitDamageEvent;
 import cn.charlotte.pit.event.PitKillEvent;
 import cn.charlotte.pit.events.trigger.type.IEpicEvent;
 import cn.charlotte.pit.events.AbstractEvent;
-import com.boydti.fawe.FaweAPI;
-import com.boydti.fawe.util.TaskManager;
-import com.sk89q.worldedit.BlockVector;
-import com.sk89q.worldedit.EditSession;
-import com.sk89q.worldedit.WorldEdit;
-import com.sk89q.worldedit.blocks.BaseBlock;
-import com.sk89q.worldedit.blocks.BlockID;
-import com.sk89q.worldedit.bukkit.BukkitWorld;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
@@ -29,7 +21,6 @@ import net.mizukilab.pit.util.cooldown.Cooldown;
 import net.mizukilab.pit.util.inventory.InventoryUtil;
 import net.mizukilab.pit.util.random.RandomUtil;
 import net.mizukilab.pit.util.time.TimeUtil;
-import net.mizukilab.pit.util.worldedit.JustAirBlockPattern;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -53,7 +44,7 @@ import java.util.stream.Collectors;
 public class RagePitEvent extends AbstractEvent implements IEpicEvent, Listener {
     @Getter
     private final Map<UUID, DamageData> damageMap = new HashMap<>();
-    private EditSession session;
+    private static final java.util.Map<org.bukkit.Location, org.bukkit.block.data.BlockData> ORIGINAL_BLOCKS = new java.util.HashMap<>();
     @Getter
     private int killed = 0;
     private BukkitRunnable runnable;
@@ -106,27 +97,31 @@ public class RagePitEvent extends AbstractEvent implements IEpicEvent, Listener 
                     .registerEvents(this, ThePit.getInstance());
             //build wall - start
             Location middle = ThePit.getInstance().getPitConfig().getRagePitMiddle();
-            BlockVector vector = new BlockVector(middle.getBlockX(), middle.getBlockY(), middle.getBlockZ());
-            BukkitWorld world = new BukkitWorld(Bukkit.getWorlds().get(0));
-            try {
-                session = FaweAPI.getEditSessionBuilder(world).build();
+            final int cx = middle.getBlockX();
+            final int cy = middle.getBlockY();
+            final int cz = middle.getBlockZ();
+            final int radius = ThePit.getInstance().getPitConfig().getRagePitRadius();
+            final int height = ThePit.getInstance().getPitConfig().getRagePitHeight();
+            final org.bukkit.World bukkitWorld = middle.getWorld() == null ? Bukkit.getWorlds().get(0) : middle.getWorld();
 
-
-                Runnable runnable1 = () -> {
-                    session.makeCylinder(vector, new JustAirBlockPattern(new BaseBlock(BlockID.GLASS)), ThePit.getInstance().getPitConfig().getRagePitRadius(), ThePit.getInstance().getPitConfig().getRagePitHeight(), false);
-                    session.flushQueue();
-                };
-
-                TaskManager.IMP.async(runnable1);
-            } catch (Throwable e){
-                session = WorldEdit.getInstance().getEditSessionFactory().getEditSession(world, Integer.MAX_VALUE);
-
-                Runnable runnable1 = () -> {
-                    session.makeCylinder(vector, new JustAirBlockPattern(new BaseBlock(BlockID.GLASS)), ThePit.getInstance().getPitConfig().getRagePitRadius(), ThePit.getInstance().getPitConfig().getRagePitHeight(), false);
-                    session.flushQueue();
-                };
-                Bukkit.getScheduler().runTask(ThePit.getInstance(), runnable1);
-            }
+            Bukkit.getScheduler().runTask(ThePit.getInstance(), () -> {
+                ORIGINAL_BLOCKS.clear();
+                int radiusSquared = radius * radius;
+                for (int x = cx - radius; x <= cx + radius; x++) {
+                    for (int z = cz - radius; z <= cz + radius; z++) {
+                        if ((x - cx) * (x - cx) + (z - cz) * (z - cz) > radiusSquared) {
+                            continue;
+                        }
+                        for (int y = cy; y < cy + height; y++) {
+                            org.bukkit.block.Block block = bukkitWorld.getBlockAt(x, y, z);
+                            if (block.getType() == Material.AIR) {
+                                ORIGINAL_BLOCKS.put(block.getLocation(), block.getBlockData());
+                                block.setType(Material.GLASS, false);
+                            }
+                        }
+                    }
+                }
+            });
 
 
             ClearRunnable.getClearRunnable().getPlacedBlock().removeIf((loc, blockData) -> {
@@ -202,21 +197,12 @@ public class RagePitEvent extends AbstractEvent implements IEpicEvent, Listener 
         //取消Runnable
         runnable.cancel();
         //还原建筑
-        try{
-        FaweAPI.getTaskManager().async(() -> {
-            session.undo(session);
-            session.flushQueue();
+        Bukkit.getScheduler().runTask(ThePit.getInstance(), () -> {
+            for (java.util.Map.Entry<org.bukkit.Location, org.bukkit.block.data.BlockData> entry : ORIGINAL_BLOCKS.entrySet()) {
+                entry.getKey().getBlock().setBlockData(entry.getValue(), false);
+            }
+            ORIGINAL_BLOCKS.clear();
         });
-        } catch (Throwable e){
-            Bukkit.getScheduler().runTask(ThePit.getInstance(), () -> {
-                session.undo(session);
-                session.flushQueue();
-            });
-        }
-        /* TaskManager.IMP.async(() -> {
-            session.undo(session);
-            session.flushQueue();
-        }); */
         //还原BossBar
         ThePit.getInstance()
                 .getBossBar()
