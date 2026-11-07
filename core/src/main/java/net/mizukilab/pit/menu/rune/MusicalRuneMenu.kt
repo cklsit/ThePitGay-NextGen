@@ -2,9 +2,11 @@ package cn.charlotte.pit.menu.rune
 
 import cn.charlotte.pit.menu.rune.button.ItemRuneButton
 import net.mizukilab.pit.music
+import net.mizukilab.pit.util.item.ItemUtil
 import net.mizukilab.pit.util.Utils.getMythicItem
 import net.mizukilab.pit.util.menu.Button
 import net.mizukilab.pit.util.menu.Menu
+import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.event.inventory.InventoryClickEvent
@@ -26,7 +28,17 @@ class MusicalRuneMenu : Menu() {
         var index = 0
 
         for ((slot, itemStack) in player.inventory.withIndex()) {
+            if (itemStack == null || itemStack.type == Material.AIR) {
+                continue
+            }
+            val mythic = getMythicItem(itemStack)
+            Bukkit.getLogger().info("[RuneDebug] slot=" + slot
+                    + " type=" + itemStack.type
+                    + " internal=" + ItemUtil.getInternalName(itemStack)
+                    + " mythic=" + (mythic != null)
+                    + " hasMusic=" + music.any { it.isItemHasEnchant(itemStack) })
             if (isItemValid(itemStack)) {
+                Bukkit.getLogger().info("[RuneDebug] 命中有效护甲 slot=" + slot)
                 map[index++] = ItemRuneButton(itemStack, slot)
             }
         }
