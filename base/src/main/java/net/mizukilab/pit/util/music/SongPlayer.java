@@ -94,6 +94,8 @@ public abstract class SongPlayer {
                 calculateFade();
                 tick++;
                 if (tick > song.getLength()) {
+                    ThePit.getInstance().getLogger().info("[MusicDebug] 循环到结尾 tick=" + tick
+                            + " length=" + song.getLength() + " delay=" + song.getDelay() + " loop=" + loop);
                     if (loop) {
                         tick = 0;
                         return;
@@ -179,6 +181,7 @@ public abstract class SongPlayer {
     public void setPlaying(boolean playing) {
         this.playing = playing;
         if (!playing) {
+            ThePit.getInstance().getLogger().info("[MusicDebug] 停止播放 setPlaying(false)");
             SongStoppedEvent event = new SongStoppedEvent(this);
             Bukkit.getPluginManager().callEvent(event);
         }
