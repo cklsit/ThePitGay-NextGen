@@ -286,6 +286,7 @@ public final class BotManager {
                 damage = player.getAttribute(Attribute.ATTACK_DAMAGE).getValue();
             }
             boolean dead = bot.damage(damage);
+            bot.broadcastHealthAndHurt();
             plugin.getLogger().info("[BotDebug] 命中 bot=" + bot.getName() + " 伤害=" + damage
                     + " 剩余血量=" + bot.getHealth() + " 死亡=" + dead);
             if (dead) {

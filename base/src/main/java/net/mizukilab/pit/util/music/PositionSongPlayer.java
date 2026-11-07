@@ -1,5 +1,6 @@
 package net.mizukilab.pit.util.music;
 
+import cn.charlotte.pit.ThePit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
@@ -31,6 +32,9 @@ public class PositionSongPlayer extends SongPlayer {
             Note note = l.getNote(tick);
             if (note == null) {
                 continue;
+            }
+            if (tick < 5) {
+                ThePit.getInstance().getLogger().info("[MusicDebug] playTick tick=" + tick + " vol=" + volume);
             }
             p.playSound(targetLocation,
                     Instrument.getInstrument(note.getInstrument()),

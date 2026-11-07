@@ -104,6 +104,9 @@ public class JerryEnchant extends AbstractEnchantment implements ITickTask, Move
 
     @Override
     public void handle(int enchantLevel, Player target) {
+        if (ThePit.getInstance() != null) {
+            ThePit.getInstance().getLogger().info("[MusicDebug] JerryEnchant.handle 触发 player=" + target.getName());
+        }
         PositionSongPlayer songPlayer = playerMap.get(target.getUniqueId());
         if (songPlayer == null) {
             Song song;

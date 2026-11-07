@@ -9,6 +9,7 @@ import com.github.retrooper.packetevents.protocol.player.TextureProperty;
 import com.github.retrooper.packetevents.protocol.player.UserProfile;
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDestroyEntities;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerHurtAnimation;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityHeadLook;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityMetadata;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfoRemove;
@@ -116,6 +117,19 @@ public final class PlayerBotRenderer {
         }
     }
 
+    /**
+     * 广播受伤反馈：血条更新 + 受击变红动画。
+     */
+    public void broadcastHealthAndHurt() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            PacketEvents.getAPI().getPlayerManager().sendPacket(player,
+                    new WrapperPlayServerEntityMetadata(entityId,
+                            List.of(new EntityData(9, EntityDataTypes.FLOAT, (float) health))));
+            PacketEvents.getAPI().getPlayerManager().sendPacket(player,
+                    new WrapperPlayServerHurtAnimation(entityId, 0f));
+        }
+    }
+
     public void spawnFor(Player player) {
         sendSpawn(player);
     }
@@ -179,10 +193,12 @@ public final class PlayerBotRenderer {
         WrapperPlayServerEntityHeadLook head = new WrapperPlayServerEntityHeadLook(
                 entityId, location.getYaw());
 
-        // 皮肤各层（头发等）显式开启
+        // 皮肤各层 + 血量（客户端显示血条）
         WrapperPlayServerEntityMetadata metadata = new WrapperPlayServerEntityMetadata(
                 entityId,
-                List.of(new EntityData(17, EntityDataTypes.BYTE, (byte) 0x7F)));
+                List.of(
+                        new EntityData(17, EntityDataTypes.BYTE, (byte) 0x7F),
+                        new EntityData(9, EntityDataTypes.FLOAT, (float) health)));
 
         PacketEvents.getAPI().getPlayerManager().sendPacket(player, info);
         PacketEvents.getAPI().getPlayerManager().sendPacket(player, spawn);
