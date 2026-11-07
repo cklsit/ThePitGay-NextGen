@@ -1,6 +1,7 @@
 package cn.charlotte.pit.bot;
 
 import cn.charlotte.pit.ThePit;
+import cn.charlotte.pit.data.PlayerProfile;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.command.CommandExecutor;
@@ -9,6 +10,10 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Zombie;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 
 import java.io.File;
 import java.io.IOException;
@@ -51,6 +56,7 @@ public final class BotManager {
         this.plugin = plugin;
         this.storageFile = new File(plugin.getDataFolder(), "bots.yml");
         load();
+        Bukkit.getPluginManager().registerEvents(new BotCombatListener(), plugin);
     }
 
     public Collection<PlayerBotRenderer> getBots() {
@@ -217,6 +223,48 @@ public final class BotManager {
     public void spawnAll() {
         for (PlayerBotRenderer bot : bots.values()) {
             bot.spawnAll();
+        }
+    }
+
+    public PlayerBotRenderer findBotByHitbox(Zombie zombie) {
+        for (PlayerBotRenderer bot : bots.values()) {
+            if (bot.getHitbox() == zombie) {
+                return bot;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Bot 战斗监听：Bot 是给玩家刷金币/经验的沙袋。
+     * <p>
+     * 命中不可见的命中框实体时按次结算奖励，并把血量回满（Bot 永不死亡）。
+     */
+    private final class BotCombatListener implements Listener {
+
+        private static final double COINS_PER_HIT = 2.0;
+        private static final double XP_PER_HIT = 5.0;
+
+        @EventHandler
+        public void onHit(EntityDamageByEntityEvent event) {
+            if (!(event.getEntity() instanceof Zombie zombie) || !(event.getDamager() instanceof Player player)) {
+                return;
+            }
+            PlayerBotRenderer bot = findBotByHitbox(zombie);
+            if (bot == null) {
+                return;
+            }
+            // 吃掉伤害，Bot 作为沙袋不回血死亡
+            event.setCancelled(true);
+            zombie.setHealth(zombie.getMaxHealth());
+
+            PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
+            if (profile == null) {
+                return;
+            }
+            profile.setCoins(profile.getCoins() + COINS_PER_HIT);
+            profile.grindCoins(COINS_PER_HIT);
+            profile.setExperience(profile.getExperience() + XP_PER_HIT);
         }
     }
 

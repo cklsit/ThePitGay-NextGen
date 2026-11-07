@@ -15,6 +15,7 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Zombie;
 
 import java.util.EnumSet;
 import java.util.List;
@@ -40,6 +41,8 @@ public final class PlayerBotRenderer {
     private final String name;
     private volatile BotSkin skin;
     private volatile Location location;
+    // 真实（不可见）实体，作为可被攻击的命中框；客户端看到的玩家模型由发包渲染
+    private Zombie hitbox;
 
     public PlayerBotRenderer(String name, BotSkin skin, Location location) {
         this.name = name;
@@ -83,6 +86,7 @@ public final class PlayerBotRenderer {
     }
 
     public void spawnFor(Player player) {
+        ensureHitbox();
         sendSpawn(player);
     }
 
@@ -91,6 +95,7 @@ public final class PlayerBotRenderer {
     }
 
     public void spawnAll() {
+        ensureHitbox();
         for (Player player : Bukkit.getOnlinePlayers()) {
             sendSpawn(player);
         }
@@ -99,6 +104,45 @@ public final class PlayerBotRenderer {
     public void despawnAll() {
         for (Player player : Bukkit.getOnlinePlayers()) {
             sendRemove(player);
+        }
+        removeHitbox();
+    }
+
+    public Zombie getHitbox() {
+        return hitbox;
+    }
+
+    /**
+     * 生成真实实体命中框：不可见、无 AI、可被攻击、不自然消亡。
+     * 客户端看到的玩家模型由 {@link #sendSpawn} 发包渲染，两者位置一致。
+     */
+    public void ensureHitbox() {
+        if (hitbox != null && hitbox.isValid()) {
+            return;
+        }
+        if (location.getWorld() == null) {
+            return;
+        }
+        hitbox = location.getWorld().spawn(location, Zombie.class, zombie -> {
+            zombie.setPersistent(false);
+            zombie.setSilent(true);
+            zombie.setInvisible(true);
+            zombie.setAI(false);
+            zombie.setInvulnerable(false);
+            zombie.setAdult();
+            zombie.setCollidable(false);
+            zombie.setRemoveWhenFarAway(false);
+            zombie.setShouldBurnInDay(false);
+            zombie.setCustomNameVisible(false);
+            zombie.setMaxHealth(10000.0);
+            zombie.setHealth(10000.0);
+        });
+    }
+
+    public void removeHitbox() {
+        if (hitbox != null) {
+            hitbox.remove();
+            hitbox = null;
         }
     }
 
