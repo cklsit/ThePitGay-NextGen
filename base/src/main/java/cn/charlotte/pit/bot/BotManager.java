@@ -11,7 +11,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
@@ -273,19 +272,21 @@ public final class BotManager {
         }
 
         /**
-         * 武器基础攻击力（不含力量/暴击等玩家状态加成），铁剑约 6，需 4 刀击杀 20 血 bot。
+         * 武器基础攻击力（按材质固定，不含力量/暴击等状态加成）。
          */
         private double baseAttackDamage(Player player) {
-            double base = 1.0;
-            ItemStack weapon = player.getInventory().getItemInMainHand();
-            if (weapon != null && weapon.getType() != Material.AIR && weapon.getItemMeta() != null) {
-                for (AttributeModifier modifier : weapon.getItemMeta().getAttributeModifiers().get(Attribute.ATTACK_DAMAGE)) {
-                    if (modifier.getOperation() == AttributeModifier.Operation.ADD_NUMBER) {
-                        base += modifier.getAmount();
-                    }
-                }
-            }
-            return base;
+            Material type = player.getInventory().getItemInMainHand().getType();
+            return switch (type) {
+                case WOODEN_SWORD, GOLDEN_SWORD -> 4.0;
+                case STONE_SWORD -> 5.0;
+                case IRON_SWORD -> 6.0;
+                case DIAMOND_SWORD -> 7.0;
+                case NETHERITE_SWORD -> 8.0;
+                case WOODEN_AXE, GOLDEN_AXE -> 7.0;
+                case STONE_AXE, IRON_AXE, DIAMOND_AXE -> 9.0;
+                case NETHERITE_AXE -> 10.0;
+                default -> 1.0;
+            };
         }
 
         private void handleAttack(Player player, int entityId) {

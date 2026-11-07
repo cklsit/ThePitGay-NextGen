@@ -37,12 +37,7 @@ public enum NotePitch {
     }
 
     public static float getPitch(int note) {
-        for (NotePitch notePitch : values()) {
-            if (notePitch.note == note) {
-                return notePitch.pitch;
-            }
-        }
-
-        return 0.0F;
+        // 1.21：按音高公式计算，覆盖全音域（原查找表对 key-33 越界返回 0.0F 导致音符乱放）
+        return (float) (0.5F * Math.pow(2.0, note / 12.0));
     }
 }
