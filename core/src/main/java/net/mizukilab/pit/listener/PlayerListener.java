@@ -236,6 +236,10 @@ public class PlayerListener implements Listener {
         ProfileLoadRunnable.getInstance().handleJoin(player);
 
         loadData(event);
+
+        if (pit.getBotManager() != null) {
+            pit.getBotManager().respawnFor(player);
+        }
     }
 
     @EventHandler

@@ -9,13 +9,16 @@ import com.comphenix.protocol.events.PacketEvent;
 import com.comphenix.protocol.wrappers.WrappedEnumEntityUseAction;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 import java.io.File;
 import java.io.IOException;
@@ -269,6 +272,22 @@ public final class BotManager {
                     });
         }
 
+        /**
+         * 武器基础攻击力（不含力量/暴击等玩家状态加成），铁剑约 6，需 4 刀击杀 20 血 bot。
+         */
+        private double baseAttackDamage(Player player) {
+            double base = 1.0;
+            ItemStack weapon = player.getInventory().getItemInMainHand();
+            if (weapon != null && weapon.getType() != Material.AIR && weapon.getItemMeta() != null) {
+                for (AttributeModifier modifier : weapon.getItemMeta().getAttributeModifiers().get(Attribute.ATTACK_DAMAGE)) {
+                    if (modifier.getOperation() == AttributeModifier.Operation.ADD_NUMBER) {
+                        base += modifier.getAmount();
+                    }
+                }
+            }
+            return base;
+        }
+
         private void handleAttack(Player player, int entityId) {
             PlayerBotRenderer bot = findBotByEntityId(entityId);
             if (bot == null) {
@@ -281,10 +300,7 @@ public final class BotManager {
                 profile.grindCoins(COINS_PER_HIT);
                 profile.setExperience(profile.getExperience() + XP_PER_HIT);
             }
-            double damage = 1.0;
-            if (player.getAttribute(Attribute.ATTACK_DAMAGE) != null) {
-                damage = player.getAttribute(Attribute.ATTACK_DAMAGE).getValue();
-            }
+            double damage = baseAttackDamage(player);
             boolean dead = bot.damage(damage);
             bot.broadcastHealthAndHurt();
             plugin.getLogger().info("[BotDebug] 命中 bot=" + bot.getName() + " 伤害=" + damage

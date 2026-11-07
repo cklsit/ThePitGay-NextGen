@@ -76,10 +76,11 @@ public class ItemFactory implements IItemFactory {
         if(internalName == null){
             return null;
         }
-        int hashCodeForUUID = ItemUtil.getHashCodeForUUID(stack);
-        if(hashCodeForUUID == -1){
+        // 无 uuid 的非法物品直接判空；但 def uuid（未鉴定）的 hash 为 -1，需走 getIMythicItem0 鉴定
+        if (ItemUtil.getUUID(stack) == null) {
             return null;
         }
+        int hashCodeForUUID = ItemUtil.getHashCodeForUUID(stack);
         IMythicItem iMythicItem = getIMythicItem(hashCodeForUUID);
 
         if (iMythicItem == null || clientSide) { //会导致不掉命bug, 有点厉害
