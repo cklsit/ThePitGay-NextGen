@@ -48,8 +48,8 @@ public class TradeData {
         ThePit instance = ThePit.getInstance();
         Bukkit.getScheduler().runTaskAsynchronously(instance, () -> instance
                 .getMongoDB()
-                .getTradeCollection()
-                .replaceOne(Filters.eq("tradeUuid", tradeUuid), this, new ReplaceOptions().upsert(true)));
+                .getTrades()
+                .replaceOne("tradeUuid", tradeUuid, this));
     }
 
     public String getTradeUuid() {

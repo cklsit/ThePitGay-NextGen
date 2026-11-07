@@ -75,6 +75,13 @@ public class PitGlobalConfig extends Configuration {
     @Setter
     @Getter
     @ConfigData(
+            path = "storage.type"
+    )
+    private String storageType = "sqlite";
+
+    @Setter
+    @Getter
+    @ConfigData(
             path = "service.mongodb.ip"
     )
     private String mongoDBAddress;

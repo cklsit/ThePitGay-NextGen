@@ -40,15 +40,15 @@ public class TradeDataViewerButton extends Button {
         List<String> lores = new ArrayList<>();
 
         List<TradeData> data = new ArrayList<>();
-        FindIterable<TradeData> tradeA = ThePit.getInstance()
+        List<TradeData> tradeA = ThePit.getInstance()
                 .getMongoDB()
-                .getTradeCollection()
-                .find(Filters.eq("playerA", profile.getUuid()));
+                .getTrades()
+                .find("playerA", profile.getUuid());
 
-        FindIterable<TradeData> tradeB = ThePit.getInstance()
+        List<TradeData> tradeB = ThePit.getInstance()
                 .getMongoDB()
-                .getTradeCollection()
-                .find(Filters.eq("playerB", profile.getUuid()));
+                .getTrades()
+                .find("playerB", profile.getUuid());
 
         for (TradeData tradeData : tradeA) {
             data.add(tradeData);
@@ -115,15 +115,15 @@ public class TradeDataViewerButton extends Button {
 
     @Override
     public void clicked(Player player, int slot, ClickType clickType, int hotbarButton, ItemStack currentItem) {
-        FindIterable<TradeData> tradeA = ThePit.getInstance()
+        List<TradeData> tradeA = ThePit.getInstance()
                 .getMongoDB()
-                .getTradeCollection()
-                .find(Filters.eq("playerA", profile.getUuid()));
+                .getTrades()
+                .find("playerA", profile.getUuid());
 
-        FindIterable<TradeData> tradeB = ThePit.getInstance()
+        List<TradeData> tradeB = ThePit.getInstance()
                 .getMongoDB()
-                .getTradeCollection()
-                .find(Filters.eq("playerB", profile.getUuid()));
+                .getTrades()
+                .find("playerB", profile.getUuid());
 
         List<TradeData> data = new ArrayList<>();
         for (TradeData tradeData : tradeA) {

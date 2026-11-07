@@ -45,8 +45,8 @@ public class CDKData {
         cachedCDK.clear();
         for (CDKData data : ThePit.getInstance()
                 .getMongoDB()
-                .getCdkCollection()
-                .find()) {
+                .getCdks()
+                .findAll()) {
             cachedCDK.put(data.cdk, data);
         }
         loading = false;
@@ -63,8 +63,8 @@ public class CDKData {
     public void active() {
         ThePit.getInstance()
                 .getMongoDB()
-                .getCdkCollection()
-                .replaceOne(Filters.eq("cdk", cdk), this, new ReplaceOptions().upsert(true));
+                .getCdks()
+                .replaceOne("cdk", cdk, this);
         cachedCDK.put(cdk, this);
     }
 

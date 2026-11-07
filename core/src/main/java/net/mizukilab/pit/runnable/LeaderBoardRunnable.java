@@ -27,30 +27,24 @@ public class LeaderBoardRunnable extends BukkitRunnable {
     }
 
     public static void updateLeaderboardData() {
-        FindIterable<Document> documents = ThePit.getInstance()
-                .getMongoDB()
-                .getCollection()
-                .find()
-                .sort(Filters.eq("totalExp", -1))
-                .filter(Filters.gte("lastLogoutTime", System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000));
+        // 1.21：排行榜改为读取全部档案后在内存排序（Mongo/SQLite 双后端统一）
+        long cutoff = System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000L;
+        List<cn.charlotte.pit.data.PlayerProfile> profiles =
+                ThePit.getInstance().getMongoDB().getProfiles().findAll();
+        profiles.removeIf(p -> p.getLastLogoutTime() < cutoff);
+
+        profiles.sort((a, b) -> Double.compare(b.getExperience(), a.getExperience()));
 
         List<LeaderBoardEntry> entries = new ObjectArrayList<>();
         int i = 1;
-        for (Document document : documents) {
+        for (cn.charlotte.pit.data.PlayerProfile profile : profiles) {
             try {
-                String name = document.getString("playerName");
-                String uuid = document.getString("uuid");
-                final Object expObj = document.get("experience");
-                Double experience;
-                try {
-                    experience = (Double) expObj;
-                } catch (Exception e) {
-                    experience = Double.valueOf(((Integer) expObj));
-                }
-                int prestige = document.getInteger("prestige");
-                int rank = i;
-                entries.add(new LeaderBoardEntry(name, UUID.fromString(uuid), rank, experience, prestige));
-
+                entries.add(new LeaderBoardEntry(
+                        profile.getPlayerName(),
+                        profile.getPlayerUuid(),
+                        i,
+                        profile.getExperience(),
+                        profile.getPrestige()));
                 i++;
             } catch (Exception e) {
                 e.printStackTrace();

@@ -34,7 +34,7 @@ class PitAdminDupeFixCommands {
         val visited = Collections.synchronizedSet(HashSet<String>())
         val searchedPlayer = Collections.synchronizedSet(HashSet<String>())
 
-        val size = ThePit.getInstance().mongoDB.profileCollection.countDocuments()
+        val size = ThePit.getInstance().mongoDB.profiles.findAll().size.toLong()
         sender.sendMessage("发现玩家总数: $size")
 
         val perDetect = ceil(size / 64.0).toInt()
@@ -46,10 +46,7 @@ class PitAdminDupeFixCommands {
             val builder = StringBuilder()
             builder.append("Ids: ")
 
-            ThePit.getInstance().mongoDB.profileCollection.find()
-                .skip(count.getAndAdd(perDetect))
-                .limit(perDetect)
-                .forEach { profile ->
+            ThePit.getInstance().mongoDB.profiles.findAll().forEach { profile ->
                     try {
                         if (!searchedPlayer.add(profile.uuid)) {
                             return@forEach
@@ -180,8 +177,8 @@ class PitAdminDupeFixCommands {
     @Execute(name = "0526")
     @Async
     fun fix0526(@Context sender: CommandSender) {
-        val profileCollection = ThePit.getInstance().mongoDB.profileCollection
-        profileCollection.find().forEach { profile ->
+        val profiles = ThePit.getInstance().mongoDB.profiles.findAll()
+        profiles.forEach { profile ->
             var count = 0
             profile.inventory.apply {
                 contents = contents.map { itemStack ->
@@ -207,11 +204,7 @@ class PitAdminDupeFixCommands {
                     }
                 }.second)
             }
-            profileCollection.replaceOne(
-                Filters.eq("uuid", profile.uuid),
-                profile,
-                ReplaceOptions().upsert(true)
-            )
+            ThePit.getInstance().mongoDB.profiles.replaceOne("uuid", profile.uuid.toString(), profile)
             if (count > 0) {
                 sender.sendMessage("已处理玩家${profile.playerName} 的 $count 个物品")
             }
@@ -227,8 +220,8 @@ class PitAdminDupeFixCommands {
     @Execute(name = "kami")
     @Async
     fun kami(@Context sender: CommandSender) {
-        val profileCollection = ThePit.getInstance().mongoDB.profileCollection
-        profileCollection.find().forEach { profile ->
+        val profiles = ThePit.getInstance().mongoDB.profiles.findAll()
+        profiles.forEach { profile ->
             var count = 0
             profile.inventory.apply {
                 contents = contents.map { itemStack ->
@@ -254,11 +247,7 @@ class PitAdminDupeFixCommands {
                     }
                 }.second)
             }
-            profileCollection.replaceOne(
-                Filters.eq("uuid", profile.uuid),
-                profile,
-                ReplaceOptions().upsert(true)
-            )
+            ThePit.getInstance().mongoDB.profiles.replaceOne("uuid", profile.uuid.toString(), profile)
             if (count > 0) {
                 sender.sendMessage("已处理玩家${profile.playerName} 的 $count 个物品")
             }

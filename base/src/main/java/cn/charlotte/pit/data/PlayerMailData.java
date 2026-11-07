@@ -61,8 +61,8 @@ public class PlayerMailData {
     public void save() {
         ThePit.getInstance()
                 .getMongoDB()
-                .getMailCollection()
-                .replaceOne(Filters.eq("uuid", this.uuid), this, new ReplaceOptions().upsert(true));
+                .getMails()
+                .replaceOne("uuid", this.uuid, this);
     }
 
     public String getUuid() {

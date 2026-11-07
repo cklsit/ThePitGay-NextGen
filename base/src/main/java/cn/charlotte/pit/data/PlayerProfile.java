@@ -449,8 +449,8 @@ public class PlayerProfile {
 
         PlayerProfile playerProfile = ThePit.getInstance()
                 .getMongoDB()
-                .getProfileCollection()
-                .findOne(Filters.eq("uuid", uuid.toString()));
+                .getProfiles()
+                .findOne("uuid", uuid.toString());
 
         if (playerProfile != null) {
             //load mail
@@ -470,13 +470,13 @@ public class PlayerProfile {
      */
     public static void gcBackups(Iterable<PlayerInvBackup> invBackups, PlayerProfile playerProfile, boolean add) {
         long lastTime = 0;
-        JacksonMongoCollection<PlayerInvBackup> invCollection = ThePit.getInstance().getMongoDB().getInvCollection();
+        cn.charlotte.pit.data.storage.DocumentCollection<PlayerInvBackup> invCollection = ThePit.getInstance().getMongoDB().getInvBackups();
         for (PlayerInvBackup backup : invBackups) {
             long between = Math.abs(ChronoUnit.DAYS.between(Instant.now(), Instant.ofEpochMilli(backup.getTimeStamp())));
             if (Math.abs(backup.getTimeStamp() - lastTime) < 10 * 60 * 1000
                     || between > 20) {
                 lastTime = backup.getTimeStamp();
-                invCollection.deleteOne(Filters.eq("backupUuid", backup.getBackupUuid()));
+                invCollection.deleteOne("backupUuid", backup.getBackupUuid());
                 continue;
             }
             lastTime = backup.getTimeStamp();
@@ -495,8 +495,8 @@ public class PlayerProfile {
     public static PlayerProfile loadPlayerProfileByName(String name) {
         return ThePit.getInstance()
                 .getMongoDB()
-                .getProfileCollection()
-                .findOne(Filters.eq("lowerName", name.toLowerCase())); //PlayerProfile lookup
+                .getProfiles()
+                .findOne("lowerName", name.toLowerCase()); //PlayerProfile lookup
     }
 
     public static void saveAll() {
@@ -506,8 +506,8 @@ public class PlayerProfile {
     public static void loadMail(PlayerProfile playerProfile, UUID uuid) {
         PlayerMailData mailData = ThePit.getInstance()
                 .getMongoDB()
-                .getMailCollection()
-                .findOne(Filters.eq("uuid", uuid.toString()));
+                .getMails()
+                .findOne("uuid", uuid.toString());
 
         if (mailData == null) {
             mailData = new PlayerMailData();
@@ -557,8 +557,8 @@ public class PlayerProfile {
 
         ThePit.getInstance()
                 .getMongoDB()
-                .getProfileCollection()
-                .replaceOne(Filters.eq("uuid", this.uuid), this, new ReplaceOptions().upsert(true));
+                .getProfiles()
+                .replaceOne("uuid", this.uuid, this);
     }
 
     public static void bootstrapProfile(PlayerProfile profile) {
@@ -733,8 +733,8 @@ public class PlayerProfile {
 
             ThePit.getInstance()
                     .getMongoDB()
-                    .getProfileCollection()
-                    .replaceOne(Filters.eq("uuid", this.uuid), profile, new ReplaceOptions().upsert(true));
+                .getProfiles()
+                .replaceOne("uuid", this.uuid, profile);
         } else {
             if (!this.loaded) {
                 return false;
@@ -770,8 +770,8 @@ public class PlayerProfile {
 
         ThePit.getInstance()
                 .getMongoDB()
-                .getProfileCollection()
-                .replaceOne(Filters.eq("uuid", this.uuid), wipedData.getWipedProfile(), new ReplaceOptions().upsert(true));
+                .getProfiles()
+                .replaceOne("uuid", this.uuid, wipedData.getWipedProfile());
 
         return true;
     }
@@ -1757,7 +1757,7 @@ public class PlayerProfile {
             Bukkit.getLogger().warning("Executing fetch inventory backups on main thread for " + this.playerName);
         }
         return ThePit.getInstance().getMongoDB().
-                getInvCollection().find(Filters.eq("uuid", uuid));
+                getInvBackups().find("uuid", uuid);
     }
 
     @Beta
@@ -1767,7 +1767,7 @@ public class PlayerProfile {
             Bukkit.getLogger().warning("Executing fetch inventory backups on main thread for " + this.playerName);
         }
         return ThePit.getInstance().getMongoDB().
-                getInvCollection().find(Filters.eq("uuid", uuid)).projection(Projections.include("timeStamp", "backupUuid", "uuid"));
+                getInvBackups().find("uuid", uuid);
     }
 
     public double getGoldStackAddon() {
