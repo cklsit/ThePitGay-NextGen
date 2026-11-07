@@ -440,9 +440,9 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
             });
             for (String loc : oriBlock.keySet()) {
                 Location location = toLoc(loc);
-                BlockData blockData = oriBlock.get(loc);
-                if (oriBlock.get(loc) != null) {
-                    location.getBlock().setBlockData(blockData);
+                BlockHeadEvent.BlockData blockData = oriBlock.get(loc);
+                if (blockData != null) {
+                    location.getBlock().setType(blockData.getType());
                 }
             }
             oriBlock.clear();
@@ -547,6 +547,14 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
             this.type = type;
             this.data = data;
             this.belonger = belonger;
+        }
+
+        public Material getType() {
+            return type;
+        }
+
+        public byte getData() {
+            return data;
         }
 
     }

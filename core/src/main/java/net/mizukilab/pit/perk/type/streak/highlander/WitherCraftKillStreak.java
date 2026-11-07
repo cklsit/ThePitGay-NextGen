@@ -115,16 +115,15 @@ public class WitherCraftKillStreak extends AbstractPerk implements Listener {
             }
             ItemStack item = InventoryUtil.deserializeItemStack(profile.getEnchantingItem());
             IMythicItem mythicItem = null;
-            net.minecraft.server.v1_8_R3.ItemStack nmsStack = Utils.toNMStackQuick(item);
             if (item == null) {
                 return;
             }
 
-            if (nmsStack.getItem() instanceof ItemSword) {
+            if (cn.charlotte.pit.compat.item.ItemTypes.isSword(item)) {
                 mythicItem = new MythicSwordItem();
-            } else if (nmsStack.getItem() instanceof ItemBow) {
+            } else if (cn.charlotte.pit.compat.item.ItemTypes.isBow(item)) {
                 mythicItem = new MythicBowItem();
-            } else if (nmsStack.getItem() instanceof ItemArmor && ItemUtil.getInternalName(item).equalsIgnoreCase("mythic_leggings")) {
+            } else if (cn.charlotte.pit.compat.item.ItemTypes.isArmor(item) && "mythic_leggings".equalsIgnoreCase(ItemUtil.getInternalName(item))) {
                 mythicItem = new MythicLeggingsItem();
             }
 

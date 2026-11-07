@@ -103,7 +103,7 @@ public class SpongeSteveKillStreak extends AbstractPerk implements Listener {
         //trigger check (every X streak)
         int streak = 25;
         if (Math.floor(event.getFrom()) % streak != 0 && Math.floor(event.getTo()) % streak == 0) {
-            float heart = (((org.bukkit.entity.Player) myself)).getAbsorptionAmount();
+            float heart = (float) (((org.bukkit.entity.Player) myself)).getAbsorptionAmount();
             (((org.bukkit.entity.Player) myself)).setAbsorptionAmount(heart + 30);
         }
     }

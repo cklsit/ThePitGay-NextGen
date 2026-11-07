@@ -436,11 +436,9 @@ public class EnchantButton extends Button {
         stack.setItemMeta(itemStack.getItemMeta());
     }
     private static BaseComponent[] toEmptyHover(IMythicItem mythicItem) {
-        net.minecraft.server.v1_8_R3.ItemStack nms = Utils.toNMStackQuick(mythicItem.toItemStack());
-        NBTTagCompound nbtTagCompound = new NBTTagCompound();
-        nms.save(nbtTagCompound);
+        // 1.21：无法再序列化物品 NBT 作为悬停，退化为物品名文本
         return new BaseComponent[]{
-                new TextComponent(nbtTagCompound.toString())
+                new TextComponent(mythicItem.getInternalName() == null ? "神话物品" : mythicItem.getInternalName())
         };
     }
 

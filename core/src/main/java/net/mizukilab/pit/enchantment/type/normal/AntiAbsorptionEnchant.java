@@ -54,7 +54,7 @@ public class AntiAbsorptionEnchant extends AbstractEnchantment implements IAttac
     @Override
     @PlayerOnly
     public void handleAttackEntity(int enchantLevel, Player attacker, Entity target, double damage, AtomicDouble finalDamage, AtomicDouble boostDamage, AtomicBoolean cancel) {
-        float heart = (((org.bukkit.entity.Player) attacker)).getAbsorptionAmount();
+        float heart = (float) (((org.bukkit.entity.Player) attacker)).getAbsorptionAmount();
         if (heart > 0) {
             boostDamage.getAndAdd(0.05 * enchantLevel);
         }

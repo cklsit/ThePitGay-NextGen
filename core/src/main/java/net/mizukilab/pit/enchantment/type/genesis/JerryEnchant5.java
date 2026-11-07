@@ -118,7 +118,7 @@ public class JerryEnchant5 extends AbstractEnchantment implements ITickTask, Mov
 
             this.playerMap.put(target.getUniqueId(), player);
         } else {
-            target.getWorld().playEffect(target.getLocation().clone().add(0, 3, 0), Effect.NOTE, 1);
+            target.getWorld().spawnParticle(org.bukkit.Particle.NOTE, target.getLocation().clone().add(0, 3, 0), 1);
         }
     }
 

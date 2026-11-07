@@ -149,7 +149,7 @@ public class ApostleForTheGesusKillStreak extends AbstractPerk implements Listen
                 profile.setRenown(profile.getRenown() + 1);
                 myself.sendMessage(CC.translate("&e&l掷骰! &7你获得了 &e1 声望 &7."));
             } else if (dice == 45) {
-                float heart = (((org.bukkit.entity.Player) myself)).getAbsorptionAmount();
+                float heart = (float) (((org.bukkit.entity.Player) myself)).getAbsorptionAmount();
                 (((org.bukkit.entity.Player) myself)).setAbsorptionAmount(heart + 20);
                 myself.sendMessage(CC.translate("&e&l掷骰! &7你获得了 &610❤ 伤害吸收效果 &7."));
             } else if (dice == 50) {
@@ -204,7 +204,7 @@ public class ApostleForTheGesusKillStreak extends AbstractPerk implements Listen
                 myself.sendMessage(CC.translate("&e&l掷骰! &7你获得了 &b" + diceExperience + " 经验值 &7."));
             }
             if (dice % 12 == 0) {
-                float heart = (((org.bukkit.entity.Player) myself)).getAbsorptionAmount();
+                float heart = (float) (((org.bukkit.entity.Player) myself)).getAbsorptionAmount();
                 (((org.bukkit.entity.Player) myself)).setAbsorptionAmount(heart + 8);
                 myself.sendMessage(CC.translate("&e&l掷骰! &7你获得了 &64❤ 伤害吸收效果 &7."));
             }

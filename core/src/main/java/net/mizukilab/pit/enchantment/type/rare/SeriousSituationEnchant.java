@@ -77,10 +77,10 @@ public class SeriousSituationEnchant extends AbstractEnchantment implements List
                 if (level <= 0) {
                     return;
                 }
-                Entity handle = ((CraftEntity) e.getProjectile()).getHandle();
-                if (handle instanceof EntityArrow arrow) {
-                    arrow.setKnockbackStrength(getPunch(level)); //set punch III
-                    arrow.b(arrow.j() + getAddonDamage(level)); //2 H = 1 Heart
+                // 1.21：直接用箭矢属性设置击退与额外伤害
+                if (e.getProjectile() instanceof org.bukkit.entity.AbstractArrow arrow) {
+                    arrow.setKnockbackStrength(getPunch(level));
+                    arrow.setDamage(arrow.getDamage() + getAddonDamage(level));
                 }
                 shoot.removeLong(uniqueId);
             }

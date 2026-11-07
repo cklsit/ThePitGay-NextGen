@@ -100,11 +100,11 @@ public class TrueDamageArrowEnchant extends AbstractEnchantment implements Liste
                 Bukkit.getScheduler().runTask(ThePit.getInstance(), () -> {
                     final int noDamageTicks = player.getNoDamageTicks(); //emptyirony u suck
                     //victim.setNoDamageTicks(0); //buggy code
-                    EntityPlayer handle = ((org.bukkit.entity.Player) victim);
-                    float absorptionHearts = handle.getAbsorptionAmount();
+                    org.bukkit.entity.Player handle = victim;
+                    float absorptionHearts = (float) handle.getAbsorptionAmount();
                     double v = getTrueDamageRate(level) * event.getFinalDamage();
                     double b = absorptionHearts - v;
-                    handle.setAbsorptionAmount((float) Math.max(0, b));
+                    handle.setAbsorptionAmount(Math.max(0, b));
                     if (handle.getAbsorptionAmount() <= 0) {
                         PlayerUtil.damage(player, (Player) event.getEntity(), PlayerUtil.DamageType.TRUE, v + b, true);
 

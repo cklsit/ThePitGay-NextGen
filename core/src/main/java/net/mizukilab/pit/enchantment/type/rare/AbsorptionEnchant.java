@@ -52,7 +52,7 @@ public class AbsorptionEnchant extends AbstractEnchantment implements IPlayerKil
     @PlayerOnly
     public void handlePlayerKilled(int enchantLevel, Player myself, Entity target, AtomicDouble coins, AtomicDouble experience) {
 
-        float heart = (((org.bukkit.entity.Player) myself)).getAbsorptionAmount();
+        float heart = (float) (((org.bukkit.entity.Player) myself)).getAbsorptionAmount();
         (((org.bukkit.entity.Player) myself)).setAbsorptionAmount(Math.min(heart + (enchantLevel + (enchantLevel >= 3 ? 1 : 0)), (2 * enchantLevel + 6)));
     }
 

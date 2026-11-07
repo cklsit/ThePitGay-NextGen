@@ -399,7 +399,8 @@ public class ProtectListener implements Listener {
 
     @EventHandler
     private void onChunkUnload(ChunkUnloadEvent e) {
-        e.setCancelled(true);
+        // 1.21：区块卸载事件不再支持取消，改为记录日志便于排查
+        ThePit.getInstance().getLogger().fine("chunk unload: " + e.getChunk().getX() + "," + e.getChunk().getZ());
     }
 
     @EventHandler

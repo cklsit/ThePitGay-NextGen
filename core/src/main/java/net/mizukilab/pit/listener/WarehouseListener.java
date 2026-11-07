@@ -82,9 +82,15 @@ public class WarehouseListener implements Listener {
     }
 
     private boolean isWarehouseInventory(Inventory inventory) {
-        if (inventory == null) return false;
-        String title = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(inventory.title());
-        return title != null && title.startsWith("寄存箱 #");
+        if (inventory == null || inventory.getViewers().isEmpty()) {
+            return false;
+        }
+        // 1.21：Inventory 不再暴露标题，改由打开该容器的玩家视图判断
+        return inventory.getViewers().stream()
+                .filter(org.bukkit.entity.HumanEntity.class::isInstance)
+                .map(viewer -> net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                        .serialize(viewer.getOpenInventory().title()))
+                .anyMatch(title -> title.startsWith("寄存箱 #"));
     }
 
     private void moveItemToWarehouse(Player player, Inventory warehouseInventory, org.bukkit.inventory.ItemStack item, int playerSlot) {

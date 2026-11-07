@@ -169,7 +169,7 @@ public class CakeEvent extends AbstractEvent implements INormalEvent, Listener {
                     baseCoins += 5;
                     block.setType(Material.AIR);
                 } else {
-                    block.setData((byte) (block.getData() + 1));
+                    block.setBlockData(block.getBlockData().getMaterial().createBlockData());
                 }
                 block.getState().update();
 

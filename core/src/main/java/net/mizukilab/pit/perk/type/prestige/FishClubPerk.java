@@ -371,8 +371,9 @@ public class FishClubPerk extends AbstractPerk implements Listener {
             }
 
             if (perkData.getLevel() >= 3) {
-                final Fish hook = event.getHook();
-                hook.setBiteChance(Math.min(hook.getBiteChance() * 1.2, 1.0));
+                // 1.21：FishHook 不再暴露咬钩概率，改为缩短等待（等价效果由钓鱼监听处理）
+                final org.bukkit.entity.FishHook hook = event.getHook();
+                hook.setWaitTime(Math.max(20, (int) (hook.getWaitTime() / 1.2)));
             }
         }
     }
@@ -406,8 +407,7 @@ public class FishClubPerk extends AbstractPerk implements Listener {
             final Player player = event.getPlayer();
             player.setFoodLevel(20);
 
-            final EntityPlayer handle = ((org.bukkit.entity.Player) player);
-            handle.setAbsorptionAmount(handle.getAbsorptionAmount() + 2);
+            player.setAbsorptionAmount(player.getAbsorptionAmount() + 2);
         }
     }
 

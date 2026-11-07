@@ -390,7 +390,13 @@ public abstract class IMythicItem extends AbstractPitItem {
                 continue;
             }
             try {
-                this.enchantments.put(entry.substring(0, index), Integer.parseInt(entry.substring(index + 1)));
+                cn.charlotte.pit.compat.item.ItemData.set(item, "ench_debug", entry);
+                int level = Integer.parseInt(entry.substring(index + 1));
+                var enchantment = ThePit.getInstance().getEnchantmentFactor()
+                        .getEnchantmentMap().get(entry.substring(0, index));
+                if (enchantment != null) {
+                    this.enchantments.put(enchantment, level);
+                }
             } catch (NumberFormatException ignored) {
             }
         }

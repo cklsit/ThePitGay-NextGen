@@ -63,7 +63,7 @@ public class ComboHealEnchant extends AbstractEnchantment implements IAttackEnti
     @Override
     public void handleAttackEntity(int enchantLevel, Player attacker, Entity target, double damage, AtomicDouble finalDamage, AtomicDouble boostDamage, AtomicBoolean cancel) {
         if (PlayerProfile.getPlayerProfileByUuid(attacker.getUniqueId()).getMeleeHit() % 4 == 0) {
-            float heart = (((org.bukkit.entity.Player) attacker)).getAbsorptionAmount();
+            float heart = (float) (((org.bukkit.entity.Player) attacker)).getAbsorptionAmount();
             float heal = enchantLevel * 0.8F;
             if (heart <= heal) {
                 (((org.bukkit.entity.Player) attacker)).setAbsorptionAmount(Math.min(heart + heal, heal));
@@ -76,7 +76,7 @@ public class ComboHealEnchant extends AbstractEnchantment implements IAttackEnti
     @net.mizukilab.pit.parm.type.BowOnly
     public void handleShootEntity(int enchantLevel, Player attacker, Entity target, double damage, AtomicDouble finalDamage, AtomicDouble boostDamage, AtomicBoolean cancel) {
         if (PlayerProfile.getPlayerProfileByUuid(attacker.getUniqueId()).getBowHit() % 4 == 0) {
-            float heart = (((org.bukkit.entity.Player) attacker)).getAbsorptionAmount();
+            float heart = (float) (((org.bukkit.entity.Player) attacker)).getAbsorptionAmount();
             float heal = enchantLevel * 0.8F;
             if (heart <= heal) {
                 (((org.bukkit.entity.Player) attacker)).setAbsorptionAmount(Math.min(heart + heal, heal));

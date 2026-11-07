@@ -36,7 +36,7 @@ public class MythicUtil {
         item.color = color;
     }
 
-    public static void setUuid(net.mizukilab.pit.item.AbstractPitItem item, java.util.UUID uuid) {
+    public static void setUuid(net.mizukilab.pit.item.IMythicItem item, java.util.UUID uuid) {
         item.uuid = uuid;
     }
 }

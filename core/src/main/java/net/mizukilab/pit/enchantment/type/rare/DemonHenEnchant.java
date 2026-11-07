@@ -154,11 +154,11 @@ public class DemonHenEnchant extends AbstractEnchantment implements IActionDispl
         
         try {
 
-            ((CraftWorld) location.getWorld()).getHandle().createExplosion(
-                owner != null ? ((CraftEntity) owner).getHandle() : null,
-                location.getX(), location.getY(), location.getZ(),
-                explosionPower, false, false
-            );
+            // 1.21：直接用 Bukkit 爆炸接口（不破坏方块、不点火）
+            if (location.getWorld() != null) {
+                location.getWorld().createExplosion(location, explosionPower, false, false,
+                        owner);
+            }
             
 
             applyKnockback(location);

@@ -20,7 +20,7 @@ public class PitItemButton extends Button {
 
     @Override
     public ItemStack getButtonItem(Player player) {
-        return CraftItemStack.asCraftCopy(itemStack).clone();
+        return itemStack.clone();
     }
 
     @Override

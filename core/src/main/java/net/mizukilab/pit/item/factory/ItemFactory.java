@@ -72,12 +72,11 @@ public class ItemFactory implements IItemFactory {
     }
     @Beta
     public IMythicItem getIMythicItem(ItemStack stack, Runnable runnable,boolean clientSide) {
-        NBTTagCompound extra = ItemUtil.getExtra(stack);
-        String internalName = ItemUtil.getInternalName0(extra);
+        String internalName = ItemUtil.getInternalName(stack);
         if(internalName == null){
             return null;
         }
-        int hashCodeForUUID = ItemUtil.getHashCodeForUUID0(stack,extra);
+        int hashCodeForUUID = ItemUtil.getHashCodeForUUID(stack);
         if(hashCodeForUUID == -1){
             return null;
         }
