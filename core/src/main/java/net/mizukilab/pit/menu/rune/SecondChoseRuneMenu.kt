@@ -20,8 +20,6 @@ class SecondChoseRuneMenu(private val itemStack: ItemStack, var index: Int) : Me
     }
 
     override fun getButtons(player: Player): MutableMap<Int, Button> {
-        val iMythicItem = Utils.getMythicItem(itemStack) ?: return mutableMapOf()
-
         val map = HashMap<Int, Button>()
         addEnchantButtonsToMap(map)
         return map

@@ -6,7 +6,7 @@ import net.mizukilab.pit.util.chat.CC
 import net.mizukilab.pit.util.item.ItemBuilder
 import net.mizukilab.pit.util.item.ItemUtil
 import net.mizukilab.pit.util.menu.Button
-import net.mizukilab.pit.util.toMythicItem
+import net.mizukilab.pit.util.Utils
 import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.entity.Player
@@ -46,7 +46,8 @@ class DJEnchantButton(
         currentItem: ItemStack
     ) {
         if (ItemUtil.getInternalName(itemStack) == "mythic_leggings") {
-            val leggingsItem = itemStack.toMythicItem()?.apply {
+            // def uuid 未鉴定的神话之甲也能谱写，改用按内部名构造
+            val leggingsItem = Utils.getMythicItem0(itemStack)?.apply {
                 this.enchantments[enchantment] = 1
                 enchantmentRecords += EnchantmentRecord(
                     player.name,
