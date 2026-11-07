@@ -172,14 +172,9 @@ public class Instrument {
         }
 
         public Sound getSound() {
-            try {
-                if (this.legacyName == "") {
-                    return Sound.valueOf("NOTE_PIANO");
-                }
-                return Sound.valueOf(this.legacyName);
-            } catch (IllegalArgumentException ex3) {
-                return Sound.valueOf("BLOCK_NOTE_BLOCK_HARP");
-            }
+            // 1.21：legacyName 是 1.8 旧名（NOTE_BASS 等）已失效，全部回退成钢琴导致乱放；
+            // 改用 1.19+ 有效名 latestName（BLOCK_NOTE_BLOCK_*）。
+            return Sound.valueOf(this.latestName);
         }
     }
 }

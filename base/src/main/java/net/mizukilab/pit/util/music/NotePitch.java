@@ -37,9 +37,7 @@ public enum NotePitch {
     }
 
     public static float getPitch(int note) {
-        // 按音高公式计算后钳制到音符盒有效音域 [0.5, 2.0]，
-        // 避免越界音符在 1.21 上发出极端音高/破碎音（乱放）。
-        float pitch = (float) (0.5F * Math.pow(2.0, note / 12.0));
-        return Math.max(0.5F, Math.min(2.0F, pitch));
+        // 音域内（key 33-57 → note 0-24）直接按音高公式计算，note 24 = 2.0
+        return (float) (0.5F * Math.pow(2.0, note / 12.0));
     }
 }
