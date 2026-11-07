@@ -46,10 +46,11 @@ class MusicalRuneMenu : Menu() {
     }
 
     private fun isItemValid(itemStack: ItemStack?): Boolean {
-
+        // 神话之甲可能带默认 uuid（未鉴定），getMythicItem 会因 uuid hash 为 -1 返回 null，
+        // 故直接按 PDC 内部名判断，避免依赖 uuid。
         return itemStack?.type == Material.LEATHER_LEGGINGS &&
-                (getMythicItem(itemStack) != null &&
-                        !music.any { it.isItemHasEnchant(itemStack) })
+                "mythic_leggings" == ItemUtil.getInternalName(itemStack) &&
+                !music.any { it.isItemHasEnchant(itemStack) }
     }
 
     override fun onClickEvent(event: InventoryClickEvent?) {

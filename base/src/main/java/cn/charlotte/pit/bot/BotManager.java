@@ -286,9 +286,14 @@ public final class BotManager {
                 damage = player.getAttribute(Attribute.ATTACK_DAMAGE).getValue();
             }
             boolean dead = bot.damage(damage);
+            plugin.getLogger().info("[BotDebug] 命中 bot=" + bot.getName() + " 伤害=" + damage
+                    + " 剩余血量=" + bot.getHealth() + " 死亡=" + dead);
             if (dead) {
-                // 死亡后 0.1 秒原地重生
-                Bukkit.getScheduler().runTaskLater(plugin, bot::respawn, 2L);
+                plugin.getLogger().info("[BotDebug] bot 已击杀，0.1s 后原地重生");
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    bot.respawn();
+                    plugin.getLogger().info("[BotDebug] bot 已重生");
+                }, 2L);
             }
         }
     }
