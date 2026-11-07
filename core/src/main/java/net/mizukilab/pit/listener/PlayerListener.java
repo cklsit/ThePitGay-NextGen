@@ -224,7 +224,9 @@ public class PlayerListener implements Listener {
         ThePit pit = ThePit.getInstance();
         Player player = event.getPlayer();
 
-        PlayerUtil.resetPlayer(player, true);
+        // 进服不再清空背包：档案加载会覆盖为已保存的背包，
+        // 而清空会让未落盘的物品（如刚用指令获得的装备）在重连时丢失。
+        PlayerUtil.resetPlayer(player, true, false);
         pit.getMapSelector().teleportIntoSpawn(player);
 
         if (ProfileLoadRunnable.getInstance() == null) {
