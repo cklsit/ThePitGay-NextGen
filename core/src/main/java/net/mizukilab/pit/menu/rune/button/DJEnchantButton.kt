@@ -47,18 +47,23 @@ class DJEnchantButton(
     ) {
         if (ItemUtil.getInternalName(itemStack) == "mythic_leggings") {
             // def uuid 未鉴定的神话之甲也能谱写，改用按内部名构造
-            val leggingsItem = Utils.getMythicItem0(itemStack)?.apply {
-                this.enchantments[enchantment] = 1
-                enchantmentRecords += EnchantmentRecord(
-                    player.name,
-                    "MusicRune",
-                    System.currentTimeMillis()
-                )
+            val leggingsItem = Utils.getMythicItem0(itemStack)
+            if (leggingsItem == null) {
+                // 兜底：识别失败时绝不 setItem(index, null)，否则会把玩家装备清掉
+                player.sendMessage(CC.translate("&c无法识别该神话之甲，已取消操作"))
+                player.closeInventory()
+                return
             }
+            leggingsItem.enchantments[enchantment] = 1
+            leggingsItem.enchantmentRecords += EnchantmentRecord(
+                player.name,
+                "MusicRune",
+                System.currentTimeMillis()
+            )
             player.playSound(player.location, Sound.BLOCK_ANVIL_USE, 1f, 99f)
             player.sendMessage(CC.translate("&6&l铸造！ &7成功为你的神话之裤增加了${enchantment.enchantName}附魔"))
 
-            player.inventory.setItem(index, leggingsItem?.toItemStack())
+            player.inventory.setItem(index, leggingsItem.toItemStack())
             updatePlayerInventory(player)
 
             player.closeInventory()
