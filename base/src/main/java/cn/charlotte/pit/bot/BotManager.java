@@ -262,9 +262,9 @@ public final class BotManager {
                             if (!"ATTACK".equals(actionName)) {
                                 return;
                             }
-                            plugin.getLogger().info("[BotDebug] 收到攻击包 entity=" + entityId
-                                    + " 攻击者=" + event.getPlayer().getName());
-                            handleAttack(event.getPlayer(), entityId);
+                            // grindCoins 会触发同步事件（PitGainCoinsEvent），必须回主线程
+                            Bukkit.getScheduler().runTask(plugin,
+                                    () -> handleAttack(event.getPlayer(), entityId));
                         }
                     });
         }

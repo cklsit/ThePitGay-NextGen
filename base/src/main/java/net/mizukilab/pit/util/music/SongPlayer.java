@@ -80,45 +80,37 @@ public abstract class SongPlayer {
         fadeDone++;
     }
 
-    protected void createThread() { //答辩了... 切个虚拟线程plz
-
-        playerThread = Bukkit.getScheduler().runTaskAsynchronously(ThePit.getInstance(), () -> {
-            while (!destroyed && cn.charlotte.pit.ThePit.getInstance() != null && cn.charlotte.pit.ThePit.getInstance().isEnabled()) {
-                long startTime = System.currentTimeMillis();
-                synchronized (SongPlayer.this) {
-                    if (playing) {
-                        calculateFade();
-                        tick++;
-                        if (tick > song.getLength()) {
-                            if (loop) {
-                                tick = 0;
-                                continue;
-                            }
-                            playing = false;
-                            tick = -1;
-                            SongEndEvent event = new SongEndEvent(SongPlayer.this);
-                            Bukkit.getPluginManager().callEvent(event);
-                            if (autoDestroy) {
-                                destroy();
-                                return;
-                            }
-                        }
-                        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                            playTick(onlinePlayer, tick);
-                        }
+    protected void createThread() {
+        // 1.21：改为主线程定时任务。playSound 与 callEvent 在 Paper 上都必须同步执行，
+        // 原先 runTaskAsynchronously + Thread.sleep 会导致音乐静默失效。
+        playerThread = Bukkit.getScheduler().runTaskTimer(ThePit.getInstance(), () -> {
+            if (destroyed || ThePit.getInstance() == null || !ThePit.getInstance().isEnabled()) {
+                return;
+            }
+            synchronized (SongPlayer.this) {
+                if (!playing) {
+                    return;
+                }
+                calculateFade();
+                tick++;
+                if (tick > song.getLength()) {
+                    if (loop) {
+                        tick = 0;
+                        return;
+                    }
+                    playing = false;
+                    tick = -1;
+                    Bukkit.getPluginManager().callEvent(new SongEndEvent(SongPlayer.this));
+                    if (autoDestroy) {
+                        destroy();
+                        return;
                     }
                 }
-                long duration = System.currentTimeMillis() - startTime;
-                float delayMillis = song.getDelay() * 50;
-                if (duration < delayMillis) {
-                    try {
-                        Thread.sleep((long) (delayMillis - duration));
-                    } catch (InterruptedException e) {
-                        // do nothing
-                    }
+                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+                    playTick(onlinePlayer, tick);
                 }
             }
-        });
+        }, 0L, Math.max(1L, song.getDelay()));
     }
 
     public List<String> getPlayerList() {
