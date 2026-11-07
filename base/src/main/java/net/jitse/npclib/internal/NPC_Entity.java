@@ -129,7 +129,8 @@ public class NPC_Entity extends NPCBase {
     }
 
     private UserProfile profile() {
-        UserProfile profile = new UserProfile(uuid, name);
+        // 名字置空，避免头顶显示无意义的随机字符串
+        UserProfile profile = new UserProfile(uuid, "");
         if (skin != null && skin.getValue() != null && !skin.getValue().isEmpty()) {
             profile.setTextureProperties(List.of(
                     new TextureProperty("textures", skin.getValue(), skin.getSignature())));
@@ -146,10 +147,10 @@ public class NPC_Entity extends NPCBase {
         WrapperPlayServerPlayerInfoUpdate.PlayerInfo data =
                 new WrapperPlayServerPlayerInfoUpdate.PlayerInfo(
                         profile,
-                        true,
+                        false,
                         0,
                         GameMode.SURVIVAL,
-                        Component.text(name),
+                        Component.empty(),
                         null);
 
         WrapperPlayServerPlayerInfoUpdate info = new WrapperPlayServerPlayerInfoUpdate(

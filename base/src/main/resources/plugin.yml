@@ -8,13 +8,3 @@ main: cn.charlotte.pit.ThePit
 load: POSTWORLD
 depend: [ LuckPerms, FastAsyncWorldEdit, ProtocolLib, PlayerPoints, PlaceholderAPI ]
 
-commands:
-  bot:
-    description: 管理玩家模型假人
-    usage: /bot {add|remove|skin} {name} [x] [y] [z]
-    permission: thepit.bot
-
-permissions:
-  thepit.bot:
-    description: 允许使用 /bot
-    default: op

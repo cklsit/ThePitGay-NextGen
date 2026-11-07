@@ -1,7 +1,6 @@
 package cn.charlotte.pit;
 
 import cn.charlotte.pit.api.PitInternalHook;
-import cn.charlotte.pit.bot.BotManager;
 import com.github.retrooper.packetevents.PacketEvents;
 import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
 import cn.charlotte.pit.api.PointsAPI;
@@ -112,8 +111,6 @@ public class ThePit extends JavaPlugin implements PluginMessageListener {
     @Getter
     private NametagHandler nametagHandler;
     private IItemFactory factory;
-    @Getter
-    private BotManager botManager;
     @Getter
     private MedalFactory medalFactory;
     @Getter
@@ -269,14 +266,6 @@ public class ThePit extends JavaPlugin implements PluginMessageListener {
         this.rebootRunnable = new RebootRunnable();
         this.rebootRunnable.runTaskTimerAsynchronously(this, 20, 20);
 
-        this.botManager = new BotManager(this);
-        this.botManager.spawnAll();
-        if (getCommand("bot") != null) {
-            BotManager.Command executor = new BotManager.Command(this.botManager);
-            getCommand("bot").setExecutor(executor);
-            getCommand("bot").setTabCompleter(executor);
-        }
-
         this.miniGameController = new MiniGameController();
         this.miniGameController.runTaskTimerAsynchronously(this, 1, 1);
         new DayNightCycleRunnable().runTaskTimer(this, 20, 20);
@@ -331,10 +320,6 @@ public class ThePit extends JavaPlugin implements PluginMessageListener {
 
     @Override
     public void onDisable() {
-        if (this.botManager != null) {
-            this.botManager.despawnAll();
-            this.botManager.save();
-        }
         try {
             PacketEvents.getAPI().terminate();
         } catch (Throwable ignored) {
