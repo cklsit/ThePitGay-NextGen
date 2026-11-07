@@ -110,7 +110,7 @@ public abstract class SongPlayer {
                     playTick(onlinePlayer, tick);
                 }
             }
-        }, 0L, Math.max(1L, song.getDelay()));
+        }, 0L, Math.max(1L, (long) song.getDelay()));
     }
 
     public List<String> getPlayerList() {
