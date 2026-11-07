@@ -83,7 +83,7 @@ public class WarehouseListener implements Listener {
 
     private boolean isWarehouseInventory(Inventory inventory) {
         if (inventory == null) return false;
-        String title = inventory.getTitle();
+        String title = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(inventory.title());
         return title != null && title.startsWith("寄存箱 #");
     }
 
@@ -110,7 +110,7 @@ public class WarehouseListener implements Listener {
                         item.setAmount(itemAmount - canAdd);
                         player.getInventory().setItem(playerSlot, item);
                     }
-                    player.playSound(player.getLocation(), Sound.BLOCK_LAVA_AMBIENT_POP, 1.0f, 1.0f);
+                    player.playSound(player.getLocation(), Sound.BLOCK_LAVA_POP, 1.0f, 1.0f);
                     player.updateInventory();
                     return;
                 }
@@ -132,7 +132,7 @@ public class WarehouseListener implements Listener {
         }
         warehouseInventory.setItem(emptySlot, item.clone());
         player.getInventory().setItem(playerSlot, null);
-        player.playSound(player.getLocation(), Sound.BLOCK_LAVA_AMBIENT_POP, 1.0f, 1.0f);
+        player.playSound(player.getLocation(), Sound.BLOCK_LAVA_POP, 1.0f, 1.0f);
         player.updateInventory();
     }
 
@@ -155,7 +155,7 @@ public class WarehouseListener implements Listener {
                         item.setAmount(itemAmount - canAdd);
                         warehouseInventory.setItem(warehouseSlot, item);
                     }
-                    player.playSound(player.getLocation(), Sound.BLOCK_LAVA_AMBIENT_POP, 1.0f, 1.0f);
+                    player.playSound(player.getLocation(), Sound.BLOCK_LAVA_POP, 1.0f, 1.0f);
                     player.updateInventory();
                     return;
                 }
@@ -167,7 +167,7 @@ public class WarehouseListener implements Listener {
         }
         player.getInventory().addItem(item.clone());
         warehouseInventory.setItem(warehouseSlot, createBarrierPlaceholder());
-        player.playSound(player.getLocation(), Sound.BLOCK_LAVA_AMBIENT_POP, 1.0f, 1.0f);
+        player.playSound(player.getLocation(), Sound.BLOCK_LAVA_POP, 1.0f, 1.0f);
         player.updateInventory();
     }
 

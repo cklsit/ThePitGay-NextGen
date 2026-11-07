@@ -294,30 +294,20 @@ public class RedVSBlueEvent extends AbstractEvent implements IEpicEvent, Listene
 
 
     private void sendPacket(Player player) {
-        PacketPlayOutEntityEquipment packet = null;
+        // 1.21：队伍头盔伪装交给 VisibleApi（PacketEvents 装备包）
         if (redTeam.contains(player.getUniqueId())) {
-            packet = new PacketPlayOutEntityEquipment(player.getEntityId(), 4, Utils.toNMStackQuick(new ItemBuilder(Material.WHITE_WOOL).durability(14).build()));
+            net.mizukilab.pit.util.VisibleApi.setFakeHelmet(player,
+                    new ItemBuilder(Material.WHITE_WOOL).durability(14).build());
         } else if (blueTeam.contains(player.getUniqueId())) {
-            packet = new PacketPlayOutEntityEquipment(player.getEntityId(), 4, Utils.toNMStackQuick(new ItemBuilder(Material.WHITE_WOOL).durability(11).build()));
-        }
-        if (packet == null) {
-            return;
-        }
-        for (Player target : Bukkit.getOnlinePlayers()) {
-            if (target.equals(player)) continue;
-            ((org.bukkit.entity.Player) target)
-                    .playerConnection
-                    .sendPacket(packet);
+            net.mizukilab.pit.util.VisibleApi.setFakeHelmet(player,
+                    new ItemBuilder(Material.WHITE_WOOL).durability(11).build());
         }
     }
 
     private void resetArmor() {
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            PlayerConnection connection = ((org.bukkit.entity.Player) player).playerConnection;
-            for (Player target : Bukkit.getOnlinePlayers()) {
-                if (player.equals(target)) continue;
-                connection.sendPacket(new PacketPlayOutEntityEquipment(target.getEntityId(), 4, Utils.toNMStackQuick(target.getInventory().getHelmet())));
-            }
+        // 1.21：把真实头盔重新下发给其他玩家
+        for (Player target : Bukkit.getOnlinePlayers()) {
+            net.mizukilab.pit.util.VisibleApi.setFakeHelmet(target, target.getInventory().getHelmet());
         }
     }
 

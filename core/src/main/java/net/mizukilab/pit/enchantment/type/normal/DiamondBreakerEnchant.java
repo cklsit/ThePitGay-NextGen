@@ -64,7 +64,7 @@ public class DiamondBreakerEnchant extends AbstractEnchantment implements IAttac
         Player victim = (Player) target;
         for (ItemStack armor : victim.getInventory().getArmorContents()) {
             if (armor != null && armor.getType() != Material.AIR && armor.getType().name().contains("DIAMOND")) {
-                if (Utils.toNMStackQuick(armor).getItem() instanceof ItemArmor) {
+                if (cn.charlotte.pit.compat.item.ItemTypes.isArmor(armor)) {
                     boostDamage.set(boostDamage.get() + (0.04 * enchantLevel));
                 }
             }
@@ -77,7 +77,7 @@ public class DiamondBreakerEnchant extends AbstractEnchantment implements IAttac
         Player victim = (Player) target;
         for (ItemStack armor : victim.getInventory().getArmorContents()) {
             if (armor != null && armor.getType() != Material.AIR && armor.getType().name().contains("DIAMOND")) {
-                if (Utils.toNMStackQuick(armor).getItem() instanceof ItemArmor) {
+                if (cn.charlotte.pit.compat.item.ItemTypes.isArmor(armor)) {
                     boostDamage.set(boostDamage.get() + (0.04 * enchantLevel));
                 }
             }

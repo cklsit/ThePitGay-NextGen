@@ -154,21 +154,20 @@ public class GameEffectListener implements Listener {
     public void onPlayerDamagePlayer(EntityDamageByEntityEvent event) {
         if (event.getDamager() instanceof Player attacker) {
             if (NewConfiguration.INSTANCE.getRepairFeatures())  {
-                if (event.getEntity() instanceof CraftLivingEntity livingEntity) { //特性修复 //TODO
-                    if (livingEntity.getHandle().hurtTicks > 5) {
+                if (event.getEntity() instanceof org.bukkit.entity.LivingEntity livingEntity) { //特性修复 //TODO
+                    if (livingEntity.getNoDamageTicks() > 5) {
                         event.setCancelled(true);
                         return;
                     }
                 }
             }
             //修正伤害
-            ItemStack itemInHand = attacker.getItemInHand();
+            ItemStack itemInHand = attacker.getInventory().getItemInMainHand();
             if (itemInHand == null || itemInHand.getType() == Material.AIR
                     || itemInHand.getType() == Material.FISHING_ROD) {
                 event.setDamage(1);
             } else {
-                final EntityPlayer entityPlayer = ((org.bukkit.entity.Player) attacker);
-                float f = (float) entityPlayer.getAttributeInstance(GenericAttributes.ATTACK_DAMAGE).getValue();
+                float f = (float) attacker.getAttribute(org.bukkit.attribute.Attribute.ATTACK_DAMAGE).getValue();
                 if (f > 9) {
                     event.setDamage(9);
                 }
@@ -350,7 +349,9 @@ public class GameEffectListener implements Listener {
             //mirror enchant code end
             player.setLastDamageCause(event);
             if (damager != null) {
-                ((org.bukkit.entity.Player) player).killer = ((org.bukkit.entity.Player) damager);
+                // 1.21：击杀者归属用 metadata 记录（死亡结算读取）
+                player.setMetadata("pit_killer", new org.bukkit.metadata.FixedMetadataValue(
+                        ThePit.getInstance(), damager.getUniqueId().toString()));
             }
 
             if (player.getHealth() < finalDamage.get()) {
@@ -423,10 +424,11 @@ public class GameEffectListener implements Listener {
             PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
             if (profile.getPlayerOption().isDebugDamageMessage()) {
                 player.sendMessage(CC.translate("&7造成伤害(Damage/Final Damage): &c" + numFormatTwo.format(event.getDamage()) + "&7/&c" + numFormatTwo.format(event.getFinalDamage())));
-                final EntityPlayer entityPlayer = ((org.bukkit.entity.Player) player);
-                final double value = entityPlayer.getAttributeInstance(GenericAttributes.ATTACK_DAMAGE).getValue();
-                final float enchantDamage = EnchantmentManager.a(entityPlayer.bA(), ((CraftLivingEntity) event.getEntity()).getHandle().getMonsterType());
-                final boolean critical = entityPlayer.fallDistance > 0.0F && !entityPlayer.onGround && !entityPlayer.k_() && !entityPlayer.V() && !entityPlayer.hasEffect(MobEffectList.BLINDNESS) && entityPlayer.vehicle == null;
+                final double value = player.getAttribute(org.bukkit.attribute.Attribute.ATTACK_DAMAGE).getValue();
+                final float enchantDamage = 0f; // 1.21：附魔额外伤害由属性系统统一计算
+                final boolean critical = player.getFallDistance() > 0.0F && !player.isOnGround()
+                        && !player.isInWater() && !player.isInsideVehicle()
+                        && player.getPotionEffect(org.bukkit.potion.PotionEffectType.BLINDNESS) == null;
                 player.sendMessage(CC.translate("&7基础: &c" + value + "&7,附魔伤害: &c" + enchantDamage + "&7,cancel:" + cancel.get() + " ,暴击: &c" + critical));
 
             }

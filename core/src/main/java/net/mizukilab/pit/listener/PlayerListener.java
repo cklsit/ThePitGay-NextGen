@@ -292,9 +292,8 @@ public class PlayerListener implements Listener {
         Player player = event.getPlayer();
 
         ItemStack stack = event.getItem().getItemStack();
-        net.minecraft.server.v1_8_R3.ItemStack nmsItem = Utils.toNMStackQuick(stack);
 
-        if (nmsItem.getItem() instanceof ItemArmor) {
+        if (cn.charlotte.pit.compat.item.ItemTypes.isArmor(stack)) {
             if (ItemUtil.getInternalName(stack) == null) {
                 return;
             }
@@ -367,7 +366,7 @@ public class PlayerListener implements Listener {
             player.getInventory().addItem(arrowBuilder.build());
             event.getItem().remove();
             player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1F, 1F);
-        } else if (stack.getType() == Material.BOW || Utils.toNMStackQuick(stack).getItem() instanceof ItemSword) {
+        } else if (stack.getType() == Material.BOW || cn.charlotte.pit.compat.item.ItemTypes.isSword(stack)) {
             InventoryUtil.addInvReverse(player.getInventory(), event.getItem().getItemStack());
             event.getItem().remove();
         } else if (stack.getType() == Material.GOLD_INGOT) {
@@ -480,7 +479,7 @@ public class PlayerListener implements Listener {
                 player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 60, 1), true);
                 (((org.bukkit.entity.Player) player)).setAbsorptionAmount(6.0F);
             }
-        } else if (item.getType() == Material.MONSTER_EGG) {
+        } else if (item.getType().name().endsWith("_SPAWN_EGG")) {
             if ("first_aid_egg".equals(ItemUtil.getInternalName(item))) {
                 e.setCancelled(true);
                 final Cooldown cooldown = firstAidEggCooldown.get(player.getUniqueId());

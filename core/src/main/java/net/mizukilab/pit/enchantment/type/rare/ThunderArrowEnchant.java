@@ -100,15 +100,8 @@ public class ThunderArrowEnchant extends AbstractEnchantment implements Listener
     }
 
     private void strikeLightningEffect(LivingEntity entity) {
-        WorldServer worldServer = ((CraftWorld) entity.getWorld()).getHandle();
+        // 1.21：闪电特效直接用 Bukkit 接口，无需发包
         Location location = entity.getLocation();
-        EntityLightning entityLightning = new EntityLightning(worldServer, location.getX(), location.getY(), location.getZ());
-        PacketPlayOutSpawnEntityWeather packet = new PacketPlayOutSpawnEntityWeather(entityLightning);
-
-        for (Player p : entity.getWorld().getPlayers()) {
-            ((org.bukkit.entity.Player) p).playerConnection.sendPacket(packet);
-        }
-
         entity.getWorld().strikeLightningEffect(location);
     }
 

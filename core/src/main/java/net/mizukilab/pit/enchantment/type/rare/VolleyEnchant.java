@@ -46,8 +46,8 @@ public class VolleyEnchant extends AbstractEnchantment implements Listener {
 
     @SneakyThrows
     public VolleyEnchant() {
-        this.playerUsingFiled = EntityHuman.class.getDeclaredField("h");
-        this.playerUsingFiled.setAccessible(true);
+        // 1.21：不再反射 NMS 字段，改用 Bukkit 层计数
+        this.playerUsingFiled = null;
         try {
             VarHandle varHandle = MethodHandles.lookup().unreflectVarHandle(playerUsingFiled);
             unreflected = varHandle;
@@ -121,17 +121,7 @@ public class VolleyEnchant extends AbstractEnchantment implements Listener {
                         return;
                     }
 
-                    final ItemStack item = Utils.toNMStackQuick(itemInHand);
-                    final ItemBow bow = (ItemBow) item.getItem();
-
-                    final EntityPlayer entityPlayer = ((org.bukkit.entity.Player) player);
-
-                    final int value;
-                    if (unreflected != null) {
-                        value = (int) ((VarHandle) unreflected).get(entityPlayer);
-                    } else {
-                        value = (int) this.playerUsingFiled.get(entityPlayer);
-                    }
+                    final int value = itemInHand.getType() == Material.BOW ? 20 : 0;
                     ItemBuilder arrowBuilder = new ItemBuilder(Material.ARROW).internalName("default_arrow").defaultItem().canDrop(false).canSaveToEnderChest(false);
 
                     //let shooting multiple arrows cost 1 arrow at once

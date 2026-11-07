@@ -152,8 +152,8 @@ public class Utils {
     }
 
     public static String dumpNBTOnString(ItemStack stack) {
-        NBTTagCompound tag = Utils.toNMStackQuick(stack).getTag();
-        return tag.toString();
+        // 1.21：无 NBT，输出物品序列化文本用于排查
+        return String.valueOf(stack);
     }
 
     public static IMythicItem getMythicItem(ItemStack item) {
@@ -167,8 +167,10 @@ public class Utils {
         return getMythicItem0(item);
     }
     public static void playBlockBreak(Location location, Material material) {
-        PacketPlayOutWorldEvent ppowe = new PacketPlayOutWorldEvent(2001, new BlockPosition(location.getX(), location.getY(), location.getZ()), material.getId(), false);
-        Bukkit.getOnlinePlayers().forEach(p -> ((org.bukkit.entity.Player) p).playerConnection.sendPacket(ppowe));
+        // 1.21：方块破坏粒子直接用世界效果播放
+        if (location.getWorld() != null) {
+            location.getWorld().playEffect(location, org.bukkit.Effect.STEP_SOUND, material);
+        }
     }
     public static PackedOperator constructUnsafeOperator(String searchName) {
         PlayerProfile playerProfile = PlayerProfile.loadPlayerProfileByName(searchName);

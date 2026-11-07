@@ -220,14 +220,9 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
                 Bukkit.getScheduler().runTask(ThePit.getInstance(), () -> {
                     try {
                         this.villager = (Villager) Bukkit.getWorlds().get(0).spawnEntity(location, EntityType.VILLAGER);
-                        final EntityVillager entityVillager = ((CraftVillager) villager).getHandle();
-                        NBTTagCompound tag = entityVillager.getNBTTag();
-                        if (tag == null) {
-                            tag = new NBTTagCompound();
-                        }
-                        entityVillager.c(tag);
-                        tag.setInt("NoAI", 1);
-                        entityVillager.f(tag);
+                        // 1.21：NoAI 直接走实体 API
+                        villager.setAI(false);
+                        villager.setSilent(true);
                         villager.setAdult();
 
                         hologram = HologramAPI.createHologram(location.clone().add(0, 2.4, 0), CC.translate("&d请给我钱"));
@@ -440,15 +435,8 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
         try {
             final World world = Bukkit.getWorlds().get(0);
             final Villager villager = (Villager) world.spawnEntity(location, EntityType.VILLAGER);
-            final EntityVillager entityVillager = ((CraftVillager) villager).getHandle();
-            NBTTagCompound tag = entityVillager.getNBTTag();
-            if (tag == null) {
-                tag = new NBTTagCompound();
-            }
-            entityVillager.c(tag);
-            tag.setInt("NoAI", 1);
-            tag.setInt("Silent", 1);
-            entityVillager.f(tag);
+            villager.setAI(false);
+            villager.setSilent(true);
             villager.setAdult();
 
 
