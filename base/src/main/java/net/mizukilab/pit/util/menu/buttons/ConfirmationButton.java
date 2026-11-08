@@ -26,22 +26,22 @@ public class ConfirmationButton extends Button {
 
     @Override
     public ItemStack getButtonItem(Player player) {
-        ItemStack itemStack;
+        // 1.21：数据值已废弃，Material.TERRACOTTA 是未染色的陶瓦（红褐色），
+        // 必须按颜色改用具体材质，否则确认/取消会显示成同一块。
+        Material material;
         if (delaySec <= 0) {
-            itemStack = new ItemStack(Material.TERRACOTTA, 1, this.confirm ? ((byte) 5) : ((byte) 14));
-            ItemMeta itemMeta = itemStack.getItemMeta();
-
-            itemMeta.setDisplayName(this.confirm ? CC.GREEN + "确认" : CC.RED + "取消");
-            itemStack.setItemMeta(itemMeta);
-
+            material = this.confirm ? Material.LIME_TERRACOTTA : Material.RED_TERRACOTTA;
         } else {
-            itemStack = new ItemStack(Material.TERRACOTTA, 1, this.confirm ? ((byte) 4) : ((byte) 14));
-            ItemMeta itemMeta = itemStack.getItemMeta();
-
-            itemMeta.setDisplayName(CC.translate(this.confirm ? CC.GREEN + "你确定吗? &7(" + delaySec + ")" : CC.RED + "取消"));
-            itemStack.setItemMeta(itemMeta);
-
+            material = this.confirm ? Material.YELLOW_TERRACOTTA : Material.RED_TERRACOTTA;
         }
+        ItemStack itemStack = new ItemStack(material, 1);
+        ItemMeta itemMeta = itemStack.getItemMeta();
+        if (delaySec <= 0) {
+            itemMeta.setDisplayName(this.confirm ? CC.GREEN + "确认" : CC.RED + "取消");
+        } else {
+            itemMeta.setDisplayName(CC.translate(this.confirm ? CC.GREEN + "你确定吗? &7(" + delaySec + ")" : CC.RED + "取消"));
+        }
+        itemStack.setItemMeta(itemMeta);
         delaySec--;
         return itemStack;
     }
