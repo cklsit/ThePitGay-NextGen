@@ -38,8 +38,16 @@ public class PlayerInv {
     }
 
     public void applyItemToPlayer(Player player) {
+        // 顺序很重要：getContents() 在现代 Paper 含护甲槽(36-39)，
+        // 若先设护甲再设背包，背包里的空护甲槽会把护甲整块覆盖掉。
+        org.bukkit.inventory.ItemStack[] safeContents = contents;
+        if (safeContents != null && safeContents.length > 36) {
+            safeContents = java.util.Arrays.copyOf(safeContents, 36);
+        }
+        if (safeContents != null) {
+            player.getInventory().setContents(safeContents);
+        }
         player.getInventory().setArmorContents(armorContents);
-        player.getInventory().setContents(contents);
         player.setItemOnCursor(null);
     }
 
