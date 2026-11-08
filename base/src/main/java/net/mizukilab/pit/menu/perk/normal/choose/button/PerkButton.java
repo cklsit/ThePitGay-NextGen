@@ -158,6 +158,8 @@ public class PerkButton extends Button {
 
     @Override
     public boolean shouldUpdate(Player player, int slot, ClickType clickType) {
-        return true;
+        // 点击会跳转到 PerkBuyMenu，不应再刷新当前菜单，
+        // 否则监听器会把旧菜单重新打开，造成闪退回上一界面。
+        return false;
     }
 }
