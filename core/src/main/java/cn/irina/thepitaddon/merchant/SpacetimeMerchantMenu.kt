@@ -101,7 +101,7 @@ object MerchantItems {
             .deathDrop(false)
             .canTrade(true)
             .canSaveToEnderChest(true)
-            .internalName("coin")
+            .internalName("coin_$i")
             .build()
     }
 }

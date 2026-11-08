@@ -4,6 +4,7 @@ import cn.charlotte.pit.data.PlayerProfile
 import cn.charlotte.pit.event.PitStreakKillChangeEvent
 import cn.irina.thepitaddon.manager.PitManager
 import net.mizukilab.pit.util.chat.CC
+import net.mizukilab.pit.util.item.ItemUtil
 import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.Sound
@@ -13,6 +14,7 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
 import org.bukkit.event.entity.ProjectileHitEvent
+import org.bukkit.event.block.Action
 import org.bukkit.event.entity.ProjectileLaunchEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerMoveEvent
@@ -42,6 +44,32 @@ class FixListeners : Listener {
         blockTypes.add(Material.POWERED_RAIL)
         blockTypes.add(Material.RAIL)
         blockTypes.add(Material.BREWING_STAND)
+    }
+
+    @EventHandler
+    fun onCoinRedeem(event: PlayerInteractEvent) {
+        val action = event.action
+        if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return
+        val player = event.player
+        val item = player.inventory.itemInMainHand
+        if (item.type == Material.AIR) return
+        val internal = ItemUtil.getInternalName(item) ?: return
+        if (!internal.startsWith("coin_")) return
+        val idx = internal.substringAfter("coin_").toIntOrNull() ?: return
+        val value = when (idx) {
+            1 -> 1000.0
+            2 -> 10000.0
+            3 -> 100000.0
+            4 -> 1000000.0
+            5 -> 10000000.0
+            else -> return
+        }
+        event.isCancelled = true
+        val profile = PlayerProfile.getRawCache(player.uniqueId) ?: return
+        profile.coins = profile.coins + value
+        if (item.amount > 1) item.amount -= 1 else player.inventory.setItemInMainHand(null)
+        player.sendMessage(CC.translate("&6你兑换了 &e" + value.toInt() + " &6硬币!"))
+        player.playSound(player.location, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f)
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
