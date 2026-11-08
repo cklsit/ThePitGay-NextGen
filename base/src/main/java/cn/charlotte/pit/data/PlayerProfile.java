@@ -1216,6 +1216,15 @@ public class PlayerProfile {
         if (this.tempInvUsing) {
             return;
         }
+        if (isEmptyInv(inv) && this.inventory != null && !isEmptyInv(this.inventory)) {
+            StackTraceElement[] trace = new Throwable().getStackTrace();
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < Math.min(trace.length, 8); i++) {
+                sb.append(" <- ").append(trace[i].getClassName()).append(".").append(trace[i].getMethodName())
+                        .append(":").append(trace[i].getLineNumber());
+            }
+            ThePit.getInstance().getLogger().warning("[InvDebug] 空背包覆盖档案 setInventory 调用栈:" + sb);
+        }
         this.inventory = inv;
     }
 
