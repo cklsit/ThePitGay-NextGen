@@ -64,7 +64,7 @@ class Main {
     private val file: File = File("plugins/ThePitAddon", "config.yml")
     val cfg: FileConfiguration = YamlConfiguration.loadConfiguration(file)
     private val PlayerDataPath: String = cfg.getString("PlayerDataPath") ?: ""
-    private val filterManager: FilterManager = FilterManager(instance)
+    private lateinit var filterManager: FilterManager
     val PREFIX: String = CC.translate(cfg.getString("Prefix") ?: "&8[&bI&fRINA&8] &f| ")
     val pointsAPI: PlayerPointsAPI?
         get() {
@@ -109,6 +109,7 @@ class Main {
     fun enable(p: ThePit) {
         this.plugin = p
         instance = this
+        filterManager = FilterManager(instance)
         loadMusicResources()
 
         BannerUtil.send()
