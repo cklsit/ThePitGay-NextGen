@@ -89,7 +89,13 @@ class FixListeners : Listener {
         if (!player.hasPermission("pit.streak")) return
         if (profile.streakKills >= 50.0 && profile.bounty > 0) return
 
-        profile.streakKills = 50.0
+        // 按所选超级连杀天赋设定连杀数：登峰造极需 400、月球之旅需 100，否则默认 50
+        val targetStreak = when (profile.chosePerk[5]?.perkInternalName) {
+            "uber_streak" -> 400.0
+            "to_the_moon" -> 100.0
+            else -> 50.0
+        }
+        profile.streakKills = targetStreak
         profile.bounty = 100
         player.sendMessage(CC.translate("&a你离开了保护区, 已自动为你开启超级连杀!"))
 
