@@ -5,7 +5,7 @@ import cn.irina.thepitaddon.Main
 import dev.rollczi.litecommands.annotations.command.Command
 import dev.rollczi.litecommands.annotations.context.Context
 import dev.rollczi.litecommands.annotations.execute.Execute
-import dev.rollczi.litecommands.annotations.flag.Flag
+import dev.rollczi.litecommands.annotations.argument.Arg
 import net.mizukilab.pit.menu.cdk.generate.CDKMenu
 import net.mizukilab.pit.menu.perk.normal.choose.PerkChooseMenu
 import net.mizukilab.pit.menu.prestige.PrestigeMainMenu
@@ -32,7 +32,7 @@ class OpenMenu {
     @Execute
     fun handleCommand(
         @Context player: Player,
-        @Flag("Shop") menuName: String
+        @Arg("menu") menuName: String
     ) {
         if (player.hasPermission("pit.admin")) {
             handleOpenMenu(player, menuName)

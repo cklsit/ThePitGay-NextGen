@@ -166,7 +166,11 @@ class Main {
         }
         clearEpicEvents()
         loadEnchantmentManager()
-        registerCommands()
+        try {
+            registerCommands()
+        } catch (e: Throwable) {
+            send("&c命令注册失败: " + e.message)
+        }
         loadListener()
         modifyRarityPrefix()
 
