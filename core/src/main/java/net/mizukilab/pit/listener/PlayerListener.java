@@ -148,7 +148,15 @@ public class PlayerListener implements Listener {
 
     private static void postSynchronize(PlayerProfile profile, Player player) {
         PlayerInv playerInv = profile.getInventory();
+        ItemStack[] savedArmor = playerInv.getArmorContents();
+        ThePit.getInstance().getLogger().info("[SyncDebug] 应用档案背包 玩家=" + player.getName()
+                + " armorLen=" + (savedArmor == null ? "null" : savedArmor.length)
+                + " leggings=" + (savedArmor == null || savedArmor.length < 2 || savedArmor[1] == null
+                        ? "null" : savedArmor[1].getType().name()));
         playerInv.applyItemToPlayer(player);
+        ItemStack after = player.getInventory().getLeggings();
+        ThePit.getInstance().getLogger().info("[SyncDebug] 应用后 玩家=" + player.getName()
+                + " 护腿=" + (after == null ? "null" : after.getType().name()));
         InventoryUtil.supplyItems(player);
         profile.setLastLogoutTime(System.currentTimeMillis());
         profile.applyExperienceToPlayer(player);
