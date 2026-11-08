@@ -72,6 +72,7 @@ import net.mizukilab.pit.nametag.NameTagImpl
 import net.mizukilab.pit.npc.type.*
 import net.mizukilab.pit.npc.type.custom.SewersNpc
 import net.mizukilab.pit.npc.type.custom.WarehouseNPC
+import net.mizukilab.pit.npc.type.custom.SpacetimeMerchantNPC
 import net.mizukilab.pit.park.Parker
 import net.mizukilab.pit.perk.type.boost.*
 import net.mizukilab.pit.perk.type.prestige.*
@@ -740,6 +741,7 @@ private fun loadCustomEntityNpcs() {
         listOf(
             SewersNpc::class.java,
             WarehouseNPC::class.java,
+            SpacetimeMerchantNPC::class.java,
         )
     )
     println("load Custom Entity NPCs...")

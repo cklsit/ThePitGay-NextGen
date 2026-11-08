@@ -100,6 +100,13 @@ public class PitWorldConfig extends Configuration {
     )
     @ConfigSerializer(serializer = LocationSerializer.class)
     private Location warehouseNpcLocation;
+    @Setter
+    @Getter
+    @ConfigData(
+            path = "loc.npc.spacetime_merchant"
+    )
+    @ConfigSerializer(serializer = LocationSerializer.class)
+    private Location spacetimeMerchantNpcLocation;
 
     @Setter
     @Getter
