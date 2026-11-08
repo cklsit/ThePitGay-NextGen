@@ -539,7 +539,13 @@ public class PlayerProfile {
     public void saveData(Player player) {
         final long now = System.currentTimeMillis();
         if (player != null) {
-            this.setInventory(InventoryUtil.playerInventoryFromPlayer(player));
+            PlayerInv captured = InventoryUtil.playerInventoryFromPlayer(player);
+            org.bukkit.inventory.ItemStack[] armor = captured.getArmorContents();
+            ThePit.getInstance().getLogger().info("[SaveDebug] 保存背包 玩家=" + player.getName()
+                    + " armorLen=" + (armor == null ? "null" : armor.length)
+                    + " leggings=" + (armor == null || armor.length < 2 || armor[1] == null
+                            ? "null" : armor[1].getType().name()));
+            this.setInventory(captured);
         }
         //if (invBackups.isEmpty() || invBackups.stream().noneMatch(backup -> now - backup.getTimeStamp() < 10 * 60 * 1000)) {
         final PlayerInvBackup backup = new PlayerInvBackup();
