@@ -173,7 +173,7 @@ dependencies {
     compileOnly(libs.luckperms)
     compileOnly("com.github.ben-manes.caffeine:caffeine:3.1.8")
     compileOnly("com.github.f4b6a3:uuid-creator:6.0.0")
-    // addon 依赖待移植完成后再加回（当前源码在 .workbuddy/wip-addon）
+    // addon 依赖在移植完成时再加回
     compileOnly(libs.papi)
     compileOnly(libs.narshorn)
     compileOnly(libs.protocollib)
