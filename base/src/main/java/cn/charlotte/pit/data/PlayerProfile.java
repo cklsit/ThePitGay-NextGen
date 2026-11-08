@@ -1149,7 +1149,9 @@ public class PlayerProfile {
 
     public void setRenown(int renown) {
         final Player player = Bukkit.getPlayer(this.getPlayerUuid());
-        if (player != null && renown > this.renown) {
+        // 反序列化在异步线程执行，Paper 禁止异步触发 Bukkit 事件，
+        // 否则读档直接抛 PitGainRenownEvent may only be triggered synchronously 导致无法进服。
+        if (player != null && renown > this.renown && Bukkit.isPrimaryThread()) {
             new PitGainRenownEvent(player, renown - this.renown).callEvent();
         }
         this.renown = renown;
@@ -1580,7 +1582,8 @@ public class PlayerProfile {
 
     public void setStreakKills(double kills) {
         final PitStreakKillChangeEvent event = new PitStreakKillChangeEvent(this, this.streakKills, kills);
-        if (kills > 0) {
+        // 同 setRenown：读档在异步线程，事件只能在主线程触发
+        if (kills > 0 && Bukkit.isPrimaryThread()) {
             event.callEvent();
         }
         if (event.isCancelled()) {
