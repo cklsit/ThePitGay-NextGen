@@ -173,6 +173,12 @@ dependencies {
     compileOnly(libs.luckperms)
     compileOnly("com.github.ben-manes.caffeine:caffeine:3.1.8")
     compileOnly("com.github.f4b6a3:uuid-creator:6.0.0")
+    // ===== ThePitAddon-MythicLand 移植所需 =====
+    implementation("org.reflections:reflections:0.10.2")
+    implementation("org.mongojack:mongojack:5.0.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("com.github.shynixn.mccoroutine:mccoroutine-bukkit-api:2.22.0")
+    implementation("com.github.shynixn.mccoroutine:mccoroutine-bukkit-core:2.22.0")
     compileOnly(libs.papi)
     compileOnly(libs.narshorn)
     compileOnly(libs.protocollib)
