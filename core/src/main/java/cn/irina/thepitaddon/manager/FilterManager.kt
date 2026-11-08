@@ -23,10 +23,10 @@ class FilterManager(private val plugin: Main) {
      * @Date 2025/10/08 0:00
      */
 
-    private var filterConfig: YamlConfiguration = YamlConfiguration.loadConfiguration(File(plugin.plugin.dataFolder, "filter.yml"))
+    private var filterConfig: YamlConfiguration = YamlConfiguration.loadConfiguration(File(plugin.plugin.dataFolder, "addon_filter.yml"))
 
     fun reloadFilterConfig() {
-        filterConfig = YamlConfiguration.loadConfiguration(File(plugin.plugin.dataFolder, "filter.yml"))
+        filterConfig = YamlConfiguration.loadConfiguration(File(plugin.plugin.dataFolder, "addon_filter.yml"))
     }
 
     /**

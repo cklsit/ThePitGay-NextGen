@@ -61,7 +61,7 @@ class Main {
         "KnockbackManager"
     )
 
-    private val file: File = File("plugins/ThePitAddon", "config.yml")
+    private val file: File = File(ThePit.getInstance().dataFolder, "addon_config.yml")
     val cfg: FileConfiguration = YamlConfiguration.loadConfiguration(file)
     private val PlayerDataPath: String = cfg.getString("PlayerDataPath") ?: ""
     private lateinit var filterManager: FilterManager
@@ -117,9 +117,9 @@ class Main {
         send("&e天坑斗斗终极版扩展 启动中...")
         send("&7作者: &fIrina &7| &fhttps://github.com/BaiJiuSama")
 
-        plugin.saveResource("config.yml", false)
+        plugin.saveResource("addon_config.yml", false)
         cfg.load(file)
-        plugin.saveResource("filter.yml", false)
+        plugin.saveResource("addon_filter.yml", false)
 
         Bukkit.getScheduler().runTaskLater(plugin, Runnable {
             depends.forEach {
