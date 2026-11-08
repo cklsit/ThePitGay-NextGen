@@ -32,6 +32,7 @@ class FreeCE : Runnable {
                 if (profile.level >= 120
                     && !hasAmuletInInventory(player, "amulet_shadow")
                     && !isFullLevel(player, 100)
+                    && !hasIRefuse(player)
                 ) {
                     autoPrestige(player)
                     return@forEach
@@ -166,6 +167,11 @@ class FreeCE : Runnable {
 
     private fun hasAmuletInInventory(player: Player, internalName: String): Boolean {
         return PitManager.hasInternalItem(player, internalName)
+    }
+
+    private fun hasIRefuse(player: Player): Boolean {
+        val leggings = player.inventory.leggings ?: return false
+        return PitManager.hasPitEnchant(leggings, "i_refuse")
     }
 
     private fun autoPrestige(player: Player) {
