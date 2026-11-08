@@ -9,6 +9,7 @@ import cn.irina.thepitaddon.command.player.buyItems.BuyExDiamondItem
 import cn.irina.thepitaddon.command.player.buyItems.BuyIronHelmet
 import cn.irina.thepitaddon.command.player.buyItems.BuyPhysicalCoin
 import cn.irina.thepitaddon.command.player.AfkCommand
+import cn.irina.thepitaddon.command.player.TrashCommand
 import cn.irina.thepitaddon.enchantment.EnchantmentManager
 import cn.irina.thepitaddon.manager.FilterManager
 import cn.irina.thepitaddon.runnable.Announcer
@@ -179,6 +180,8 @@ class Main {
         send("&a天坑乱斗终极版扩展 已启动!")
         send("&aPowered by Irina, ShanguanLinG, MIYU")
 
+        TrashCommand.startClearTask()
+
         if (cfg.getBoolean("FreeCoinAndExperience.Enable") ?: false) {
             Bukkit.getScheduler().runTaskTimer(plugin, FreeCE(), 0L, 5 * 20L * 60L)
         } else {
@@ -268,6 +271,7 @@ class Main {
                 OpenMenu(),
                 ReloadConfig(),
                 AfkCommand(),
+                TrashCommand(),
             )
             .build()
     }
