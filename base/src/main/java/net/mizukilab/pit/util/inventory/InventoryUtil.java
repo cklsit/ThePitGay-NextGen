@@ -203,7 +203,14 @@ public class InventoryUtil {
             armor = new ItemStack[4];
         }
 
+        ItemStack[] armorForLog = inv.getArmorContents();
+        cn.charlotte.pit.ThePit.getInstance().getLogger().info("[SerDebug] 序列化护甲 armorLen="
+                + (armorForLog == null ? "null" : armorForLog.length)
+                + " [0]=" + typeName(armorForLog, 0) + " [1]=" + typeName(armorForLog, 1)
+                + " armorSection=" + cn.charlotte.pit.ThePit.getInstance().getLogger().getName());
         serializeItemStack(builder, armor);
+        cn.charlotte.pit.ThePit.getInstance().getLogger().info("[SerDebug] armorSection="
+                + builder.substring(0, Math.min(builder.length(), 80)));
 
         if (inv.getContents() == null) {
             inv.setContents(new ItemStack[36]);
@@ -266,6 +273,9 @@ public class InventoryUtil {
             armor[i] = deserializeItemStack(split[i]);
         }
 
+        cn.charlotte.pit.ThePit.getInstance().getLogger().info("[DesDebug] 反序列化护甲 armorLen="
+                + armor.length + " [0]=" + typeName(armor, 0) + " [1]=" + typeName(armor, 1)
+                + " dataParts=" + data.length + " armorParts=" + split.length);
         inv.setArmorContents(armor);
         String[] split1 = data[1].split(";");
         ItemStack[] contents = new ItemStack[split1.length];
@@ -357,6 +367,11 @@ public class InventoryUtil {
                     .warning("[Inv] 反序列化失败: " + e);
             return null;
         }
+    }
+
+    private static String typeName(ItemStack[] arr, int idx) {
+        if (arr == null || arr.length <= idx || arr[idx] == null) return "null";
+        return arr[idx].getType().name();
     }
 
     public static boolean isInvFull(Player player) {
