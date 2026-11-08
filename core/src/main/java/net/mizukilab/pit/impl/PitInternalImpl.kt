@@ -253,7 +253,9 @@ object PitInternalImpl : PitInternalHook {
         }
 
         item.loadFromItemStack(itemStack)
-        if (item.isEnchanted && (item.maxLive <= 0 || item.live <= 0)) {
+        // 只有「本来有生命值、且已耗尽」才销毁。
+        // 此前 maxLive 未配置(<=0) 时也会返回 null，导致附魔过的神话之甲在每次载入时被吞掉。
+        if (item.isEnchanted && item.maxLive > 0 && item.live <= 0) {
             return null
         }
 
