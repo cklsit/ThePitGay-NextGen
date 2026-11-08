@@ -31,7 +31,6 @@ class FreeCE : Runnable {
                 fixMythicItemsInHandWithCoal(player)
                 if (profile.level >= 120
                     && !hasAmuletInInventory(player, "amulet_shadow")
-                    && !isFullLevel(player, 100)
                     && !hasIRefuse(player)
                 ) {
                     autoPrestige(player)

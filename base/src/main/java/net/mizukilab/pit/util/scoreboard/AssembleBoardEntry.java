@@ -88,10 +88,14 @@ public class AssembleBoardEntry {
                 prefix = prefix.substring(0, 14);
                 suffix = this.text.substring(14);
             } else {
+                String suffixPart = this.text.substring(16);
                 if (ChatColor.getLastColors(prefix).equalsIgnoreCase(ChatColor.getLastColors(this.identifier))) {
-                    suffix = this.text.substring(16);
+                    suffix = suffixPart;
+                } else if (!suffixPart.isEmpty() && suffixPart.charAt(0) == ChatColor.COLOR_CHAR) {
+                    // 后缀已自带颜色码时不再补前缀末尾颜色，避免冗余颜色码把后缀顶过 16 字符导致末尾（如右括号）被截断
+                    suffix = suffixPart;
                 } else {
-                    suffix = ChatColor.getLastColors(prefix) + this.text.substring(16);
+                    suffix = ChatColor.getLastColors(prefix) + suffixPart;
                 }
             }
 
