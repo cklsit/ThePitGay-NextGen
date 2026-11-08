@@ -317,10 +317,23 @@ public class InventoryUtil {
 
         try {
             // Paper 1.20.5+ 提供稳定的物品字节序列化，替代手工 NBT 压缩流
-            return java.util.Base64.getEncoder().encodeToString(itemStack.serializeAsBytes());
-        } catch (IllegalArgumentException e) {
-            e.printStackTrace();
-            return null;
+            return "B:" + java.util.Base64.getEncoder().encodeToString(itemStack.serializeAsBytes());
+        } catch (Throwable e) {
+            // 某些物品（如神话之甲）serializeAsBytes 会抛异常；此前直接返回 Java null，
+            // 拼进字符串后变成字面量 "null"，导致物品在存档里被抹掉。
+            cn.charlotte.pit.ThePit.getInstance().getLogger()
+                    .warning("[Inv] serializeAsBytes 失败，回退 legacy: " + itemStack.getType() + " -> " + e);
+        }
+        try {
+            java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+            org.bukkit.util.io.BukkitObjectOutputStream boos = new org.bukkit.util.io.BukkitObjectOutputStream(out);
+            boos.writeObject(itemStack);
+            boos.close();
+            return "L:" + java.util.Base64.getEncoder().encodeToString(out.toByteArray());
+        } catch (Throwable e) {
+            cn.charlotte.pit.ThePit.getInstance().getLogger()
+                    .severe("[Inv] legacy 序列化同样失败，物品将丢失: " + itemStack.getType() + " -> " + e);
+            return "null";
         }
     }
 
@@ -329,9 +342,19 @@ public class InventoryUtil {
         if (itemStackString == null || "null".equals(itemStackString)) return null;
 
         try {
-            return ItemStack.deserializeBytes(java.util.Base64.getDecoder().decode(itemStackString));
-        } catch (IllegalArgumentException e) {
-            e.printStackTrace();
+            if (itemStackString.startsWith("L:")) {
+                byte[] legacy = java.util.Base64.getDecoder().decode(itemStackString.substring(2));
+                org.bukkit.util.io.BukkitObjectInputStream bois =
+                        new org.bukkit.util.io.BukkitObjectInputStream(new java.io.ByteArrayInputStream(legacy));
+                Object obj = bois.readObject();
+                bois.close();
+                return obj instanceof ItemStack ? (ItemStack) obj : null;
+            }
+            String base64 = itemStackString.startsWith("B:") ? itemStackString.substring(2) : itemStackString;
+            return ItemStack.deserializeBytes(java.util.Base64.getDecoder().decode(base64));
+        } catch (Throwable e) {
+            cn.charlotte.pit.ThePit.getInstance().getLogger()
+                    .warning("[Inv] 反序列化失败: " + e);
             return null;
         }
     }
