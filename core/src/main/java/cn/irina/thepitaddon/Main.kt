@@ -8,6 +8,7 @@ import cn.irina.thepitaddon.command.player.buyItems.BuyEgg
 import cn.irina.thepitaddon.command.player.buyItems.BuyExDiamondItem
 import cn.irina.thepitaddon.command.player.buyItems.BuyIronHelmet
 import cn.irina.thepitaddon.command.player.buyItems.BuyPhysicalCoin
+import cn.irina.thepitaddon.command.player.AfkCommand
 import cn.irina.thepitaddon.enchantment.EnchantmentManager
 import cn.irina.thepitaddon.manager.FilterManager
 import cn.irina.thepitaddon.runnable.Announcer
@@ -266,6 +267,7 @@ class Main {
                 PlayerProving(),
                 OpenMenu(),
                 ReloadConfig(),
+                AfkCommand(),
             )
             .build()
     }
