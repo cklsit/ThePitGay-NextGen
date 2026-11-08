@@ -160,7 +160,7 @@ class Main {
     private fun setUp() {
         try {
             kbmAPI = KnockbackManager.getInstance().api
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             // KnockbackManager 非必需，缺失时降级跳过
             send("&eKnockbackManager 未加载, 相关功能不可用")
         }
