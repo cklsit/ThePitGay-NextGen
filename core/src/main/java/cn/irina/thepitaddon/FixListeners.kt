@@ -17,6 +17,7 @@ import org.bukkit.event.entity.ProjectileHitEvent
 import org.bukkit.event.block.Action
 import org.bukkit.event.entity.ProjectileLaunchEvent
 import org.bukkit.event.player.PlayerInteractEvent
+import org.bukkit.event.entity.CreatureSpawnEvent
 import org.bukkit.event.player.PlayerMoveEvent
 import org.bukkit.scheduler.BukkitRunnable
 
@@ -44,6 +45,13 @@ class FixListeners : Listener {
         blockTypes.add(Material.POWERED_RAIL)
         blockTypes.add(Material.RAIL)
         blockTypes.add(Material.BREWING_STAND)
+    }
+
+    @EventHandler
+    fun onMobSpawnInAfk(event: CreatureSpawnEvent) {
+        if (event.location.world?.name?.equals("afk", ignoreCase = true) == true) {
+            event.isCancelled = true
+        }
     }
 
     @EventHandler

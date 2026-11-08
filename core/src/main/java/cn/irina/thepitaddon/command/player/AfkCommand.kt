@@ -8,6 +8,8 @@ import dev.rollczi.litecommands.annotations.execute.Execute
 import net.mizukilab.pit.util.chat.CC
 import org.bukkit.Bukkit
 import org.bukkit.World
+import org.bukkit.Difficulty
+import org.bukkit.GameRule
 import org.bukkit.WorldCreator
 import org.bukkit.WorldType
 import org.bukkit.entity.Player
@@ -43,6 +45,10 @@ class AfkCommand {
             player.sendMessage(CC.translate("&c挂机池世界创建失败, 请联系管理员!"))
             return
         }
+        afkWorld.setGameRule(GameRule.DO_MOB_SPAWNING, false)
+        afkWorld.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false)
+        afkWorld.setGameRule(GameRule.DO_FIRE_TICK, false)
+        afkWorld.difficulty = Difficulty.PEACEFUL
         player.teleport(afkWorld.spawnLocation)
         player.sendMessage(CC.translate("&a你已进入挂机池, 每5分钟获得挂机奖励!"))
     }
