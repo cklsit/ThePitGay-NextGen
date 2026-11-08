@@ -34,6 +34,11 @@ Announcements:
   #- "&e&l公告! &7输入 &6/tps &7和 &6/ping &7可以查看服务器的当前状态!"
   - "&e&l公告! &7邀请玩家进服游玩拥有海量福利! 领到手软!"
 
+#垃圾桶设置（/lj 指令）
+Trash:
+  ClearInterval-Minutes: 5
+  ClearMessage: "&7垃圾桶 >> &c垃圾桶里的物品已被清空"
+
 #此段填入你想给予玩家在挂机池中的免费福利的数额
 #不要在 Coin & Experience 的空中填入字符串。
 FreeCoinAndExperience:

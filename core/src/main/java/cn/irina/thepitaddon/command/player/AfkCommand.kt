@@ -25,18 +25,20 @@ class AfkCommand {
     @Execute
     fun onDefault(@Context player: Player) {
         if (player.world.name.equals("afk", ignoreCase = true)) {
-            teleportBack(player)
+            leaveAfk(player)
             return
         }
-        teleportToAfk(player)
+        enterAfk(player)
     }
 
     @Execute(name = "leave")
     fun onLeave(@Context player: Player) {
-        teleportBack(player)
+        leaveAfk(player)
     }
 
-    private fun teleportToAfk(player: Player) {
+    companion object {
+        @JvmStatic
+        fun enterAfk(player: Player) {
         val afkWorld: World? = Bukkit.getWorld("afk") ?: WorldCreator("afk")
             .type(WorldType.FLAT)
             .generateStructures(false)
@@ -48,15 +50,17 @@ class AfkCommand {
         afkWorld.setGameRule(GameRule.DO_MOB_SPAWNING, false)
         afkWorld.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false)
         afkWorld.setGameRule(GameRule.DO_FIRE_TICK, false)
-        afkWorld.difficulty = Difficulty.PEACEFUL
-        player.teleport(afkWorld.spawnLocation)
-        player.sendMessage(CC.translate("&a你已进入挂机池, 每5分钟获得挂机奖励!"))
-    }
+            afkWorld.difficulty = Difficulty.PEACEFUL
+            player.teleport(afkWorld.spawnLocation)
+            player.sendMessage(CC.translate("&a你已进入挂机池, 每5分钟获得挂机奖励!"))
+        }
 
-    private fun teleportBack(player: Player) {
-        val spawn = ThePit.getInstance().pitConfig.spawnLocations.firstOrNull()
-        val target = spawn ?: Bukkit.getWorld("world")?.spawnLocation ?: player.location
-        player.teleport(target)
-        player.sendMessage(CC.translate("&a你已离开挂机池!"))
+        @JvmStatic
+        fun leaveAfk(player: Player) {
+            val spawn = ThePit.getInstance().pitConfig.spawnLocations.firstOrNull()
+            val target = spawn ?: Bukkit.getWorld("world")?.spawnLocation ?: player.location
+            player.teleport(target)
+            player.sendMessage(CC.translate("&a你已离开挂机池!"))
+        }
     }
 }

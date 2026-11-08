@@ -26,17 +26,18 @@ class TrashCommand {
         @JvmField
         val trashInventory: Inventory = Bukkit.createInventory(null, 54, CC.translate("垃圾桶"))
 
-        const val CLEAR_INTERVAL_TICKS: Long = 5 * 60 * 20L
-
         fun startClearTask() {
+            val minutes = Main.instance.cfg.getInt("Trash.ClearInterval-Minutes") ?: 5
+            val message = Main.instance.cfg.getString("Trash.ClearMessage") ?: "&7垃圾桶 >> &c垃圾桶里的物品已被清空"
+            val intervalTicks = (minutes * 60L * 20L).coerceAtLeast(20L)
             Bukkit.getScheduler().runTaskTimer(
                 Main.instance.plugin,
                 Runnable {
                     trashInventory.clear()
-                    Bukkit.broadcastMessage(CC.translate("&7垃圾桶 >> &c垃圾桶里的物品已被清空"))
+                    Bukkit.broadcastMessage(CC.translate(message))
                 },
-                CLEAR_INTERVAL_TICKS,
-                CLEAR_INTERVAL_TICKS
+                intervalTicks,
+                intervalTicks
             )
         }
     }

@@ -107,6 +107,13 @@ public class PitWorldConfig extends Configuration {
     )
     @ConfigSerializer(serializer = LocationSerializer.class)
     private Location spacetimeMerchantNpcLocation;
+    @Setter
+    @Getter
+    @ConfigData(
+            path = "loc.npc.afk_pool"
+    )
+    @ConfigSerializer(serializer = LocationSerializer.class)
+    private Location afkPoolNpcLocation;
 
     @Setter
     @Getter

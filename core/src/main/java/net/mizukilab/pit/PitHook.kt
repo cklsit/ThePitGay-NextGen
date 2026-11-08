@@ -73,6 +73,7 @@ import net.mizukilab.pit.npc.type.*
 import net.mizukilab.pit.npc.type.custom.SewersNpc
 import net.mizukilab.pit.npc.type.custom.WarehouseNPC
 import net.mizukilab.pit.npc.type.custom.SpacetimeMerchantNPC
+import net.mizukilab.pit.npc.type.custom.AfkPoolNPC
 import net.mizukilab.pit.park.Parker
 import net.mizukilab.pit.perk.type.boost.*
 import net.mizukilab.pit.perk.type.prestige.*
@@ -742,6 +743,7 @@ private fun loadCustomEntityNpcs() {
             SewersNpc::class.java,
             WarehouseNPC::class.java,
             SpacetimeMerchantNPC::class.java,
+            AfkPoolNPC::class.java,
         )
     )
     println("load Custom Entity NPCs...")
