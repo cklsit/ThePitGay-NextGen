@@ -32,7 +32,7 @@ import java.util.List;
  */
 public class PrestigeStatusButton extends Button {
 
-    public static int limit = 35;
+    public static int limit = Integer.MAX_VALUE;
 
     @Override
     public ItemStack getButtonItem(Player player) {
@@ -45,7 +45,7 @@ public class PrestigeStatusButton extends Button {
         boolean isNot = ThePit.getInstance().getGlobalConfig().getToken().equals("SmallMY");
         if (profile.getLevel() >= 120 && profile.getPrestige() < limit) {
             // && profile.getCoins() >= Math.round(profile.getPrestige() * 12 / 30) * 10000
-            if (profile.getGrindedCoins() >= 16000 * (profile.getPrestige() + 1)) {
+            if (profile.getGrindedCoins() >= getRequiredCoins(profile.getPrestige())) {
                 EventFactory eventFactory = ThePit.getInstance().getEventFactory();
                 //check if event is available
                 if (eventFactory.getActiveNormalEvent() != null && eventFactory.getActiveNormalEventName().equals("auction")) {
@@ -105,16 +105,7 @@ public class PrestigeStatusButton extends Button {
                         //PlayerUtil.clearPlayer(player);
                         //InventoryUtil.supplyItems(player);
 
-                        int award = 10;
-                        if (profile.getPrestige() > 4) {
-                            award += 10;
-                        }
-                        if (profile.getPrestige() > 10) {
-                            award += 10;
-                        }
-                        if (profile.getPrestige() > 14) {
-                            award += 10;
-                        }
+                        int award = prestigeAward(profile.getPrestige());
                         profile.setRenown(profile.getRenown() + award);
                         CC.boardCast(MessageType.PRESTIGE, "&e&l精通! &7" + RankUtil.getPlayerColoredName(player.getName()) + " &7解锁了精通 &e" + RomanUtil.convert(profile.getPrestige()) + " &7,gg!");
                         TitleUtil.sendTitle(player, "&e&l精通!", "&7你解锁了精通 &e" + RomanUtil.convert(profile.getPrestige()) + " &7!", 20, 100, 20);
@@ -129,19 +120,36 @@ public class PrestigeStatusButton extends Button {
         }
     }
 
+    private static int prestigeAward(int prestige) {
+        // p100 后每次精通固定 40 声望
+        if (prestige >= 100) {
+            return 40;
+        }
+        int award = 10;
+        if (prestige > 4) {
+            award += 10;
+        }
+        if (prestige > 10) {
+            award += 10;
+        }
+        if (prestige > 14) {
+            award += 10;
+        }
+        return award;
+    }
+
+    private static double getRequiredCoins(int prestige) {
+        // p100 后硬币需求每次精通翻倍
+        if (prestige < 100) {
+            return 16000.0 * (prestige + 1);
+        }
+        return 16000.0 * 100 * Math.pow(2, prestige - 99);
+    }
+
     private ItemStack getPrestigeItem(Player player) {
         PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
         List<String> lore = new ArrayList<>();
-        int award = 10;
-        if (profile.getPrestige() > 4) {
-            award += 10;
-        }
-        if (profile.getPrestige() > 10) {
-            award += 10;
-        }
-        if (profile.getPrestige() > 14) {
-            award += 10;
-        }
+        int award = prestigeAward(profile.getPrestige());
         if (profile.getPrestige() >= limit) {
             lore.add("&7当前精通等级: &e" + RomanUtil.convert(profile.getPrestige()));
             if (profile.getLevel() < 120) {
@@ -172,7 +180,7 @@ public class PrestigeStatusButton extends Button {
                 lore.add("&4▶ &c重置所有的天赋与加成");
                 //lore.add("&4▶ &c重置背包物品");
                 //lore.add("&4▶ &c至少持有硬币 &6" + new DecimalFormat("0.00").format(profile.getCoins()) + "g&c/&6" + Math.round(profile.getPrestige() * 12 / 30) * 10000 + "g");
-                lore.add("&4▶ &c累计获得硬币 &6" + new DecimalFormat("0.00").format(profile.getGrindedCoins()) + "g&c/&6" + (profile.getPrestige() + 1) * 16000 + "g");
+                lore.add("&4▶ &c累计获得硬币 &6" + new DecimalFormat("0.00").format(profile.getGrindedCoins()) + "g&c/&6" + new DecimalFormat("0").format(getRequiredCoins(profile.getPrestige())) + "g");
                 lore.add("&7&o精通商店与末影箱内的物品会保留.");
                 lore.add("&7&o累计获得硬币只统计战斗获得硬币与任务获得硬币.");
                 lore.add(" ");
@@ -182,7 +190,7 @@ public class PrestigeStatusButton extends Button {
                 lore.add("&7精通后所需经验提升至原来的 &b" + new DecimalFormat("0.00").format(Math.pow(1.1, profile.getPrestige() + 1) * 100) + "%");
                 lore.add(" ");
                 // && profile.getCoins() >= Math.round(profile.getPrestige() * 12 / 30) * 10000
-                if (profile.getGrindedCoins() >= 16000 * (profile.getPrestige() + 1)) {
+                if (profile.getGrindedCoins() >= getRequiredCoins(profile.getPrestige())) {
                     lore.add("&e点击精通!");
                 } else {
                     lore.add("&c未满足硬币要求!");

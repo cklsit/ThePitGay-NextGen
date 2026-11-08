@@ -255,7 +255,7 @@ public class LevelUtil {
     public static String getLevelTagWithRoman(int prestige, double experience) {
         if (prestige > 0) {
             int level = getLevelByExp(prestige, experience);
-            return getPrestigeColor(prestige) + "[&e" + RomanUtil.convert(prestige) + getPrestigeColor(prestige) + "-" + getLevelColor(level) + level + getPrestigeColor(prestige) + "]";
+            return getPrestigeColor(prestige) + "[&e" + RomanUtil.convert(prestige) + "-" + getLevelColor(level) + level + getPrestigeColor(prestige) + "]";
         } else {
             return getLevelTag(prestige, experience);
         }
@@ -270,7 +270,7 @@ public class LevelUtil {
     }
     public static String getLevelTagWithRoman(int prestige, int level) {
         if (prestige > 0) {
-            return getPrestigeColor(prestige) + "[&e" + RomanUtil.convert(prestige) + getPrestigeColor(prestige) + "-" + getLevelColor(level) + level + getPrestigeColor(prestige) + "]";
+            return getPrestigeColor(prestige) + "[&e" + RomanUtil.convert(prestige) + "-" + getLevelColor(level) + level + getPrestigeColor(prestige) + "]";
         } else {
             return getLevelTag(prestige, level);
         }
