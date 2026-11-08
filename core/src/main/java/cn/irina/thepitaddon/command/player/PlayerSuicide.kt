@@ -25,7 +25,7 @@ class PlayerSuicide {
                         checkSuicideNumber.replace(player.uniqueId, 0)
                     }
                 }
-                (task as BukkitRunnable).runTaskLater(Main.instance, 8 * 20L)
+                (task as BukkitRunnable).runTaskLater(Main.instance.plugin, 8 * 20L)
             }
         } else {
             if (task != null) {

@@ -37,7 +37,7 @@ class DJ10 : AbstractEnchantment(), ITickTask, MovementHandler {
                     }
                 }
             }
-        }.runTaskTimerAsynchronously(instance, 20, 20)
+        }.runTaskTimerAsynchronously(instance.plugin, 20, 20)
 
         try {
             iSpigot.INSTANCE.addMovementHandler(this)

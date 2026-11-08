@@ -127,7 +127,7 @@ class LonelyRedBlood : AbstractEnchantment(), IAttackEntity, IActionDisplayEncha
             }
         }
 
-        healthCheckTaskMap[player.uniqueId]!!.runTaskTimer(Main.instance, 0L, 1L)
+        healthCheckTaskMap[player.uniqueId]!!.runTaskTimer(Main.instance.plugin, 0L, 1L)
 
         buffCancelRunnableMap[player.uniqueId] = object : BukkitRunnable() {
             override fun run() {
@@ -140,7 +140,7 @@ class LonelyRedBlood : AbstractEnchantment(), IAttackEntity, IActionDisplayEncha
             }
         }
 
-        buffCancelRunnableMap[player.uniqueId]!!.runTaskLaterAsynchronously(Main.instance, duration * 20L)
+        buffCancelRunnableMap[player.uniqueId]!!.runTaskLaterAsynchronously(Main.instance.plugin, duration * 20L)
     }
 
     @EventHandler

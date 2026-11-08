@@ -91,7 +91,7 @@ class EnderBow: AbstractEnchantment(), IPlayerShootEntity, IActionDisplayEnchant
         if (!cooldown.getOrDefault(player.uniqueId, Cooldown(0)).hasExpired() || !player.isSneaking) return
 
         cooldown[player.uniqueId] = Cooldown((if (level >= 3) 25 else 120 - (level * 30)).toLong(), TimeUnit.SECONDS)
-        event.projectile.setMetadata("ender_bow", FixedMetadataValue(Main.instance, true))
+        event.projectile.setMetadata("ender_bow", FixedMetadataValue(Main.instance.plugin, true))
     }
 
     @EventHandler

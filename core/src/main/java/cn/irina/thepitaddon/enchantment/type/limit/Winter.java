@@ -98,9 +98,9 @@ public class Winter extends AbstractEnchantment implements IAttackEntity, Listen
 
         targetPlayer.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, (enchantLevel + 1) * 20, 1, false, true));
 
-        if (targetPlayer.hasMetadata(WINTER_FRAIL)) targetPlayer.removeMetadata(WINTER_FRAIL, Main.getInstance());
+        if (targetPlayer.hasMetadata(WINTER_FRAIL)) targetPlayer.removeMetadata(WINTER_FRAIL, Main.getInstance().getPlugin());
 
-        targetPlayer.setMetadata(WINTER_FRAIL, new FixedMetadataValue(Main.getInstance(), System.currentTimeMillis() + ((enchantLevel * 2L) + 2) * 1000L));
+        targetPlayer.setMetadata(WINTER_FRAIL, new FixedMetadataValue(Main.getInstance().getPlugin(), System.currentTimeMillis() + ((enchantLevel * 2L) + 2) * 1000L));
 
         if (enchantLevel >= 3 && player.hasPotionEffect(PotionEffectType.SLOWNESS))
             player.removePotionEffect(PotionEffectType.SLOWNESS);

@@ -43,10 +43,12 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
 
-class Main : JavaPlugin() {
+class Main {
     init {
         instance = this
     }
+
+    lateinit var plugin: ThePit
 
     private val songs: MutableMap<String, Song> = HashMap()
     private val scheduler: ScheduledExecutorService = Executors.newScheduledThreadPool(3)
@@ -60,10 +62,10 @@ class Main : JavaPlugin() {
     )
 
     private val file: File = File("plugins/ThePitAddon", "config.yml")
-    private val cfg: FileConfiguration = YamlConfiguration.loadConfiguration(file)
+    val cfg: FileConfiguration = YamlConfiguration.loadConfiguration(file)
     private val PlayerDataPath: String = cfg.getString("PlayerDataPath") ?: ""
     private val filterManager: FilterManager = FilterManager(instance)
-    val PREFIX: String = CC.translate(instance.config.getString("Prefix") ?: "&8[&bI&fRINA&8] &f| ")
+    val PREFIX: String = CC.translate(cfg.getString("Prefix") ?: "&8[&bI&fRINA&8] &f| ")
     val pointsAPI: PlayerPointsAPI?
         get() {
             val playerPoints = Bukkit.getPluginManager().getPlugin("PlayerPoints")
@@ -104,7 +106,8 @@ class Main : JavaPlugin() {
 
     @HideAccess
     @DynamicInvoke
-    override fun onEnable() {
+    fun enable(p: ThePit) {
+        this.plugin = p
         instance = this
         loadMusicResources()
 
@@ -113,19 +116,19 @@ class Main : JavaPlugin() {
         send("&e天坑斗斗终极版扩展 启动中...")
         send("&7作者: &fIrina &7| &fhttps://github.com/BaiJiuSama")
 
-        saveResource("config.yml", false)
-        saveResource("filter.yml", false)
+        plugin.saveResource("config.yml", false)
+        cfg.load(file)
+        plugin.saveResource("filter.yml", false)
 
-        Bukkit.getScheduler().runTaskLater(this, Runnable {
+        Bukkit.getScheduler().runTaskLater(plugin, Runnable {
             depends.forEach {
                 val depend = Bukkit.getPluginManager().getPlugin(it)
                 if (depend == null || !depend.isEnabled) {
-                    send("$PREFIX&c前置 &e$it &c未加载或缺失!")
-                    Bukkit.shutdown()
-                    return@Runnable
+                    // 已并入主插件，前置缺失不再关服，仅提示（PlayerPoints/KnockbackManager 可缺失）
+                    send("$PREFIX&e前置 &f$it &e未加载, 相关功能将不可用!")
                 }
             }
-            send("&a无缺失前置, 等待 &fThePit Ultimate &a加载完毕后加载...")
+            send("&a前置检查完成, 等待 &fThePit Ultimate &a加载完毕后加载...")
 
             object : BukkitRunnable() {
                 var index = 0
@@ -145,28 +148,33 @@ class Main : JavaPlugin() {
                     send("&fThePit Ultimate &a已加载完毕, 正在加载...")
                     this.cancel()
                     setUp()
-                    Bukkit.getScheduler().scheduleSyncDelayedTask(instance, {
+                    Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, Runnable {
                         serverLoaded = true
                     }, 5 * 20L)
                 }
-            }.runTaskTimerAsynchronously(this, 0, 5 * 20L)
+            }.runTaskTimerAsynchronously(plugin, 0, 5 * 20L)
         }, 21L)
     }
 
     private fun setUp() {
-        kbmAPI = KnockbackManager.getInstance().api
+        try {
+            kbmAPI = KnockbackManager.getInstance().api
+        } catch (e: Exception) {
+            // KnockbackManager 非必需，缺失时降级跳过
+            send("&eKnockbackManager 未加载, 相关功能不可用")
+        }
         clearEpicEvents()
         loadEnchantmentManager()
         registerCommands()
         loadListener()
         modifyRarityPrefix()
 
-        if (config.getBoolean("DamageValidRange.Enable") ?: false) send("&e玩家伤害已被改动! 请注意!")
+        if (cfg.getBoolean("DamageValidRange.Enable") ?: false) send("&e玩家伤害已被改动! 请注意!")
         send("&a天坑乱斗终极版扩展 已启动!")
         send("&aPowered by Irina, ShanguanLinG, MIYU")
 
-        if (config.getBoolean("FreeCoinAndExperience.Enable") ?: false) {
-            Bukkit.getScheduler().runTaskTimer(this, FreeCE(), 0L, 5 * 20L * 60L)
+        if (cfg.getBoolean("FreeCoinAndExperience.Enable") ?: false) {
+            Bukkit.getScheduler().runTaskTimer(plugin, FreeCE(), 0L, 5 * 20L * 60L)
         } else {
             send("&c未启用 挂机池")
         }
@@ -175,7 +183,7 @@ class Main : JavaPlugin() {
 
     @HideAccess
     @DynamicInvoke
-    override fun onDisable() {
+    fun disable() {
         send("&c天坑斗斗终极版扩展 关闭中!")
         Bukkit.setWhitelist(true)
 
@@ -225,7 +233,7 @@ class Main : JavaPlugin() {
 
     private var liteCommands: LiteCommands<CommandSender>? = null
     private fun registerCommands() {
-        this.liteCommands = LiteBukkitFactory.builder("ThePitAddon", this)
+        this.liteCommands = LiteBukkitFactory.builder("ThePitAddon", plugin)
             .commands(
                 AdminChangeGameMode(),
                 CommandEnchant(),
@@ -277,11 +285,11 @@ class Main : JavaPlugin() {
                         val song = NBSDecoder.parse(stream)
                         songs.put(filePath, song)
                     } else {
-                        logger.warning("寻找资源失败: $filePath")
+                        plugin.logger.warning("寻找资源失败: $filePath")
                     }
                 }
             } catch (e: Exception) {
-                logger.severe("加载音乐资源失败: " + filePath + ", " + e.message)
+                plugin.logger.severe("加载音乐资源失败: " + filePath + ", " + e.message)
             }
         }
     }
@@ -312,7 +320,7 @@ class Main : JavaPlugin() {
             }
             send("&a注册: &f${clazz.simpleName}")
             val listener = clazz.getDeclaredConstructor().newInstance() as Listener
-            Bukkit.getPluginManager().registerEvents(listener, this)
+            Bukkit.getPluginManager().registerEvents(listener, plugin)
         }
     }
 

@@ -87,7 +87,7 @@ class DevilChicken : AbstractEnchantment(), IPlayerShootEntity, IActionDisplayEn
                     customExplosion(chicken.location)
                     chicken.remove()
                 }
-            }.runTaskLater(Main.instance, 14L)
+            }.runTaskLater(Main.instance.plugin, 14L)
         }
     }
 

@@ -38,7 +38,7 @@ class ChangeUserMeta {
             return
         }
 
-        Bukkit.getScheduler().runTaskAsynchronously(Main.instance, Runnable {
+        Bukkit.getScheduler().runTaskAsynchronously(Main.instance.plugin, Runnable {
             val node: Node
             when (type.lowercase(Locale.getDefault())) {
                 "suffix" -> {
@@ -68,7 +68,7 @@ class ChangeUserMeta {
             user.data().add(node)
 
             luckPerms.userManager.saveUser(user)
-            Bukkit.getScheduler().runTask(Main.instance, Runnable {
+            Bukkit.getScheduler().runTask(Main.instance.plugin, Runnable {
                 player.sendMessage(
                     CC.translate(
                         "$PREFIX&a成功! 当前你的 &e" + type.uppercase(

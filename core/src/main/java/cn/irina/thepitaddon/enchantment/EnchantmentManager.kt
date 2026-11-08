@@ -25,7 +25,7 @@ import org.reflections.Reflections
 //    private val darkRareEnchants: MutableList<String> = ArrayList()
 //
 //    fun registerEnchantment() {
-////        val classes = ClassUtil.getClassesInPackage(Main.instance, "cn.irina.thepitaddon.enchantment.type")!!
+////        val classes = ClassUtil.getClassesInPackage(Main.instance.plugin, "cn.irina.thepitaddon.enchantment.type")!!
 //        val classes: Array<Class<*>> = arrayOf(VolleyA::class.java)
 //        Bukkit.getConsoleSender().sendMessage(translate("$PREFIX&e扫描到的附魔类数量: ${classes.size}"))
 //        for (clazz in classes) {

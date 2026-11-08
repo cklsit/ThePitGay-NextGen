@@ -11,14 +11,14 @@ import org.bukkit.event.player.PlayerTeleportEvent
 class ItemFilterListener : Listener {
     @EventHandler
     fun onPlayerJoin(event: PlayerJoinEvent) {
-        Main.instance.server.scheduler.runTaskLater(Main.instance, Runnable {
+        Main.instance.plugin.server.scheduler.runTaskLater(Main.instance.plugin, Runnable {
             Main.instance.getFilterManager().applyFilters(event.player)
         }, 20L)
     }
     
     @EventHandler
     fun onPlayerSpawn(event: PlayerTeleportEvent) {
-        Main.instance.server.scheduler.runTaskLater(Main.instance, Runnable {
+        Main.instance.plugin.server.scheduler.runTaskLater(Main.instance.plugin, Runnable {
             Main.instance.getFilterManager().applyFilters(event.player)
         }, 20L)
     }

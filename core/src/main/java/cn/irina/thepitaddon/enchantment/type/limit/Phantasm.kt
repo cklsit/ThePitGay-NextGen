@@ -87,7 +87,7 @@ class Phantasm : AbstractEnchantment(), Listener, IActionDisplayEnchant {
 
     private fun Player.scheduleDeactivation(state: PhantasmState, durationTicks: Long) {
         state.task?.cancel()
-        state.task = Bukkit.getScheduler().runTaskLater(instance, Runnable {
+        state.task = Bukkit.getScheduler().runTaskLater(Main.instance.plugin, Runnable {
             deactivatePhantasm(state)
         }, durationTicks)
     }
@@ -200,7 +200,7 @@ class Phantasm : AbstractEnchantment(), Listener, IActionDisplayEnchant {
     }
 
     private fun startCleanupTask() {
-        Bukkit.getScheduler().runTaskTimerAsynchronously(instance, Runnable {
+        Bukkit.getScheduler().runTaskTimerAsynchronously(Main.instance.plugin, Runnable {
             performPeriodicCleanup()
         }, CLEANUP_INTERVAL_TICKS, CLEANUP_INTERVAL_TICKS)
     }

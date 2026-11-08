@@ -108,11 +108,11 @@ class BrokenString : AbstractEnchantment(),  IPlayerShootEntity, IAttackEntity, 
     @EventHandler(priority = EventPriority.LOWEST)
     fun onDeath(event: PlayerDeathEvent) {
         val player = event.entity
-        if (player.hasMetadata(brokenString)) player.removeMetadata(brokenString, Main.instance)
+        if (player.hasMetadata(brokenString)) player.removeMetadata(brokenString, Main.instance.plugin)
     }
 
     private fun onActive(attacker: Player, targetPlayer: Player) {
-        if (targetPlayer.hasMetadata(brokenString)) targetPlayer.removeMetadata(brokenString, Main.instance)
+        if (targetPlayer.hasMetadata(brokenString)) targetPlayer.removeMetadata(brokenString, Main.instance.plugin)
 
         targetPlayer.addPotionEffect(
             PotionEffect(
@@ -125,7 +125,7 @@ class BrokenString : AbstractEnchantment(),  IPlayerShootEntity, IAttackEntity, 
         )
         targetPlayer.setMetadata(
             brokenString,
-            FixedMetadataValue(Main.instance, System.currentTimeMillis() + (2 * 1000L))
+            FixedMetadataValue(Main.instance.plugin, System.currentTimeMillis() + (2 * 1000L))
         )
 
         attacker.sendMessage(CC.translate("&c&l断弦! &f" + targetPlayer.displayName + " &7将在接下来 &e2s &7内无法发射箭矢!"))

@@ -51,7 +51,7 @@ class ExplorationSpecialist : AbstractEnchantment(),  MovementHandler{
         p2: Location?,
         p3: Any?
     ) {
-        Bukkit.getScheduler().runTaskAsynchronously(Main.instance, Runnable {
+        Bukkit.getScheduler().runTaskAsynchronously(Main.instance.plugin, Runnable {
             val enchantLevel = ThePit.getApi().getItemEnchantLevel(player.inventory.leggings, this.nbtName)
 
             if (enchantLevel < 1) return@Runnable

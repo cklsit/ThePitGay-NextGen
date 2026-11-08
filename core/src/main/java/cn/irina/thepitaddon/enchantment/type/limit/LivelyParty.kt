@@ -42,7 +42,7 @@ class LivelyParty: AbstractEnchantment(), ITickTask, IActionDisplayEnchant {
     private val instance = Main.instance
     override fun handle(i: Int, p: Player) {
         var radiusPlayers: Int? = 0
-        Bukkit.getScheduler().runTaskAsynchronously(instance, Runnable {
+        Bukkit.getScheduler().runTaskAsynchronously(Main.instance.plugin, Runnable {
             radiusPlayers = p.getNearbyEntities(RADIUS, RADIUS, RADIUS)
                 .filterIsInstance<Player>()
                 .filter { it != p }

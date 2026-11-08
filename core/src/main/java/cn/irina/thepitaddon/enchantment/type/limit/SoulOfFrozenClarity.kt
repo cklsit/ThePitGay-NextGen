@@ -130,7 +130,7 @@ class SoulOfFrozenClarity: AbstractEnchantment(), ITickTask, IPlayerDamaged, Lis
                 this.cancel()
                 return
             }
-        }.runTaskTimerAsynchronously(instance, 20L, 0)
+        }.runTaskTimerAsynchronously(Main.instance.plugin, 20L, 0)
 
         runnableMap[uuid] = task
     }

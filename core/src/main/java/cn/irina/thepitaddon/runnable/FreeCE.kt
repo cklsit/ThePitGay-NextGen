@@ -204,15 +204,15 @@ class FreeCE : Runnable {
     }
 
     companion object {
-        private val getEXPMessage: String = Main.instance.config.getString("FreeCoinAndExperience.GetEXP-Message") ?: ""
-        private val getCoinMessage: String = Main.instance.config.getString("FreeCoinAndExperience.GetCoin-Message") ?: ""
-        private val getItemMessage: String = Main.instance.config.getString("FreeCoinAndExperience.GetItem-Message") ?: ""
-        private val getKillsMessage: String = Main.instance.config.getString("FreeCoinAndExperience.GetKills-Message") ?: ""
+        private val getEXPMessage: String = Main.instance.cfg.getString("FreeCoinAndExperience.GetEXP-Message") ?: ""
+        private val getCoinMessage: String = Main.instance.cfg.getString("FreeCoinAndExperience.GetCoin-Message") ?: ""
+        private val getItemMessage: String = Main.instance.cfg.getString("FreeCoinAndExperience.GetItem-Message") ?: ""
+        private val getKillsMessage: String = Main.instance.cfg.getString("FreeCoinAndExperience.GetKills-Message") ?: ""
         private val getNoEnoughCoalsMessage: String =
-            Main.instance.config.getString("FreeCoinAndExperience.NoEnoughCoals-Message") ?: ""
+            Main.instance.cfg.getString("FreeCoinAndExperience.NoEnoughCoals-Message") ?: ""
         private val getSuccessfulFixItemInHand: String =
-            Main.instance.config.getString("FreeCoinAndExperience.SuccessfulFixItemInHand-Message") ?: ""
-//        private val experience = Main.instance.config.getInt("FreeCoinAndExperience.Experience") ?: 0
-//        private val coin = Main.instance.config.getInt("FreeCoinAndExperience.Coin") ?: 0
+            Main.instance.cfg.getString("FreeCoinAndExperience.SuccessfulFixItemInHand-Message") ?: ""
+//        private val experience = Main.instance.cfg.getInt("FreeCoinAndExperience.Experience") ?: 0
+//        private val coin = Main.instance.cfg.getInt("FreeCoinAndExperience.Coin") ?: 0
     }
 }

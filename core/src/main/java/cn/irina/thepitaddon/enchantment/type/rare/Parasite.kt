@@ -135,7 +135,7 @@ class Parasite : AbstractEnchantment(),  Listener, IPlayerShootEntity, IActionDi
                 applyTrueDamage(target)
                 shooter.sendMessage(CC.translate("&2&l寄生! &f" + target.displayName + " &7当前剩余血量: &c" + (target.health / 2).toInt() + "❤"))
             }
-        }.runTaskTimer(Main.instance, 0L, DAMAGE_INTERVAL.toLong()))
+        }.runTaskTimer(Main.instance.plugin, 0L, DAMAGE_INTERVAL.toLong()))
     }
 
     // 辅助方法

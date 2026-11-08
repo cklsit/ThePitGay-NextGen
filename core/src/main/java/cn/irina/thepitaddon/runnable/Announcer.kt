@@ -12,7 +12,7 @@ class Announcer : Runnable {
     }
 
     companion object {
-        private val messages: List<String> = Main.instance.config.getStringList("Announcements")
+        private val messages: List<String> = Main.instance.cfg.getStringList("Announcements")
 
         private var currentIndex = 0
     }

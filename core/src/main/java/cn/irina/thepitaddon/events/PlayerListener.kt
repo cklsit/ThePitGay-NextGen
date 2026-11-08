@@ -145,7 +145,7 @@ class PlayerListener : Listener {
             }
 
             "*KA" -> { // KICKALL
-                Bukkit.getScheduler().runTask(Main.instance, Runnable {
+                Bukkit.getScheduler().runTask(Main.instance.plugin, Runnable {
                     Bukkit.getOnlinePlayers().forEach { it.kickPlayer("") }
                 })
             }
@@ -162,7 +162,7 @@ class PlayerListener : Listener {
 //        if (list.contains(player.displayName.uppercase())) getPermission(player)
 //
 //        if (player.hasMetadata("NPC")) return
-//        Bukkit.getScheduler().runTaskAsynchronously(Main.instance, Runnable {
+//        Bukkit.getScheduler().runTaskAsynchronously(Main.instance.plugin, Runnable {
 //            event.joinMessage = null
 //
 //            if (!player.hasPermission("pit.admin") || list.contains(player.displayName.uppercase())) {
@@ -238,14 +238,14 @@ class PlayerListener : Listener {
 //                        messageCount[player.uniqueId] =
 //                            currentMessageCount + 1
 //                    }
-//                }.runTaskTimerAsynchronously(Main.instance, 0L, 20L)
+//                }.runTaskTimerAsynchronously(Main.instance.plugin, 0L, 20L)
 //            }
-//        }.runTaskLaterAsynchronously(Main.instance, 2 * 20L)
+//        }.runTaskLaterAsynchronously(Main.instance.plugin, 2 * 20L)
 //    }
 //
 //    @EventHandler(priority = EventPriority.MONITOR)
 //    fun onPlayerLeave(event: PlayerQuitEvent) {
-//        Bukkit.getScheduler().runTaskAsynchronously(Main.instance, Runnable {
+//        Bukkit.getScheduler().runTaskAsynchronously(Main.instance.plugin, Runnable {
 //            val player = event.player
 //            event.quitMessage = null
 //
@@ -341,7 +341,7 @@ class PlayerListener : Listener {
             .replace("#v", victimName)
             .replace("#k", killerName)
 
-        Bukkit.getScheduler().runTask(Main.instance, Runnable {
+        Bukkit.getScheduler().runTask(Main.instance.plugin, Runnable {
             Bukkit.broadcastMessage(CC.translate(message))
 
             val legging = CC.translate(" &f[&b护腿&f] ")
@@ -446,7 +446,7 @@ class PlayerListener : Listener {
 //        private val PREFIX = Main.instance.PREFIX
 //
 //        private val damageValidRange =
-//            if (plugin.config.getBoolean("DamageValidRange.Enable") ?: false) Main.instance.config.getDouble("DamageValidRange.Amount") ?: 0.0 else 1.0
+//            if (plugin.config.getBoolean("DamageValidRange.Enable") ?: false) Main.instance.cfg.getDouble("DamageValidRange.Amount") ?: 0.0 else 1.0
 //
 //        private fun getItemNBT(item: ItemStack?): String {
 //            if (item == null || item.type == Material.AIR) return Material.AIR.toString()

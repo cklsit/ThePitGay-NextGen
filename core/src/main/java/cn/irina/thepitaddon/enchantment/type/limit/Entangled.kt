@@ -67,7 +67,7 @@ class Entangled: AbstractEnchantment(), IPlayerShootEntity, IActionDisplayEnchan
         val oldBlock = if (targetLoc.block.type == Material.COBWEB) Material.AIR else targetLoc.block.type
         targetLoc.block.type = Material.COBWEB
 
-        Bukkit.getScheduler().runTaskLater(instance, Runnable { targetLoc.block.type = oldBlock }, 20L * (i * 2))
+        Bukkit.getScheduler().runTaskLater(Main.instance.plugin, Runnable { targetLoc.block.type = oldBlock }, 20L * (i * 2))
     }
 
     override fun getText(p0: Int, p: Player): String {

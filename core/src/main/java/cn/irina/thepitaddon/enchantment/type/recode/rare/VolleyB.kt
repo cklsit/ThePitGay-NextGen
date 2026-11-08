@@ -90,6 +90,6 @@ class VolleyB : AbstractEnchantment(),  Listener {
                 val arrow = player.launchProjectile(org.bukkit.entity.Arrow::class.java)
                 arrow.velocity = player.location.direction.multiply(3.0 * (value / 20.0))
             }
-        }.runTaskTimer(Main.instance, 0L, 2L)
+        }.runTaskTimer(Main.instance.plugin, 0L, 2L)
     }
 }

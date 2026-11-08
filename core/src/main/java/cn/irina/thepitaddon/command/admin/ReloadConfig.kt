@@ -17,10 +17,10 @@ class ReloadConfig {
     fun reloadConfig(@Context sender: CommandSender) {
         try {
             val main = Main.instance
-            val configFile = File(main.dataFolder, "config.yml")
-            val filterFile = File(main.dataFolder, "filter.yml")
+            val configFile = File(main.plugin.dataFolder, "config.yml")
+            val filterFile = File(main.plugin.dataFolder, "filter.yml")
             if (configFile.exists() && filterFile.exists()) {
-                main.reloadConfig()
+                main.plugin.reloadConfig()
                 main.getFilterManager().reloadFilterConfig()
                 sender.sendMessage(CC.translate("${Main.instance.PREFIX} &a配置文件重载成功!"))
             } else {

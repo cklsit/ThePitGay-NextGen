@@ -47,7 +47,7 @@ class Ping {
             pingCheckTasks.remove(uuid)
             player.sendMessage(CC.translate("&aStopped checking ping."))
         } else {
-            val task = Bukkit.getScheduler().runTaskTimer(Main.instance, Runnable {
+            val task = Bukkit.getScheduler().runTaskTimer(Main.instance.plugin, Runnable {
                 val (ping, pingColor) = getPingAndPingColor(player)
                 player.sendMessage(CC.translate("&fYour ping is $pingColor$ping ms"))
             }, 0L, 10L)
@@ -63,7 +63,7 @@ class Ping {
             pingCheckTasks.remove(uuid)
             player.sendMessage(CC.translate("&aStopped checking ping."))
         } else {
-            val task = Bukkit.getScheduler().runTaskTimer(Main.instance, Runnable {
+            val task = Bukkit.getScheduler().runTaskTimer(Main.instance.plugin, Runnable {
                 if (!target.isOnline) {
                     pingCheckTasks[uuid]?.cancel()
                     pingCheckTasks.remove(uuid)

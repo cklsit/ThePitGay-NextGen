@@ -28,7 +28,7 @@ class PlayerProving {
                         checkNumber.replace(player.uniqueId, 0)
                     }
                 }
-                (PlayerProving.task as BukkitRunnable).runTaskLater(Main.instance, 8 * 20L)
+                (PlayerProving.task as BukkitRunnable).runTaskLater(Main.instance.plugin, 8 * 20L)
             }
         } else {
             if (player.hasPermission("storage.use")) {
