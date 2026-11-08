@@ -17,6 +17,7 @@ import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.entity.Player
+import org.bukkit.entity.Projectile
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
@@ -380,10 +381,19 @@ class PlayerListener : Listener {
     fun onPlayerDamageInAFKWorld(event: EntityDamageByEntityEvent) {
         val worldName = event.entity.world.name
         if (!worldName.equals("afk", ignoreCase = true)) return
-        val damager = event.damager
         val entity = event.entity
-        if (damager is Player && entity is Player) {
+        if (entity !is Player) return
+        // 直接攻击
+        if (event.damager is Player) {
             event.isCancelled = true
+            return
+        }
+        // 弹射物（箭/雪球/三叉戟等）来源是玩家
+        if (event.damager is Projectile) {
+            val shooter = (event.damager as Projectile).shooter
+            if (shooter is Player) {
+                event.isCancelled = true
+            }
         }
     }
 
