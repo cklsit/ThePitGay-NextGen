@@ -545,7 +545,12 @@ public class PlayerProfile {
                     + " armorLen=" + (armor == null ? "null" : armor.length)
                     + " leggings=" + (armor == null || armor.length < 2 || armor[1] == null
                             ? "null" : armor[1].getType().name()));
-            this.setInventory(captured);
+            // 防止「刚加载完、背包还没套上」时把空背包写回档案（装备丢失竞态）
+            if (isEmptyInv(captured) && this.inventory != null && !isEmptyInv(this.inventory)) {
+                ThePit.getInstance().getLogger().info("[SaveDebug] 跳过空背包覆盖 玩家=" + player.getName());
+            } else {
+                this.setInventory(captured);
+            }
         }
         //if (invBackups.isEmpty() || invBackups.stream().noneMatch(backup -> now - backup.getTimeStamp() < 10 * 60 * 1000)) {
         final PlayerInvBackup backup = new PlayerInvBackup();
@@ -565,6 +570,29 @@ public class PlayerProfile {
                 .getMongoDB()
                 .getProfiles()
                 .replaceOne("uuid", this.uuid, this);
+    }
+
+    private static boolean isEmptyInv(PlayerInv inv) {
+        if (inv == null) {
+            return true;
+        }
+        org.bukkit.inventory.ItemStack[] armor = inv.getArmorContents();
+        if (armor != null) {
+            for (org.bukkit.inventory.ItemStack item : armor) {
+                if (item != null && item.getType() != org.bukkit.Material.AIR) {
+                    return false;
+                }
+            }
+        }
+        org.bukkit.inventory.ItemStack[] contents = inv.getContents();
+        if (contents != null) {
+            for (org.bukkit.inventory.ItemStack item : contents) {
+                if (item != null && item.getType() != org.bukkit.Material.AIR) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     public static void bootstrapProfile(PlayerProfile profile) {
