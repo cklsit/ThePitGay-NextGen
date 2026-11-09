@@ -71,6 +71,8 @@ public class MythicItemButton extends Button {
             IMythicItem mythicItem = new AngelChestplate();
             mythicItem.loadFromItemStack(itemStack);
             return mythicItem.toItemStack();
+        } else if (i == 12) {
+            return new net.mizukilab.pit.item.type.mythic.MythicHammerItem().toItemStack();
         } else if (i == 11) {
             return MythicBook.toItemStack();
         }

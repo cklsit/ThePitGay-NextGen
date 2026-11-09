@@ -309,6 +309,16 @@ public class EnchantButton extends Button {
         }
         if (level > 0) {
             mythicItem.setLive(mythicItem.getLive() + mythicItem.getMaxLive() - maxLive);
+            // 64 铸缝：重铸时额外保留 live 不被消耗
+            int seam = mythicItem.getEnchantmentLevel("hammer_064");
+            if (seam > 0) {
+                net.mizukilab.pit.enchantment.AbstractEnchantment seamEnchant =
+                        ThePit.getInstance().getEnchantmentFactor().getEnchantmentMap().get("hammer_064");
+                if (seamEnchant instanceof net.mizukilab.pit.enchantment.type.hammer.HammerEnchantBase seamBase) {
+                    int keep = (int) Math.round(seamBase.valueAt(seam));
+                    mythicItem.setLive(Math.min(mythicItem.getMaxLive(), mythicItem.getLive() + keep));
+                }
+            }
         } else {
 
             mythicItem.setLive(mythicItem.getMaxLive());

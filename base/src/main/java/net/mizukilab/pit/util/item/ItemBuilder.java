@@ -425,6 +425,50 @@ public class ItemBuilder {
         return this;
     }
 
+    /**
+     * 击退抗性（加法）：value = 0.3 表示 +30%。固定 key + 先 remove 再 add。
+     */
+    public ItemBuilder knockbackResistance(double value) {
+        ItemMeta meta = is.getItemMeta();
+        if (meta != null) {
+            NamespacedKey key = new NamespacedKey("thepit", "item_kb_resistance");
+            java.util.Collection<AttributeModifier> existing = meta.getAttributeModifiers(Attribute.KNOCKBACK_RESISTANCE);
+            if (existing != null) {
+                for (AttributeModifier mod : new java.util.ArrayList<>(existing)) {
+                    if (key.equals(mod.getKey())) {
+                        meta.removeAttributeModifier(Attribute.KNOCKBACK_RESISTANCE, mod);
+                    }
+                }
+            }
+            meta.addAttributeModifier(Attribute.KNOCKBACK_RESISTANCE, new AttributeModifier(
+                    key, value, AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
+            is.setItemMeta(meta);
+        }
+        return this;
+    }
+
+    /**
+     * 实体交互距离（加法）：value = 0.5 表示有效命中范围 +0.5 格。固定 key + 先 remove 再 add。
+     */
+    public ItemBuilder entityInteractionRange(double value) {
+        ItemMeta meta = is.getItemMeta();
+        if (meta != null) {
+            NamespacedKey key = new NamespacedKey("thepit", "item_interaction_range");
+            java.util.Collection<AttributeModifier> existing = meta.getAttributeModifiers(Attribute.ENTITY_INTERACTION_RANGE);
+            if (existing != null) {
+                for (AttributeModifier mod : new java.util.ArrayList<>(existing)) {
+                    if (key.equals(mod.getKey())) {
+                        meta.removeAttributeModifier(Attribute.ENTITY_INTERACTION_RANGE, mod);
+                    }
+                }
+            }
+            meta.addAttributeModifier(Attribute.ENTITY_INTERACTION_RANGE, new AttributeModifier(
+                    key, value, AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
+            is.setItemMeta(meta);
+        }
+        return this;
+    }
+
     public ItemBuilder addPotionEffect(PotionEffect effect, boolean b) {
         if (this.is.getItemMeta() instanceof PotionMeta) {
             final PotionMeta meta = (PotionMeta) this.is.getItemMeta();

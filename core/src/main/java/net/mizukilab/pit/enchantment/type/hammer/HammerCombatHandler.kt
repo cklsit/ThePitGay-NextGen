@@ -42,6 +42,7 @@ class HammerCombatHandler : Listener {
         for ((enchant, level) in mythic.enchantments) {
             if (enchant !is HammerEnchantBase) continue
             if (!SeasonalOpenService.isOpen(enchant)) continue
+            if (CONDITIONAL.contains(enchant.nbtName)) continue
             when (enchant.effect()) {
                 HammerEffect.DAMAGE_PCT -> damageBonus += enchant.valueAt(level)
                 HammerEffect.HEAL -> healHearts += enchant.valueAt(level)
@@ -89,6 +90,7 @@ class HammerCombatHandler : Listener {
         var reduction = 0.0
         for ((enchant, level) in mythic.enchantments) {
             if (enchant is HammerEnchantBase && SeasonalOpenService.isOpen(enchant)
+                && !CONDITIONAL.contains(enchant.nbtName)
                 && enchant.effect() == HammerEffect.DAMAGE_REDUCTION) {
                 reduction += enchant.valueAt(level)
             }
@@ -126,5 +128,20 @@ class HammerCombatHandler : Listener {
 
     companion object {
         private val LAST_TRIGGER = ConcurrentHashMap<String, Long>()
+
+        /**
+         * 由 HammerConditionalEffects 等专用处理器按条件结算的条目。
+         * 这些条目必须跳过通用聚合，否则会与条件判定重复计算。
+         */
+        private val CONDITIONAL: Set<String> = setOf(
+            "hammer_002", "hammer_003", "hammer_005", "hammer_006", "hammer_008",
+            "hammer_014", "hammer_015", "hammer_018", "hammer_022", "hammer_024",
+            "hammer_025", "hammer_026", "hammer_032", "hammer_036", "hammer_038",
+            "hammer_042", "hammer_045", "hammer_048", "hammer_061", "hammer_066",
+            "hammer_088"
+        )
+
+        @JvmStatic
+        fun isConditional(nbt: String): Boolean = CONDITIONAL.contains(nbt)
     }
 }

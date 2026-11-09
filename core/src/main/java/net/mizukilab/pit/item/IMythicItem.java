@@ -239,6 +239,33 @@ public abstract class IMythicItem extends AbstractPitItem {
             lore.add("&8" + (equals ? "Refresh on table" : uuid.toString()));
         }
 
+        // 神话之锤：汇总攻速（C2）、击退抗性（12/63）与命中范围（35）到物品属性
+        double atsScalar = 0.0D;
+        double kbResistance = 0.0D;
+        double reachBonus = 0.0D;
+        for (Map.Entry<AbstractEnchantment, Integer> e : enchantments.entrySet()) {
+            if (!(e.getKey() instanceof net.mizukilab.pit.enchantment.type.hammer.HammerEnchantBase hb)) {
+                continue;
+            }
+            int lv = e.getValue();
+            double v = hb.valueAt(lv);
+            String nbt = hb.getNbtName();
+            switch (nbt) {
+                case "hammer_023", "hammer_065" -> {
+                    double t0 = 1.0D / 0.6D;
+                    atsScalar += t0 / (t0 + v) - 1.0D;
+                }
+                case "hammer_051" -> atsScalar += v / 100.0D;
+                case "hammer_012", "hammer_063" -> kbResistance += v / 100.0D;
+                case "hammer_035" -> reachBonus += v;
+                default -> {
+                }
+            }
+        }
+        atsScalar = Math.max(-0.30D, Math.min(0.30D, atsScalar));
+        kbResistance = Math.max(0.0D, Math.min(1.0D, kbResistance));
+        reachBonus = Math.max(0.0D, Math.min(0.7D, reachBonus));
+
         double mythicItemDamage = this instanceof IMythicSword sword ? sword.getItemDamage()
                 : (this instanceof net.mizukilab.pit.item.IMythicHammer hammer ? hammer.getItemDamage() : -1.0D);
         if (mythicItemDamage >= 0) {
@@ -254,6 +281,9 @@ public abstract class IMythicItem extends AbstractPitItem {
                     .canTrade(true)
                     .enchant(enchantments)
                     .itemDamage(mythicItemDamage)
+                    .attackSpeed(atsScalar)
+                    .knockbackResistance(kbResistance)
+                    .entityInteractionRange(reachBonus)
                     .maxLive(this.maxLive)
                     .tier(this.tier)
                     .makeBoostedByGem(this.boostedByGem)
