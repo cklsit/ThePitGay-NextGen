@@ -401,6 +401,10 @@ public abstract class IMythicItem extends AbstractPitItem {
         this.maxLive = maxLiveValue == null ? 0 : maxLiveValue;
         Integer liveValue = ItemData.getInt(item, "live");
         this.live = liveValue == null ? 0 : liveValue;
+        // 存量物品自愈：历史版本重铸时可能把 live 补到上限之上
+        if (this.maxLive > 0 && this.live > this.maxLive) {
+            this.live = this.maxLive;
+        }
         if (ItemData.has(item, "forceCanTrade")) {
             this.forceCanTrade = ItemData.getBoolean(item, "forceCanTrade") ? 1 : 0;
         }

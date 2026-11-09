@@ -262,11 +262,13 @@ public class EnchantButton extends Button {
             maxLive = mythicItem.getMaxLive();
         }
         // 神话之锤：常驻高生命 100 / 120 / 135（按附魔后的物品阶 tier 决定），不随颜色随机
-        if (mythicItem instanceof net.mizukilab.pit.item.IMythicHammer) {
+        boolean hammerItem = mythicItem instanceof net.mizukilab.pit.item.IMythicHammer;
+        if (hammerItem) {
             int newTier = Math.min(level + 1, 3);
             int hammerLive = newTier <= 1 ? 100 : (newTier == 2 ? 120 : 135);
+            // 只改上限，live 由下方「按 maxLive 变化补差额」统一处理，
+            // 否则先补满再补差额会得到超过上限的数值（例如 135 + 15 = 150）
             mythicItem.setMaxLive(hammerLive);
-            mythicItem.setLive(hammerLive);
             //根据附魔物品颜色的不同,maxLive也有所不同
         } else if (color == MythicColor.DARK) {
             switch (level) {
@@ -321,6 +323,10 @@ public class EnchantButton extends Button {
             }
         } else {
 
+            mythicItem.setLive(mythicItem.getMaxLive());
+        }
+        // 兜底：live 不得超过 maxLive
+        if (mythicItem.getLive() > mythicItem.getMaxLive()) {
             mythicItem.setLive(mythicItem.getMaxLive());
         }
         level++;
