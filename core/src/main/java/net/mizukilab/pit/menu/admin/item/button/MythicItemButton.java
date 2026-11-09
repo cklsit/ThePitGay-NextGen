@@ -72,7 +72,15 @@ public class MythicItemButton extends Button {
             mythicItem.loadFromItemStack(itemStack);
             return mythicItem.toItemStack();
         } else if (i == 12) {
-            return new net.mizukilab.pit.item.type.mythic.MythicHammerItem().toItemStack();
+            try {
+                return new net.mizukilab.pit.item.type.mythic.MythicHammerItem().toItemStack();
+            } catch (Throwable e) {
+                // 兜底：渲染失败也不能让整个菜单打不开
+                return new ItemBuilder(Material.MACE)
+                        .name("&6神话之锤")
+                        .lore("&7渲染失败，请把日志发给管理员")
+                        .build();
+            }
         } else if (i == 11) {
             return MythicBook.toItemStack();
         }

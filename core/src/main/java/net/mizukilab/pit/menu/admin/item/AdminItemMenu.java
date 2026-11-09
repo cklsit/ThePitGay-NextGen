@@ -64,7 +64,8 @@ public class AdminItemMenu extends Menu {
             buttonMap.put(12, new CombatSpadeShopButton());
             buttonMap.put(13, new MythicItemButton(4));
             buttonMap.put(14, new PantsBundleShopButton());
-            buttonMap.put(16, new MythicItemButton(12));
+            // 15：神话之锤（admin 分支不会再覆盖该槽位）
+            buttonMap.put(15, new MythicItemButton(12));
 
             //TODO Not
 /*            if (ThePit.getInstance().getPitConfig().getCode().equals("4847a648-bd9f-463e-ab18-3006b0fabd3b")) {
