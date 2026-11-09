@@ -557,6 +557,7 @@ private fun loadEnchants() {
         add(JerryEnchant6())
         add(JerryEnchant7())
     }
+    classes += net.mizukilab.pit.enchantment.type.hammer.HammerEnchantRegistrar.classes()
     enchantmentFactor.init(classes)
     EnchantedConstructor.apply {
         Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), Runnable {
