@@ -44,4 +44,15 @@ public final class ItemTypes {
     public static boolean isAxe(ItemStack stack) {
         return name(stack).endsWith("_AXE");
     }
+
+    /**
+     * 神话之锤：按 PDC internal name 精确匹配，不按材质家族判定。
+     * 普通 MACE / 普通斧都不算。
+     */
+    public static boolean isMythicHammer(ItemStack stack) {
+        if (stack == null) {
+            return false;
+        }
+        return "mythic_hammer".equals(net.mizukilab.pit.util.item.ItemUtil.getInternalName(stack));
+    }
 }

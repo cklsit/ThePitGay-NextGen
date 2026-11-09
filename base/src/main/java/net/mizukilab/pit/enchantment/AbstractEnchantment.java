@@ -67,6 +67,13 @@ public abstract class AbstractEnchantment {
     }
 
     public boolean canApply(ItemStack item) {
+        if (cn.charlotte.pit.compat.item.ItemTypes.isMythicHammer(item)) {
+            return this.getClass().isAnnotationPresent(net.mizukilab.pit.enchantment.param.item.HammerOnly.class);
+        }
+        if (this.getClass().isAnnotationPresent(net.mizukilab.pit.enchantment.param.item.HammerOnly.class)) {
+            // 锤专属附魔不得落到其它物品上
+            return false;
+        }
         if (cn.charlotte.pit.compat.item.ItemTypes.isSword(item)) {
             return this.getClass().isAnnotationPresent(WeaponOnly.class);
         }

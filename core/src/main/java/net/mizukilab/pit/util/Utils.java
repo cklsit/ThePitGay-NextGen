@@ -189,6 +189,7 @@ public class Utils {
         }
         switch (internalName) {
             case "mythic_sword" -> mythicItem = new MythicSwordItem();
+            case "mythic_hammer" -> mythicItem = new net.mizukilab.pit.item.type.mythic.MythicHammerItem();
             case "mythic_bow" -> mythicItem = new MythicBowItem();
             case "mythic_leggings" -> mythicItem = new MythicLeggingsItem();
             case "angel_chestplate" -> mythicItem = new AngelChestplate();

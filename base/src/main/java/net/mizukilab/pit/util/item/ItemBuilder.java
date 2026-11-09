@@ -400,6 +400,31 @@ public class ItemBuilder {
         return this;
     }
 
+    /**
+     * 攻击速度修正（标量）：value = 0.05 表示 +5%。固定 key + 先 remove 再 add，避免重复叠加覆盖。
+     */
+    public ItemBuilder attackSpeed(double value) {
+        ItemMeta meta = is.getItemMeta();
+        if (meta != null) {
+            NamespacedKey key = new NamespacedKey("thepit", "item_attack_speed");
+            java.util.Collection<AttributeModifier> existing = meta.getAttributeModifiers(Attribute.ATTACK_SPEED);
+            if (existing != null) {
+                for (AttributeModifier mod : new java.util.ArrayList<>(existing)) {
+                    if (key.equals(mod.getKey())) {
+                        meta.removeAttributeModifier(Attribute.ATTACK_SPEED, mod);
+                    }
+                }
+            }
+            meta.addAttributeModifier(Attribute.ATTACK_SPEED, new AttributeModifier(
+                    key,
+                    value,
+                    AttributeModifier.Operation.ADD_SCALAR,
+                    EquipmentSlotGroup.MAINHAND));
+            is.setItemMeta(meta);
+        }
+        return this;
+    }
+
     public ItemBuilder addPotionEffect(PotionEffect effect, boolean b) {
         if (this.is.getItemMeta() instanceof PotionMeta) {
             final PotionMeta meta = (PotionMeta) this.is.getItemMeta();

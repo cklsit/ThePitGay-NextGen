@@ -102,6 +102,8 @@ public abstract class IMythicItem extends AbstractPitItem {
             }
         } else if (this instanceof MythicSwordItem) {
             name = (tier >= 3 ? "&c" : "&e") + (tier > 0 ? RomanUtil.convert(tier) + " 阶" : "") + getItemDisplayName();
+        } else if (this instanceof net.mizukilab.pit.item.IMythicHammer) {
+            name = (tier >= 3 ? "&c" : "&6") + (tier > 0 ? RomanUtil.convert(tier) + " 阶" : "") + getItemDisplayName();
         } else if (this instanceof MythicBowItem) {
             name = (tier >= 3 ? "&c" : "&b") + (tier > 0 ? RomanUtil.convert(tier) + " 阶" : "") + getItemDisplayName();
         } else if (this instanceof MagicFishingRod) {
@@ -139,7 +141,7 @@ public abstract class IMythicItem extends AbstractPitItem {
         }
 
         if (this.maxLive >= 100) {
-            if (color == MythicColor.DARK) {
+            if (color == MythicColor.DARK && !(this instanceof net.mizukilab.pit.item.IMythicHammer)) {
                 name = color.getChatColor() + (tier > 0 ? RomanUtil.convert(tier) + " 阶" : "") + "恶魔之甲";
             } else {
                 this.prefix = "精制的";
@@ -237,7 +239,9 @@ public abstract class IMythicItem extends AbstractPitItem {
             lore.add("&8" + (equals ? "Refresh on table" : uuid.toString()));
         }
 
-        if (this instanceof IMythicSword mythicSword) {
+        double mythicItemDamage = this instanceof IMythicSword sword ? sword.getItemDamage()
+                : (this instanceof net.mizukilab.pit.item.IMythicHammer hammer ? hammer.getItemDamage() : -1.0D);
+        if (mythicItemDamage >= 0) {
             builder
                     .lore(lore)
                     .internalName(getInternalName())
@@ -249,7 +253,7 @@ public abstract class IMythicItem extends AbstractPitItem {
                     .canDrop(false)
                     .canTrade(true)
                     .enchant(enchantments)
-                    .itemDamage(mythicSword.getItemDamage())
+                    .itemDamage(mythicItemDamage)
                     .maxLive(this.maxLive)
                     .tier(this.tier)
                     .makeBoostedByGem(this.boostedByGem)
