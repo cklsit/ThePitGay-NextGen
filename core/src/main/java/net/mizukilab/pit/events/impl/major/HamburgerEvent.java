@@ -9,13 +9,17 @@ import cn.charlotte.pit.events.AbstractEvent;
 import cn.charlotte.pit.events.trigger.type.addon.IScoreBoardInsert;
 import cn.charlotte.pit.util.hologram.Hologram;
 import cn.charlotte.pit.util.hologram.HologramAPI;
-import com.boydti.fawe.FaweAPI;
-import com.sk89q.worldedit.BlockVector;
-import com.sk89q.worldedit.CuboidClipboard;
 import com.sk89q.worldedit.EditSession;
-import com.sk89q.worldedit.bukkit.BukkitWorld;
-import com.sk89q.worldedit.schematic.MCEditSchematicFormat;
-import com.sk89q.worldedit.schematic.SchematicFormat;
+import com.sk89q.worldedit.WorldEdit;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
+import com.sk89q.worldedit.extent.clipboard.Clipboard;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardReader;
+import com.sk89q.worldedit.function.operation.Operation;
+import com.sk89q.worldedit.function.operation.Operations;
+import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.session.ClipboardHolder;
 import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -82,6 +86,15 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
     private BukkitRunnable runnable;
     private Cooldown timer = new Cooldown(5, TimeUnit.MINUTES);
     private EditSession session;
+
+    /** 解析 legacy .schematic 读取器，优先按别名查找，找不到时退回内置 MCEdit 格式。 */
+    private static ClipboardFormat resolveSchematicFormat() {
+        ClipboardFormat format = ClipboardFormats.findByAlias("schematic");
+        if (format == null) {
+            format = com.sk89q.worldedit.extent.clipboard.io.BuiltInClipboardFormat.MCEDIT_SCHEMATIC;
+        }
+        return format;
+    }
 
     @SneakyThrows
     public HamburgerEvent() {
@@ -179,7 +192,6 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
         });
 
 
-        BukkitWorld world = new BukkitWorld(Bukkit.getWorlds().get(0));
         this.location = ThePit.getInstance().getPitConfig().getHamburgerOfferNpcLocA(); //villager location
 
         Bukkit.getScheduler().runTask(ThePit.getInstance(), () -> {
@@ -200,22 +212,36 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
             });
         });
 
-        FaweAPI.getTaskManager().async(() -> {
+        Bukkit.getScheduler().runTaskAsynchronously(ThePit.getInstance(), () -> {
             try {
                 final InputStream inputStream = ThePit.getInstance().getClass().getClassLoader().getResourceAsStream("hamburger.schematic");
+                if (inputStream == null) {
+                    throw new IllegalStateException("缺少 hamburger.schematic 资源");
+                }
 
-                BlockVector vector = new BlockVector(location.getX(), location.getY(), location.getZ());
+                final ClipboardFormat format = resolveSchematicFormat();
+                if (format == null) {
+                    throw new IllegalStateException("当前 WorldEdit 未注册 schematic 读取器");
+                }
 
-                session = FaweAPI.getEditSessionBuilder(world).build();
+                final Clipboard clipboard;
+                try (ClipboardReader reader = format.getReader(inputStream)) {
+                    clipboard = reader.read();
+                }
 
-                final MCEditSchematicFormat mcedit = (MCEditSchematicFormat) SchematicFormat.MCEDIT;
-
-                final CuboidClipboard clipboard = mcedit.load(inputStream);
-
-
-                clipboard.paste(session, vector, false);
-
-                session.flushQueue();
+                final EditSession editSession = WorldEdit.getInstance()
+                        .newEditSession(BukkitAdapter.adapt(location.getWorld()));
+                session = editSession;
+                try {
+                    final Operation operation = new ClipboardHolder(clipboard)
+                            .createPaste(editSession)
+                            .to(BlockVector3.at(location.getBlockX(), location.getBlockY(), location.getBlockZ()))
+                            .ignoreAirBlocks(false)
+                            .build();
+                    Operations.complete(operation);
+                } finally {
+                    editSession.flushSession();
+                }
 
                 Bukkit.getScheduler().runTask(ThePit.getInstance(), () -> {
                     try {
@@ -295,9 +321,11 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
         hologram.deSpawn();
         villager.remove();
 
-        FaweAPI.getTaskManager().async(() -> {
-            session.undo(session);
-            session.flushQueue();
+        Bukkit.getScheduler().runTaskAsynchronously(ThePit.getInstance(), () -> {
+            if (session != null) {
+                session.undo(session);
+                session.flushQueue();
+            }
         });
 
         for (Map.Entry<UUID, VillagerData> entry : this.villagerDataMap.entrySet()) {

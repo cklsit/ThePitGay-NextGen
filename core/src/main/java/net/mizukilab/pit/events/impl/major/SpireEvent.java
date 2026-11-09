@@ -10,18 +10,21 @@ import cn.charlotte.pit.events.trigger.type.IEpicEvent;
 import cn.charlotte.pit.events.trigger.type.addon.IPreparative;
 import cn.charlotte.pit.events.trigger.type.addon.IScoreBoardInsert;
 import cn.charlotte.pit.events.trigger.type.addon.ISortable;
-import com.boydti.fawe.FaweAPI;
-import com.sk89q.worldedit.BlockVector;
-import com.sk89q.worldedit.CuboidClipboard;
 import com.sk89q.worldedit.EditSession;
-import com.sk89q.worldedit.blocks.BaseBlock;
-import com.sk89q.worldedit.blocks.BlockID;
-import com.sk89q.worldedit.bukkit.BukkitWorld;
+import com.sk89q.worldedit.WorldEdit;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
+import com.sk89q.worldedit.extent.clipboard.Clipboard;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardReader;
 import com.sk89q.worldedit.function.mask.BlockMask;
-import com.sk89q.worldedit.patterns.SingleBlockPattern;
+import com.sk89q.worldedit.function.operation.Operation;
+import com.sk89q.worldedit.function.operation.Operations;
+import com.sk89q.worldedit.function.pattern.BlockPattern;
+import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.CuboidRegion;
-import com.sk89q.worldedit.schematic.MCEditSchematicFormat;
-import com.sk89q.worldedit.schematic.SchematicFormat;
+import com.sk89q.worldedit.session.ClipboardHolder;
+import com.sk89q.worldedit.world.block.BlockTypes;
 import cn.charlotte.pit.compat.math.MathHelper;
 import net.mizukilab.pit.config.NewConfiguration;
 import net.mizukilab.pit.item.type.SpireArmor;
@@ -69,6 +72,15 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
     private Cooldown timer;
     private BukkitRunnable runnable;
     private EditSession session;
+
+    /** 解析 legacy .schematic 读取器，优先按别名查找，找不到时退回内置 MCEdit 格式。 */
+    private static ClipboardFormat resolveSchematicFormat() {
+        ClipboardFormat format = ClipboardFormats.findByAlias("schematic");
+        if (format == null) {
+            format = com.sk89q.worldedit.extent.clipboard.io.BuiltInClipboardFormat.MCEDIT_SCHEMATIC;
+        }
+        return format;
+    }
     private EditSession teleport;
     private EditSession wall;
 
@@ -134,51 +146,76 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
             player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1, 0.5F);
         }
 
-        FaweAPI.getTaskManager().async(() -> {
+        Bukkit.getScheduler().runTaskAsynchronously(ThePit.getInstance(), () -> {
             if (this.session != null) {
                 this.session.undo(this.session);
                 this.session.flushQueue();
             }
 
-            final InputStream inputStream = ThePit.getInstance().getClass().getClassLoader().getResourceAsStream("spire.schematic");
-
             final Location location = ThePit.getInstance().getPitConfig().getSpireLoc();
 
-            final BukkitWorld world = new BukkitWorld(location.getWorld());
-
-            BlockVector vector = new BlockVector(location.getX(), location.getY(), location.getZ());
-
-            session = FaweAPI.getEditSessionBuilder(world).build();
-
-            final MCEditSchematicFormat mcedit = (MCEditSchematicFormat) SchematicFormat.MCEDIT;
-
-
             try {
-                final CuboidClipboard clipboard = mcedit.load(inputStream);
-                clipboard.paste(session, vector, false);
+                final InputStream inputStream = ThePit.getInstance().getClass().getClassLoader().getResourceAsStream("spire.schematic");
+                if (inputStream == null) {
+                    throw new IllegalStateException("缺少 spire.schematic 资源");
+                }
 
-                session.flushQueue();
+                final ClipboardFormat format = resolveSchematicFormat();
+                if (format == null) {
+                    throw new IllegalStateException("当前 WorldEdit 未注册 schematic 读取器");
+                }
 
+                final Clipboard clipboard;
+                try (ClipboardReader reader = format.getReader(inputStream)) {
+                    clipboard = reader.read();
+                }
+
+                session = WorldEdit.getInstance().newEditSession(BukkitAdapter.adapt(location.getWorld()));
+                try {
+                    final Operation operation = new ClipboardHolder(clipboard)
+                            .createPaste(session)
+                            .to(BlockVector3.at(location.getBlockX(), location.getBlockY(), location.getBlockZ()))
+                            .ignoreAirBlocks(false)
+                            .build();
+                    Operations.complete(operation);
+                } finally {
+                    session.flushSession();
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
 
-            Location middle = ThePit.getInstance().getPitConfig().getRagePitMiddle();
-            BlockVector wallVec = new BlockVector(middle.getBlockX(), middle.getBlockY(), middle.getBlockZ());
-            wall = FaweAPI.getEditSessionBuilder(world).build();
-            wall.makeCylinder(wallVec, new SingleBlockPattern(new BaseBlock(BlockID.GLASS)), ThePit.getInstance().getPitConfig().getRagePitRadius(), ThePit.getInstance().getPitConfig().getRagePitHeight(), false);
-            wall.flushQueue();
+            // 狂怒之坑玻璃墙
+            final Location middle = ThePit.getInstance().getPitConfig().getRagePitMiddle();
+            wall = WorldEdit.getInstance().newEditSession(BukkitAdapter.adapt(middle.getWorld()));
+            try {
+                wall.makeCylinder(
+                        BlockVector3.at(middle.getBlockX(), middle.getBlockY(), middle.getBlockZ()),
+                        new BlockPattern(BlockTypes.GLASS.getDefaultState()),
+                        ThePit.getInstance().getPitConfig().getRagePitRadius(),
+                        ThePit.getInstance().getPitConfig().getRagePitHeight(),
+                        false);
+                wall.flushQueue();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
 
             if (teleport == null) {
-                teleport = FaweAPI.getEditSessionBuilder(world).build();
+                final Location portalA = ThePit.getInstance().getPitConfig().getPortalPosA();
+                final Location portalB = ThePit.getInstance().getPitConfig().getPortalPosB();
 
-                Location portalA = ThePit.getInstance().getPitConfig().getPortalPosA();
-                Location portalB = ThePit.getInstance().getPitConfig().getPortalPosB();
-                BlockVector posA = new BlockVector(portalA.getBlockX(), portalA.getBlockY(), portalA.getBlockZ());
-                BlockVector posB = new BlockVector(portalB.getBlockX(), portalB.getBlockY(), portalB.getBlockZ());
-
-                teleport.replaceBlocks(new CuboidRegion(posA, posB), new BlockMask(teleport.getExtent(), new BaseBlock(BlockID.AIR)), new BaseBlock(BlockID.END_PORTAL));
-                teleport.flushQueue();
+                teleport = WorldEdit.getInstance().newEditSession(BukkitAdapter.adapt(portalA.getWorld()));
+                try {
+                    final CuboidRegion region = new CuboidRegion(
+                            BlockVector3.at(portalA.getBlockX(), portalA.getBlockY(), portalA.getBlockZ()),
+                            BlockVector3.at(portalB.getBlockX(), portalB.getBlockY(), portalB.getBlockZ()));
+                    final BlockMask airMask = new BlockMask(
+                            teleport.getExtent(), BlockTypes.AIR.getDefaultState().toBaseBlock());
+                    teleport.replaceBlocks(region, airMask, new BlockPattern(BlockTypes.END_PORTAL.getDefaultState()));
+                    teleport.flushQueue();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         });
     }
@@ -477,7 +514,7 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
 
         this.runnable.cancel();
 
-        FaweAPI.getTaskManager().async(() -> {
+        Bukkit.getScheduler().runTaskAsynchronously(ThePit.getInstance(), () -> {
             try {
                 session.undo(session);
 
