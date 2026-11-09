@@ -119,9 +119,11 @@ class Main {
         send("&e天坑斗斗终极版扩展 启动中...")
         send("&7作者: &fIrina &7| &fhttps://github.com/BaiJiuSama")
 
-        plugin.saveResource("addon_config.yml", false)
+        // 仅在文件缺失时释放默认配置，避免每次启动都刷「already exists」告警
+        if (!file.exists()) plugin.saveResource("addon_config.yml", false)
         cfg.load(file)
-        plugin.saveResource("addon_filter.yml", false)
+        val filterFile = File(ThePit.getInstance().dataFolder, "addon_filter.yml")
+        if (!filterFile.exists()) plugin.saveResource("addon_filter.yml", false)
 
         Bukkit.getScheduler().runTaskLater(plugin, Runnable {
             depends.forEach {
