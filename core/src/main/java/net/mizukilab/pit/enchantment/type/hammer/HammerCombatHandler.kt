@@ -141,11 +141,13 @@ class HammerCombatHandler : Listener {
          * 这些条目必须跳过通用聚合，否则会与条件判定重复计算。
          */
         private val CONDITIONAL: Set<String> = setOf(
-            "hammer_002", "hammer_003", "hammer_005", "hammer_006", "hammer_008",
-            "hammer_014", "hammer_015", "hammer_018", "hammer_022", "hammer_024",
-            "hammer_025", "hammer_026", "hammer_032", "hammer_036", "hammer_038",
-            "hammer_042", "hammer_045", "hammer_048", "hammer_061", "hammer_066",
-            "hammer_088"
+            "hammer_002", "hammer_003", "hammer_004", "hammer_005", "hammer_006",
+            "hammer_008", "hammer_009", "hammer_014", "hammer_015", "hammer_018",
+            "hammer_022", "hammer_024", "hammer_025", "hammer_026", "hammer_028",
+            "hammer_031", "hammer_032", "hammer_034", "hammer_036", "hammer_038",
+            "hammer_041", "hammer_042", "hammer_045", "hammer_047", "hammer_048",
+            "hammer_060", "hammer_061", "hammer_066", "hammer_073", "hammer_077",
+            "hammer_082", "hammer_088"
         )
 
         @JvmStatic

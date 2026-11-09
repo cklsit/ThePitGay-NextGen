@@ -818,6 +818,7 @@ private fun registerListeners() {
         net.mizukilab.pit.enchantment.type.hammer.HammerSpecialEffectsBatch3::class.java,
         net.mizukilab.pit.enchantment.type.hammer.HammerSpecialEffectsBatch4::class.java,
         net.mizukilab.pit.enchantment.type.hammer.HammerMiscHooks::class.java,
+        net.mizukilab.pit.enchantment.type.hammer.HammerSpecialEffectsBatch5::class.java,
     )
     for (aClass in classes) {
         try {
