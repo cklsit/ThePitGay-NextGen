@@ -357,8 +357,22 @@ public class EnchantButton extends Button {
         if (mythicItem instanceof net.mizukilab.pit.item.IMythicHammer) {
             rareResults.addAll(list.stream()
                     .filter(e -> e.getRarity() == EnchantmentRarity.SEASONAL)
-                    .filter(net.mizukilab.pit.enchantment.type.hammer.SeasonalOpenService::isOpen)
+                    .filter(net.mizukilab.pit.enchantment.seasonal.SeasonalOpenService::isOpen)
                     .collect(Collectors.toList()));
+
+            // M1/M2 互斥：已持有其一则不再提供另一条
+            java.util.Set<String> owned = mythicItem.getEnchantments().keySet().stream()
+                    .map(AbstractEnchantment::getNbtName)
+                    .collect(Collectors.toSet());
+            java.util.function.Predicate<AbstractEnchantment> blocked = e -> {
+                String n = e.getNbtName();
+                return (owned.contains("hammer_005") && "hammer_006".equals(n))
+                        || (owned.contains("hammer_006") && "hammer_005".equals(n))
+                        || (owned.contains("hammer_022") && "hammer_036".equals(n))
+                        || (owned.contains("hammer_036") && "hammer_022".equals(n));
+            };
+            results.removeIf(blocked);
+            rareResults.removeIf(blocked);
         }
         //Enchant Start
         switch (color) {

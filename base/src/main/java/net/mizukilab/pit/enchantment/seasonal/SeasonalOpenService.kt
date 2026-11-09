@@ -1,4 +1,4 @@
-package net.mizukilab.pit.enchantment.type.hammer
+package net.mizukilab.pit.enchantment.seasonal
 
 import cn.charlotte.pit.ThePit
 import net.mizukilab.pit.enchantment.AbstractEnchantment

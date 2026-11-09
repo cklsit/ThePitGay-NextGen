@@ -56,20 +56,29 @@ public abstract class AbstractPitItem {
         if (lore == null || entry == null || entry.getKey() == null) {
             return;
         }
+        // 季节性附魔：非开放季度保留词条但置灰（不改写 PDC）
+        boolean seasonalClosed = entry.getKey().getRarity() == EnchantmentRarity.SEASONAL
+                && !net.mizukilab.pit.enchantment.seasonal.SeasonalOpenService.isOpen(entry.getKey());
+        boolean struck = entry.getKey().getRarity() == EnchantmentRarity.DISABLED
+                || entry.getKey().getRarity() == EnchantmentRarity.REMOVED
+                || seasonalClosed;
         lore.add(entry.getKey().getRarity().getPrefix() + "&9"
-                + (entry.getKey().getRarity() == EnchantmentRarity.DISABLED || entry.getKey().getRarity() == EnchantmentRarity.REMOVED ? "&m" : "")
+                + (struck ? "&m" : "")
                 + entry.getKey().getEnchantName() + " " + (entry.getValue() >= 2 ? RomanUtil.convert(entry.getValue()) : "") + "&r");
         if (entries.size() < 6) {
             String[] split = entry.getKey().getUsefulnessLore(entry.getValue()).split("/s");
             if (entry.getKey().getRarity() != EnchantmentRarity.REMOVED) {
                 for (String s : split) {
-                    lore.add("&7" + s);
+                    lore.add((seasonalClosed ? "&8" : "&7") + s);
                 }
             } else {
                 lore.add("&7此附魔已被移除. &8| " + ThePit.getApi().getWatermark());
             }
             if (entry.getKey().getRarity() == EnchantmentRarity.DISABLED) {
                 lore.add("&7此附魔暂时被管理员停用. &8| " + ThePit.getApi().getWatermark());
+            }
+            if (seasonalClosed) {
+                lore.add("&7当前季度未开放 &8| " + ThePit.getApi().getWatermark());
             }
             lore.add(" ");
         }
