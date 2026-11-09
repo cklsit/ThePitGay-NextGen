@@ -104,10 +104,11 @@ class HammerSpecialEffectsBatch4 : Listener {
 
         // 91 惊蛰砧：目标处于标记状态时受到的击退提高
         if (marked(target.uniqueId, "shock")) {
+            val boost = markValues[target.uniqueId.toString() + "|shock"] ?: 0.0
             Bukkit.getScheduler().runTask(ThePit.getInstance(), Runnable {
                 val dir = target.location.toVector().subtract(attacker.location.toVector()).setY(0)
                 if (dir.lengthSquared() > 0.0001) {
-                    target.velocity = target.velocity.add(dir.normalize().multiply(0.45))
+                    target.velocity = target.velocity.add(dir.normalize().multiply(0.3 * (1.0 + boost / 100.0)))
                 }
             })
         }
@@ -303,10 +304,11 @@ class HammerSpecialEffectsBatch4 : Listener {
             superArmor[attacker.uniqueId] = System.currentTimeMillis() + (valueOf(mythic, "hammer_089") * 1000).toLong()
         }
 
-        // 91 惊蛰砧：打上「易被击退」标记
+        // 91 惊蛰砧：命中后 3 秒内目标受到的击退提高（物品阶数值为击退增幅）
         val lv91 = levelOf(mythic, "hammer_091")
         if (lv91 > 0) {
-            putMark(target.uniqueId, "shock", (valueOf(mythic, "hammer_091") * 1000).toLong())
+            putMark(target.uniqueId, "shock", 3000L)
+            markValues[target.uniqueId.toString() + "|shock"] = valueOf(mythic, "hammer_091")
         }
 
         // 94 骤雨：重击落点生成雨幕，站在其中命中时附带范围冲击
@@ -381,7 +383,10 @@ class HammerSpecialEffectsBatch4 : Listener {
         // 40 石幔：远程减伤（live ≥ 60% 生效）
         val lv40 = levelOf(mythic, "hammer_040")
         if (lv40 > 0 && liveRatio(mythic) >= 0.6 && event is EntityDamageByEntityEvent && event.damager is Projectile) {
-            event.damage = event.damage * (1.0 - valueOf(mythic, "hammer_040") / 100.0)
+            val granted = HammerBudget.claimReduction(victim.uniqueId, valueOf(mythic, "hammer_040"))
+            if (granted > 0.0) {
+                event.damage = event.damage * (1.0 - granted / 100.0)
+            }
         }
 
         // 85 秤衡：把本次伤害的一部分推迟到 4 秒内分摊
@@ -417,17 +422,17 @@ class HammerSpecialEffectsBatch4 : Listener {
 
     // ---------------------------------------------------------- 其它监听器
 
-    /** 87 回声砧：标记期间位移超过 3 格追加伤害。 */
+    /** 92 抽芽草地回复 / 84 断层阻挡 / 87 回声砧追逃。 */
     @EventHandler(priority = EventPriority.MONITOR)
     fun onMove(event: PlayerMoveEvent) {
         val player = event.player
-        if (!marked(player.uniqueId, "echo")) return
-        val key = player.uniqueId.toString() + "|echo"
-        val origin = echoOrigin[key] ?: return
 
-        // 92 抽芽：站在自己的草地区域内持续小幅回复
+        // 92 抽芽：站在自己的草地区域内持续小幅回复（已有较长再生则不重复施加）
         if (inZone(player.uniqueId, "grass", player.location, 3.0)) {
-            player.addPotionEffect(PotionEffect(PotionEffectType.REGENERATION, 40, 0, false, true))
+            val current = player.getPotionEffect(PotionEffectType.REGENERATION)
+            if (current == null || current.duration < 30) {
+                player.addPotionEffect(PotionEffect(PotionEffectType.REGENERATION, 40, 0, false, true))
+            }
         }
 
         // 84 断层：阻挡穿越
@@ -436,6 +441,10 @@ class HammerSpecialEffectsBatch4 : Listener {
             return
         }
 
+        // 87 回声砧：标记期间位移超过 3 格追加伤害
+        if (!marked(player.uniqueId, "echo")) return
+        val key = player.uniqueId.toString() + "|echo"
+        val origin = echoOrigin[key] ?: return
         if (origin.world == player.world && origin.distanceSquared(player.location) >= 9.0) {
             marks.remove(player.uniqueId.toString() + "|echo")
             echoOrigin.remove(key)

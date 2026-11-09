@@ -175,8 +175,10 @@ class HammerConditionalEffects : Listener {
         if (stacks > 0 && value("hammer_086") > 0.0) bonus += stacks * 3.0
 
         if (bonus > 0.0) {
-            val capped = bonus.coerceAtMost(60.0)
-            event.damage = event.damage * (1.0 + capped / 100.0)
+            val granted = HammerBudget.claimBonus(attacker.uniqueId, bonus)
+            if (granted > 0.0) {
+                event.damage = event.damage * (1.0 + granted / 100.0)
+            }
         }
     }
 
@@ -212,8 +214,10 @@ class HammerConditionalEffects : Listener {
         }
 
         if (reduction > 0.0) {
-            val capped = reduction.coerceAtMost(35.0)
-            event.damage = event.damage * (1.0 - capped / 100.0)
+            val granted = HammerBudget.claimReduction(victim.uniqueId, reduction)
+            if (granted > 0.0) {
+                event.damage = event.damage * (1.0 - granted / 100.0)
+            }
         }
     }
 

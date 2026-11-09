@@ -829,6 +829,11 @@ private fun registerListeners() {
         }
     }
 
+    // 神话之锤叠加封顶预算（Kotlin object，不能走反射构造）
+    Bukkit.getPluginManager().registerEvents(
+        net.mizukilab.pit.enchantment.type.hammer.HammerBudget, ThePit.getInstance()
+    )
+
     // ProtocolLib 是可选依赖：未安装时跳过其异步监听注册
     if (Bukkit.getPluginManager().isPluginEnabled("ProtocolLib")) {
         ProtocolLibrary.getProtocolManager().asynchronousManager

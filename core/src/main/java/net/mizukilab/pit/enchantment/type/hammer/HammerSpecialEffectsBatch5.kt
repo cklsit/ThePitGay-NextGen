@@ -51,6 +51,7 @@ class HammerSpecialEffectsBatch5 : Listener {
 
     // 34 退火 / 82 重砧契：减伤到期时间
     private val annealUntil = ConcurrentHashMap<UUID, Long>()
+    private val annealActive = ConcurrentHashMap<UUID, Long>()
     private val contractUntil = ConcurrentHashMap<UUID, Long>()
 
     @EventHandler(priority = EventPriority.NORMAL)
@@ -72,7 +73,8 @@ class HammerSpecialEffectsBatch5 : Listener {
 
         // 4 回摆：挥空后的下一次命中增伤
         if (missed && levelOf(mythic, "hammer_004") > 0) {
-            event.damage = event.damage * (1.0 + valueOf(mythic, "hammer_004") / 100.0)
+            val granted = HammerBudget.claimBonus(attacker.uniqueId, valueOf(mythic, "hammer_004"))
+            if (granted > 0.0) event.damage = event.damage * (1.0 + granted / 100.0)
         }
 
         // 31 收势：连续 3 次挥空后命中回血
@@ -85,7 +87,8 @@ class HammerSpecialEffectsBatch5 : Listener {
         if (levelOf(mythic, "hammer_028") > 0) {
             val airborne = !target.isOnGround || target.velocity.lengthSquared() > 0.09
             if (airborne) {
-                event.damage = event.damage * (1.0 + valueOf(mythic, "hammer_028") / 100.0)
+                val granted = HammerBudget.claimBonus(attacker.uniqueId, valueOf(mythic, "hammer_028"))
+                if (granted > 0.0) event.damage = event.damage * (1.0 + granted / 100.0)
             }
         }
 
@@ -155,6 +158,15 @@ class HammerSpecialEffectsBatch5 : Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onDamaged(event: EntityDamageEvent) {
         val victim = event.entity as? Player ?: return
+
+        // 82 重砧契：主手已换成其他武器时仍需生效，故先于「主手是否为锤」判定
+        if (System.currentTimeMillis() < (contractUntil[victim.uniqueId] ?: 0L)) {
+            val granted = HammerBudget.claimReduction(victim.uniqueId, 8.0)
+            if (granted > 0.0) {
+                event.damage = event.damage * (1.0 - granted / 100.0)
+            }
+        }
+
         val mythic = hammerOf(victim) ?: return
 
         // 60 双层锭：按层数减伤，受击清空一半层数
@@ -162,12 +174,15 @@ class HammerSpecialEffectsBatch5 : Listener {
         if (lv60 > 0) {
             val stacks = plateStacks[victim.uniqueId] ?: 0
             if (stacks > 0) {
-                event.damage = event.damage * (1.0 - 0.02 * stacks)
+                val granted = HammerBudget.claimReduction(victim.uniqueId, 2.0 * stacks)
+                if (granted > 0.0) {
+                    event.damage = event.damage * (1.0 - granted / 100.0)
+                }
                 plateStacks[victim.uniqueId] = stacks / 2
             }
         }
 
-        // 34 退火：受到暴击后短暂降低后续受到的伤害
+        // 34 退火：受到暴击后进入一段缓冲期，期间降低后续受到的伤害
         val lv34 = levelOf(mythic, "hammer_034")
         if (lv34 > 0 && event is EntityDamageByEntityEvent) {
             val damager = event.damager as? Player
@@ -175,15 +190,18 @@ class HammerSpecialEffectsBatch5 : Listener {
                 val now = System.currentTimeMillis()
                 if (now > (annealUntil[victim.uniqueId] ?: 0L)) {
                     annealUntil[victim.uniqueId] = now + 10_000L
-                    buffArmor(victim, "anneal", 6.0, (valueOf(mythic, "hammer_034") * 20).toLong().coerceAtLeast(20))
+                    annealActive[victim.uniqueId] = now + (valueOf(mythic, "hammer_034") * 1000).toLong()
                 }
             }
         }
-
-        // 82 重砧契：切换其他武器后的缓冲减伤
-        if (System.currentTimeMillis() < (contractUntil[victim.uniqueId] ?: 0L)) {
-            event.damage = event.damage * 0.92
+        if (System.currentTimeMillis() < (annealActive[victim.uniqueId] ?: 0L)) {
+            val granted = HammerBudget.claimReduction(victim.uniqueId, 8.0)
+            if (granted > 0.0) {
+                event.damage = event.damage * (1.0 - granted / 100.0)
+            }
         }
+
+        // 82 重砧契：切换其他武器后的缓冲减伤（命中判定已在方法入口处理）
     }
 
     /** 9 余温：击杀后 3 秒内持续回复生命值。 */
@@ -222,6 +240,7 @@ class HammerSpecialEffectsBatch5 : Listener {
         plateStacks.remove(id)
         tideUntil.remove(id)
         annealUntil.remove(id)
+        annealActive.remove(id)
         contractUntil.remove(id)
         forgeHits.keys.removeIf { it.startsWith(id.toString() + "|") }
     }
@@ -274,19 +293,6 @@ class HammerSpecialEffectsBatch5 : Listener {
         val key = org.bukkit.NamespacedKey(ThePit.getInstance(), "hammer_temp_" + name)
         instance.modifiers.firstOrNull { it.key == key }?.let { instance.removeModifier(it) }
         instance.addModifier(AttributeModifier(key, scalar, AttributeModifier.Operation.ADD_SCALAR, EquipmentSlotGroup.ANY))
-        Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), Runnable {
-            instance.modifiers.firstOrNull { it.key == key }?.let { instance.removeModifier(it) }
-        }, ticks.coerceAtLeast(1L))
-    }
-
-    /** 34 退火：临时提升护甲，近似「降低后续受到的伤害」。 */
-    private fun buffArmor(player: Player, name: String, amount: Double, ticks: Long) {
-        val instance = player.getAttribute(Attribute.ARMOR) ?: return
-        val key = org.bukkit.NamespacedKey(ThePit.getInstance(), "hammer_temp_" + name)
-        instance.modifiers.firstOrNull { it.key == key }?.let { instance.removeModifier(it) }
-        instance.addModifier(
-            AttributeModifier(key, amount, AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.ANY)
-        )
         Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), Runnable {
             instance.modifiers.firstOrNull { it.key == key }?.let { instance.removeModifier(it) }
         }, ticks.coerceAtLeast(1L))

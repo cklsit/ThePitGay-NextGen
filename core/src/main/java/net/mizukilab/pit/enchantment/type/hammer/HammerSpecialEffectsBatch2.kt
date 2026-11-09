@@ -131,10 +131,14 @@ class HammerSpecialEffectsBatch2 : Listener {
         // 74 崩砧：live = 1 时爆发（C1 优先级低于 53 砧垫，保命条目在场时不触发）
         if (mythic.live == 1 && levelOf("hammer_074") > 0 && levelOf("hammer_053") <= 0) {
             val bonus = levelOf("hammer_074").let { if (it >= 3) 30.0 else if (it == 2) 24.0 else 18.0 }
-            event.damage = event.damage * (1.0 + bonus / 100.0)
-            mythic.live = 0
-            attacker.inventory.setItemInMainHand(mythic.toItemStack())
-            world.spawnParticle(Particle.EXPLOSION_EMITTER, loc, 1, 0.0, 0.0, 0.0, 0.0)
+            val granted = HammerBudget.claimBonus(attacker.uniqueId, bonus)
+            if (granted > 0.0) {
+                event.damage = event.damage * (1.0 + granted / 100.0)
+                // 触发后 live 归零（按 §5.2 该物品不可用），未获批额度则不扣
+                mythic.live = 0
+                attacker.inventory.setItemInMainHand(mythic.toItemStack())
+                world.spawnParticle(Particle.EXPLOSION_EMITTER, loc, 1, 0.0, 0.0, 0.0, 0.0)
+            }
         }
 
         // 88 压铸：目标 3 种以上减益时增伤
@@ -146,7 +150,8 @@ class HammerSpecialEffectsBatch2 : Listener {
             }
             if (debuffs >= 3) {
                 val bonus = if (lv >= 3) 20.0 else if (lv == 2) 15.0 else 10.0
-                event.damage = event.damage * (1.0 + bonus / 100.0)
+                val granted = HammerBudget.claimBonus(attacker.uniqueId, bonus)
+                if (granted > 0.0) event.damage = event.damage * (1.0 + granted / 100.0)
             }
         }
 

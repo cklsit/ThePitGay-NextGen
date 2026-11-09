@@ -56,8 +56,10 @@ class HammerCombatHandler : Listener {
         }
 
         if (damageBonus > 0.0) {
-            val capped = damageBonus.coerceAtMost(60.0)
-            event.damage = event.damage * (1.0 + capped / 100.0)
+            val granted = HammerBudget.claimBonus(attacker.uniqueId, damageBonus)
+            if (granted > 0.0) {
+                event.damage = event.damage * (1.0 + granted / 100.0)
+            }
         }
 
         // 猛击（下落 > 1.5 格）：额外伤害封顶 +50%
@@ -96,8 +98,10 @@ class HammerCombatHandler : Listener {
             }
         }
         if (reduction > 0.0) {
-            val capped = reduction.coerceAtMost(35.0)
-            event.damage = event.damage * (1.0 - capped / 100.0)
+            val granted = HammerBudget.claimReduction(victim.uniqueId, reduction)
+            if (granted > 0.0) {
+                event.damage = event.damage * (1.0 - granted / 100.0)
+            }
         }
     }
 

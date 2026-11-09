@@ -77,8 +77,9 @@ class HammerSpecialEffectsBatch3 : Listener {
                     val until = COOLDOWN[key] ?: 0L
                     if (System.currentTimeMillis() > until) {
                         COOLDOWN[key] = System.currentTimeMillis() + 30_000L
-                        val secs = (3 + entry.value - 1) * 20
-                        victim.addPotionEffect(PotionEffect(PotionEffectType.SPEED, secs.coerceAtLeast(20), 1, false, true))
+                        // 物品阶数值即持续秒数：3 / 4 / 5 秒
+                        val secs = (entry.value * 20).coerceAtLeast(20)
+                        victim.addPotionEffect(PotionEffect(PotionEffectType.SPEED, secs, 1, false, true))
                         victim.sendMessage(CC.translate("&6&l余烬! &7生命告急, 获得短暂移速!"))
                     }
                 }
@@ -110,13 +111,15 @@ class HammerSpecialEffectsBatch3 : Listener {
 
         // 53 砧垫：致命伤保留 1 点生命，消耗等量 live
         val v53 = value("hammer_053")
-        if (v53 > 0.0 && victim.health - event.finalDamage <= 0.0) {
+        if (v53 > 0.0 && victim.health - event.finalDamage <= 0.0 && !refuseLiveCost(mythic)) {
             val key = victim.uniqueId.toString() + "|cushion"
             val until = COOLDOWN[key] ?: 0L
             if (System.currentTimeMillis() > until && mythic.live > 0) {
                 event.isCancelled = true
                 victim.health = 1.0
-                mythic.live = (mythic.live - 1).coerceAtLeast(0)
+                // 物品阶数值即本次免死消耗的 live 点数（最多扣到 0）
+                val cost = v53.toInt().coerceAtLeast(1)
+                mythic.live = (mythic.live - cost).coerceAtLeast(0)
                 victim.inventory.setItemInMainHand(mythic.toItemStack())
                 COOLDOWN[key] = System.currentTimeMillis() + 60_000L
                 victim.sendMessage(CC.translate("&c&l砧垫! &7你以 1 点物品生命换回了一条命!"))
@@ -126,5 +129,13 @@ class HammerSpecialEffectsBatch3 : Listener {
 
     companion object {
         private val COOLDOWN = ConcurrentHashMap<String, Long>()
+
+        /** 48 砧裂：live 低于上限一半期间屏蔽全部 C3 消耗。 */
+        private fun refuseLiveCost(mythic: IMythicItem): Boolean {
+            if (mythic.maxLive <= 0 || mythic.live * 2 >= mythic.maxLive) return false
+            return mythic.enchantments.keys.any {
+                it is HammerEnchantBase && (it as HammerEnchantBase).nbtName == "hammer_048"
+            }
+        }
     }
 }
