@@ -352,6 +352,14 @@ public class EnchantButton extends Button {
 
         rareResults = rareResults.stream().filter(abstractEnchantment -> !isBlackList(player, abstractEnchantment)).collect(Collectors.toList());
         results = results.stream().filter(abstractEnchantment -> !isBlackList(player, abstractEnchantment)).collect(Collectors.toList());
+
+        // 神话之锤：季节性附魔仅在当前季度开放时并入稀有池，未开放不进候选
+        if (mythicItem instanceof net.mizukilab.pit.item.IMythicHammer) {
+            rareResults.addAll(list.stream()
+                    .filter(e -> e.getRarity() == EnchantmentRarity.SEASONAL)
+                    .filter(net.mizukilab.pit.enchantment.type.hammer.SeasonalOpenService::isOpen)
+                    .collect(Collectors.toList()));
+        }
         //Enchant Start
         switch (color) {
             case DARK: {

@@ -536,6 +536,7 @@ object NewConfiguration {
         "event-online-required.squads" to 999,
 
         "highest-prestige" to Integer.MAX_VALUE,
+        "seasonal-override" to "auto",
         "title.event.epic.animation" to listOf(
             "&5&l大型事件! ",
             "&d&l大型事件! ",

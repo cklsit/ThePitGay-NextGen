@@ -34,6 +34,7 @@ class HammerCombatHandler : Listener {
         var healHearts = 0.0
         for ((enchant, level) in mythic.enchantments) {
             if (enchant !is HammerEnchantBase) continue
+            if (!SeasonalOpenService.isOpen(enchant)) continue
             when (enchant.effect()) {
                 HammerEffect.DAMAGE_PCT -> damageBonus += enchant.valueAt(level)
                 HammerEffect.HEAL -> healHearts += enchant.valueAt(level)
@@ -63,7 +64,8 @@ class HammerCombatHandler : Listener {
 
         var reduction = 0.0
         for ((enchant, level) in mythic.enchantments) {
-            if (enchant is HammerEnchantBase && enchant.effect() == HammerEffect.DAMAGE_REDUCTION) {
+            if (enchant is HammerEnchantBase && SeasonalOpenService.isOpen(enchant)
+                && enchant.effect() == HammerEffect.DAMAGE_REDUCTION) {
                 reduction += enchant.valueAt(level)
             }
         }
