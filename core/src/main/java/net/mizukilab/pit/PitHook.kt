@@ -811,6 +811,7 @@ private fun registerListeners() {
         WarehouseListener::class.java,
         iSpigot::class.java,
         HologramListener::class.java,
+        net.mizukilab.pit.enchantment.type.hammer.HammerCombatHandler::class.java,
     )
     for (aClass in classes) {
         try {

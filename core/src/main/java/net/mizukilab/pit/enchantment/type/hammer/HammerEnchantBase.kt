@@ -19,7 +19,8 @@ abstract class HammerEnchantBase(
     private val tierValues: List<Double>,
     private val loreTemplate: String,
     private val cooldownSeconds: Double = 0.0,
-    private val liveCost: Int = 0
+    private val liveCost: Int = 0,
+    private val effect: HammerEffect = HammerEffect.SPECIAL
 ) : AbstractEnchantment() {
 
     override fun getEnchantName(): String = enchantName
@@ -41,6 +42,8 @@ abstract class HammerEnchantBase(
         tierValues.getOrElse((level - 1).coerceAtLeast(0)) { tierValues.lastOrNull() ?: 0.0 }
 
     fun liveCostPerTrigger(): Int = liveCost
+
+    fun effect(): HammerEffect = effect
 
     fun cooldownMillis(): Long = (cooldownSeconds * 1000).toLong()
 
