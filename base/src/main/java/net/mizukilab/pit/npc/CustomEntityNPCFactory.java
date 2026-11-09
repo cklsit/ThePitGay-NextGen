@@ -10,6 +10,8 @@ import net.mizukilab.pit.npc.events.CustomEntityNPCInteractEvent;
 import net.mizukilab.pit.util.chat.CC;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
+import org.bukkit.World;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -17,6 +19,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.*;
 
@@ -33,6 +36,70 @@ public class CustomEntityNPCFactory implements Listener {
     private final Map<UUID, AbstractCustomEntityNPC> entityToNPCMap = new HashMap<>();
 
     private final Map<UUID, Map<UUID, List<Hologram>>> playerNPCHolograms = new HashMap<>();
+
+    /** NPC 实体标记键：用于识别并清理历史遗留的重复实体。 */
+    private static final String NPC_TAG_KEY = "custom_npc";
+
+    private NamespacedKey npcTagKey() {
+        return new NamespacedKey(ThePit.getInstance(), NPC_TAG_KEY);
+    }
+
+    private void tagEntity(Entity entity, AbstractCustomEntityNPC npc) {
+        try {
+            entity.getPersistentDataContainer()
+                    .set(npcTagKey(), PersistentDataType.STRING, npc.getNpcInternalName());
+        } catch (Exception ignored) {
+        }
+    }
+
+    private String npcTagOf(Entity entity) {
+        try {
+            return entity.getPersistentDataContainer().get(npcTagKey(), PersistentDataType.STRING);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * 清理目标点位附近的残留 NPC。
+     *
+     * 历史版本只在启动时清扫「已加载区块」的实体，NPC 所在区块未加载时旧实体不会被删除，
+     * 于是每次重启都会在同一坐标再生成一个，最终叠成一堆村民。
+     * 这里在生成前强制加载该区块并就地清扫，同时兼容没有标记的旧版本实体
+     * （无 AI 的同类型生物）。
+     */
+    private void clearStaleEntities(Location location, EntityType type) {
+        World world = location.getWorld();
+        if (world == null) {
+            return;
+        }
+        if (!world.isChunkLoaded(location.getBlockX() >> 4, location.getBlockZ() >> 4)) {
+            world.getChunkAt(location).load();
+        }
+        int removed = 0;
+        for (Entity entity : world.getNearbyEntities(location, 2.5, 3.0, 2.5)) {
+            if (entity instanceof Player) {
+                continue;
+            }
+            // 已经登记并存活的其他 NPC 不动
+            if (entityToNPCMap.containsKey(entity.getUniqueId())) {
+                continue;
+            }
+            boolean tagged = npcTagOf(entity) != null;
+            boolean legacyDuplicate = entity.getType() == type
+                    && entity instanceof LivingEntity
+                    && !((LivingEntity) entity).hasAI();
+            if (tagged || legacyDuplicate) {
+                entity.remove();
+                removed++;
+            }
+        }
+        if (removed > 0) {
+            Bukkit.getLogger().info("[NPC] 清理 " + removed + " 个残留实体 @ "
+                    + world.getName() + " " + location.getBlockX() + "," + location.getBlockY()
+                    + "," + location.getBlockZ());
+        }
+    }
 
     public boolean isCustomNPC(Entity entity) {
         return entityToNPCMap.containsKey(entity.getUniqueId());
@@ -127,7 +194,18 @@ public class CustomEntityNPCFactory implements Listener {
                 return;
             }
 
+            // 同一个 NPC 实例若已持有活体实体，先移除，避免重复堆叠
+            Entity previous = npc.getEntity();
+            if (previous != null && !previous.isDead()) {
+                entityToNPCMap.remove(previous.getUniqueId());
+                previous.remove();
+            }
+
+            // 生成前清扫该点位的残留实体（含历史版本遗留的重复村民）
+            clearStaleEntities(location, npc.getEntityType());
+
             Entity entity = location.getWorld().spawnEntity(location, npc.getEntityType());
+            tagEntity(entity, npc);
 
 
             initializeNPCEntity(entity, npc);
@@ -276,23 +354,24 @@ public class CustomEntityNPCFactory implements Listener {
         });
     }
 
+    /**
+     * 只清理带 NPC 标记的实体。
+     *
+     * 原实现会删除所有已加载区块内的非玩家、非掉落物实体（宠物、盔甲架、事件生物一并被清），
+     * 且对未加载区块无效，是重复堆叠的根源之一。
+     */
     private void cleanupWorldEntities() {
         try {
-            Bukkit.getWorlds().forEach(world -> {
-                
-                List<Entity> entitiesToRemove = new ArrayList<>();
-
+            for (World world : Bukkit.getWorlds()) {
                 for (Entity entity : world.getEntities()) {
-                    if (!(entity instanceof Player) && 
-                        !(entity instanceof org.bukkit.entity.Item) &&
-                        !(entity instanceof org.bukkit.entity.ExperienceOrb)) {
-                        entitiesToRemove.add(entity);
+                    if (entity instanceof Player) {
+                        continue;
+                    }
+                    if (npcTagOf(entity) != null) {
+                        entity.remove();
                     }
                 }
-
-                entitiesToRemove.forEach(Entity::remove);
-
-            });
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
