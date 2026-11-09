@@ -582,6 +582,11 @@ public class EnchantButton extends Button {
     }
 
     private boolean levelTier3MythicEnchantLogic(ItemStack item, Player player, IMythicItem mythicItem,int level, List<AbstractEnchantment> rareResults, boolean announcement, List<AbstractEnchantment> results, List<AbstractEnchantment> enchantments, MythicColor color) {
+        // 候选池为空时直接返回，避免 RandomUtil.helpMeToChooseOne 触发 nextInt(0) 异常
+        if ((results == null || results.isEmpty()) && (rareResults == null || rareResults.isEmpty())) {
+            player.sendMessage(CC.translate("&c该物品没有可用的附魔候选"));
+            return announcement;
+        }
         int amount = mythicItem.getEnchantments().size();
         if (amount == 1) { // If this item have only 1 enchantment
             AbstractEnchantment enchantment = null;
@@ -718,6 +723,11 @@ public class EnchantButton extends Button {
     }
 
     private boolean levelTier2MythicEnchantLogic(ItemStack item, Player player, IMythicItem mythicItem,int level, List<AbstractEnchantment> rareResults, boolean announcement, MythicColor color, List<AbstractEnchantment> enchantments, List<AbstractEnchantment> results) {
+        // 候选池为空时直接返回，避免 RandomUtil.helpMeToChooseOne 触发 nextInt(0) 异常
+        if ((results == null || results.isEmpty()) && (rareResults == null || rareResults.isEmpty())) {
+            player.sendMessage(CC.translate("&c该物品没有可用的附魔候选"));
+            return announcement;
+        }
         int amount = mythicItem.getEnchantments().size();
 
         if (amount <= 1) { // If this item has only 1 enchantment
@@ -834,6 +844,11 @@ public class EnchantButton extends Button {
     }
 
     private boolean levelTier1MythicEnchantLogic(ItemStack item, Player player, IMythicItem mythicItem,int level, List<AbstractEnchantment> rareResults, boolean announcement, List<AbstractEnchantment> results, List<AbstractEnchantment> enchantments) {
+        // 候选池为空时直接返回，避免 RandomUtil.helpMeToChooseOne 触发 nextInt(0) 异常
+        if ((results == null || results.isEmpty()) && (rareResults == null || rareResults.isEmpty())) {
+            player.sendMessage(CC.translate("&c该物品没有可用的附魔候选"));
+            return announcement;
+        }
         //Tier 1 Enchant Start
         int choice = random.nextInt(4);
 
