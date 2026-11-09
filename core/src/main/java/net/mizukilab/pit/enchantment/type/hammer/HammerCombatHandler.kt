@@ -104,10 +104,17 @@ class HammerCombatHandler : Listener {
     private fun consumeLive(player: Player, mythic: IMythicItem, cost: Int) {
         val current = mythic.live
         if (current <= 0) return
+        // 48 砧裂：live 低于上限一半期间不允许再消耗 live
+        if (mythic.maxLive > 0 && current * 2 < mythic.maxLive && hasEnchant(mythic, "hammer_048")) return
         val next = (current - cost).coerceAtLeast(0)
         if (next == current) return
         mythic.live = next
         player.inventory.setItemInMainHand(mythic.toItemStack())
+    }
+
+    /** 判断物品是否带有指定附魔条目。 */
+    private fun hasEnchant(mythic: IMythicItem, nbt: String): Boolean {
+        return mythic.enchantments.keys.any { it is HammerEnchantBase && it.nbtName == nbt }
     }
 
     /** 按条目冷却判定是否可触发；可触发则记录时间并返回 true。 */

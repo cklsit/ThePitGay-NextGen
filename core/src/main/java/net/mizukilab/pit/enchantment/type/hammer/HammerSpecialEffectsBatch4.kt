@@ -465,7 +465,14 @@ class HammerSpecialEffectsBatch4 : Listener {
         val entity = event.entity as? LivingEntity ?: return
         if (event.action != EntityPotionEffectEvent.Action.ADDED && event.action != EntityPotionEffectEvent.Action.CHANGED) return
         val effect = event.newEffect ?: return
-        if (isHarmful(effect.type)) return
+        if (isHarmful(effect.type)) {
+            // 89 沉星：霸体期间免疫控制类效果（优先于 26 铁律 / 54 锻隙）
+            val player = entity as? Player
+            if (player != null && (superArmor[player.uniqueId] ?: 0L) > System.currentTimeMillis()) {
+                event.isCancelled = true
+            }
+            return
+        }
         if (marked(entity.uniqueId, "sandlock")) {
             event.isCancelled = true
         }

@@ -533,7 +533,25 @@ public class EnchantButton extends Button {
     }
 
     private boolean hasAvailableBookRareEnchantment(Player player, ItemStack item, IMythicItem mythicItem, MythicColor color, int level) {
-        return hasAvailableBookRareEnchantment(getBookRareResults(player, item, color, level), new ObjectArrayList<>(mythicItem.getEnchantments().keySet()));
+        // 卷轴可产出稀有! 与当期开放的季节性! 两类
+        List<AbstractEnchantment> pool = new ObjectArrayList<>(getBookRareResults(player, item, color, level));
+        pool.addAll(getBookSeasonalResults(player, item, player));
+        return hasAvailableBookRareEnchantment(pool, new ObjectArrayList<>(mythicItem.getEnchantments().keySet()));
+    }
+
+    /**
+     * 卷轴可用的季节性条目：只在当前季度开放集合内产出，跨季持有卷轴自动失效。
+     */
+    private List<AbstractEnchantment> getBookSeasonalResults(Player player, ItemStack item, Player ignored) {
+        return ThePit.getInstance()
+                .getEnchantmentFactor()
+                .getEnchantments()
+                .stream()
+                .filter(abstractEnchantment -> abstractEnchantment.canApply(item))
+                .filter(abstractEnchantment -> abstractEnchantment.getRarity() == EnchantmentRarity.SEASONAL)
+                .filter(net.mizukilab.pit.enchantment.seasonal.SeasonalOpenService::isOpen)
+                .filter(abstractEnchantment -> !isBlackList(player, abstractEnchantment))
+                .collect(Collectors.toList());
     }
 
     private boolean hasAvailableBookRareEnchantment(List<AbstractEnchantment> rareResults, List<AbstractEnchantment> enchantments) {
