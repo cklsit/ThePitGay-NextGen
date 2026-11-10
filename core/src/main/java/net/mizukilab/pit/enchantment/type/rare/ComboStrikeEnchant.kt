@@ -17,7 +17,6 @@ import net.mizukilab.pit.util.PlayerUtil
 import net.mizukilab.pit.util.chat.CC
 import net.mizukilab.pit.util.chat.MessageType
 import net.mizukilab.pit.util.cooldown.Cooldown
-import nya.Skip
 import org.bukkit.Material
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
@@ -31,7 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 
 @WeaponOnly
-@Skip
+
 class ComboStrikeEnchant : AbstractEnchantment(), IAttackEntity, IPlayerShootEntity,
     IActionDisplayEnchant {
     private val numFormat = DecimalFormat("0.0")
@@ -86,7 +85,7 @@ class ComboStrikeEnchant : AbstractEnchantment(), IAttackEntity, IPlayerShootEnt
             }
         }
         if (PlayerProfile.getPlayerProfileByUuid(attacker.uniqueId).meleeHit % (if (enchantLevel > 1) 4 else 5) == 0) {
-            PlayerUtil.damage(attacker,victim, PlayerUtil.DamageType.TRUE, getDamage(enchantLevel) * 2, true)
+            finalDamage.set(finalDamage.get() + 2 * getDamage(enchantLevel))
             PlayerUtil.playThunderEffect(target.getLocation())
             val victimProfile = PlayerProfile.getPlayerProfileByUuid(victim.uniqueId)
             CC.send(MessageType.MISC, attacker, "&b&l闪电! &7你的闪电击中了 " + victimProfile.formattedName + " &7!")
@@ -97,7 +96,7 @@ class ComboStrikeEnchant : AbstractEnchantment(), IAttackEntity, IPlayerShootEnt
                         extra++
                     }
                 }
-                PlayerUtil.damage(attacker,victim, PlayerUtil.DamageType.TRUE, extra * 2, true)
+                finalDamage.set(finalDamage.get() + extra * 2)
             }
         }
     }
@@ -127,7 +126,7 @@ class ComboStrikeEnchant : AbstractEnchantment(), IAttackEntity, IPlayerShootEnt
             }
         }
         if (PlayerProfile.getPlayerProfileByUuid(attacker.uniqueId).meleeHit % (if (enchantLevel > 1) 4 else 5) == 0) {
-            PlayerUtil.damage(attacker,victim, PlayerUtil.DamageType.TRUE, getDamage(enchantLevel) * 2, true)
+            finalDamage.set(finalDamage.get() + 2 * getDamage(enchantLevel))
             PlayerUtil.playThunderEffect(target.getLocation())
             val victimProfile = PlayerProfile.getPlayerProfileByUuid(victim.uniqueId)
             CC.send(MessageType.MISC, attacker, "&b&l闪电! &7你的闪电击中了 " + victimProfile.formattedName + " &7!")
@@ -138,7 +137,7 @@ class ComboStrikeEnchant : AbstractEnchantment(), IAttackEntity, IPlayerShootEnt
                         extra++
                     }
                 }
-                PlayerUtil.damage(attacker,victim, PlayerUtil.DamageType.TRUE, extra * 2, true)
+                finalDamage.set(finalDamage.get() + extra * 2)
             }
         }
     }

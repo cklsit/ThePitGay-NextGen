@@ -15,7 +15,6 @@ import net.mizukilab.pit.util.chat.CC
 import net.mizukilab.pit.util.cooldown.Cooldown
 import net.mizukilab.pit.util.time.TimeUtil
 import net.mizukilab.pit.util.toMythicItem
-import nya.Skip
 import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.entity.Entity
@@ -31,7 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * @author Araykal
  * @since 2025/5/17
  */
-@Skip
+
 @WeaponOnly
 class PrimordialStrikerEnchant : AbstractEnchantment(), IPlayerDamaged, IPlayerKilledEntity,Listener, IAttackEntity, ITickTask,
     IActionDisplayEnchant {
@@ -85,8 +84,8 @@ class PrimordialStrikerEnchant : AbstractEnchantment(), IPlayerDamaged, IPlayerK
             val shieldLeft = shields[myself.uniqueId] ?: 0
 
             myself.sendMessage(CC.translate("&e&l原初圣伊! &b抵消一层攻击!"))
-            myself.playSound(myself.location, Sound.DRINK, 1.0f, 1.0f)
-            player.playSound(myself.location, Sound.DRINK, 1.0f, 1.0f)
+            myself.playSound(myself.location, Sound.ENTITY_GENERIC_DRINK, 1.0f, 1.0f)
+            player.playSound(myself.location, Sound.ENTITY_GENERIC_DRINK, 1.0f, 1.0f)
             player.sendMessage(CC.translate("&e&l原初圣伊! &b你的攻击被抵消,对方剩余圣盾数: $shieldLeft"))
         }
         finalDamage.set(finalDamage.get() - 1.33)

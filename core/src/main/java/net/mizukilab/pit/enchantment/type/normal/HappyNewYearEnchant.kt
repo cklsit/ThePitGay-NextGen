@@ -8,8 +8,6 @@ import net.mizukilab.pit.parm.listener.IPlayerDamaged
 import net.mizukilab.pit.util.chat.RomanUtil
 import net.mizukilab.pit.util.cooldown.Cooldown
 import com.google.common.util.concurrent.AtomicDouble
-import nya.Skip
-
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
 import org.bukkit.potion.PotionEffect
@@ -18,7 +16,7 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-@Skip
+
 @ArmorOnly
 class HappyNewYearEnchant : AbstractEnchantment(), IPlayerDamaged, IActionDisplayEnchant {
     private val cooldown = HashMap<UUID, Cooldown>()

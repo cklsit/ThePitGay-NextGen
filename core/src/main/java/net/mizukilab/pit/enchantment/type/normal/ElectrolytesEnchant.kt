@@ -7,7 +7,6 @@ import net.mizukilab.pit.enchantment.rarity.EnchantmentRarity
 import net.mizukilab.pit.parm.listener.IPlayerKilledEntity
 import net.mizukilab.pit.util.cooldown.Cooldown
 import com.google.common.util.concurrent.AtomicDouble
-import nya.Skip
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
 import org.bukkit.potion.PotionEffect
@@ -17,9 +16,16 @@ import org.bukkit.potion.PotionEffectType
  * @Author: Misoryan
  * @Created_In: 2021/2/25 15:11
  */
-@Skip
+
 @ArmorOnly
 class ElectrolytesEnchant : AbstractEnchantment(), IPlayerKilledEntity {
+    companion object {
+        private const val TICKS_PER_SECOND = 20
+        private const val EXTEND_SECONDS_PER_LEVEL = 2
+        private const val MAX_DURATION_BASE_LEVEL = 2
+        private const val MAX_DURATION_SECONDS_MULTIPLIER = 6
+    }
+
     override fun getEnchantName(): String {
         return "电解质"
     }
@@ -57,11 +63,13 @@ class ElectrolytesEnchant : AbstractEnchantment(), IPlayerKilledEntity {
             .filter { effect: PotionEffect -> effect.type === PotionEffectType.SPEED }
             .findFirst()
             .ifPresent { potionEffect: PotionEffect ->
-                val duration = if (potionEffect.amplifier > 1) {
-                    potionEffect.duration + ((enchantLevel * 20) / 2)
-                } else {
-                    potionEffect.duration + enchantLevel * 20
+                val maxDuration = maxDurationTicks(enchantLevel)
+                val extendedDuration = potionEffect.duration + extensionTicks(enchantLevel, potionEffect.amplifier)
+                val duration = minOf(maxDuration, extendedDuration)
+                if (duration <= potionEffect.duration) {
+                    return@ifPresent
                 }
+
                 myself.addPotionEffect(
                     PotionEffect(
                         PotionEffectType.SPEED,
@@ -70,5 +78,19 @@ class ElectrolytesEnchant : AbstractEnchantment(), IPlayerKilledEntity {
                     ), true
                 )
             }
+    }
+
+    private fun extensionTicks(enchantLevel: Int, amplifier: Int): Int {
+        var extension = enchantLevel * EXTEND_SECONDS_PER_LEVEL * TICKS_PER_SECOND
+        if (amplifier > 1) {
+            extension /= 2
+        }
+        return extension
+    }
+
+    private fun maxDurationTicks(enchantLevel: Int): Int {
+        return (enchantLevel + MAX_DURATION_BASE_LEVEL) *
+                MAX_DURATION_SECONDS_MULTIPLIER *
+                TICKS_PER_SECOND
     }
 }
