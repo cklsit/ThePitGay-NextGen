@@ -370,8 +370,4 @@ public class Utils {
         return false;
     }
 
-    public static boolean canUseGlobalAttGem(org.bukkit.inventory.ItemStack item) {
-        return item != null && canUseGem0(true, item);
-    }
-
 }

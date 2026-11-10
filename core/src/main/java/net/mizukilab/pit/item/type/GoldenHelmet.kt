@@ -30,7 +30,7 @@ class GoldenHelmet : IMythicItem(), Listener {
     }
 
     override fun getItemDisplayMaterial(): Material {
-        return Material.GOLD_HELMET
+        return Material.GOLDEN_HELMET
     }
 
     override fun isEnchanted(): Boolean {
