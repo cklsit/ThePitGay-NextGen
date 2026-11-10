@@ -8,8 +8,17 @@ import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Opcodes
 buildscript {
     repositories {
-        mavenCentral()
-    }
+    mavenCentral()
+    maven("https://maven.cleanroommc.com")
+    maven("https://repo.codemc.io/repository/nms/")
+    maven("https://repo.codemc.io/repository/maven-public/")
+    maven("https://repo.dmulloy2.net/repository/public/")
+    maven("https://jitpack.io")
+    maven("https://repo.rosewooddev.io/repository/public/")
+    maven("https://repo.extendedclip.com/content/repositories/placeholderapi/")
+    maven("https://repo.panda-lang.org/releases")
+    maven("https://repo.papermc.io/repository/maven-public/")
+}
     dependencies {
         classpath("com.guardsquare:proguard-gradle:7.7.0")
         classpath("org.ow2.asm:asm:9.7.1")
@@ -175,7 +184,12 @@ tasks.test {
     systemProperty("nativeRepairJar", nativeRepairJar.absolutePath)
 }
 kotlin {
-    jvmToolchain(17)
+    // Paper 1.21.8 要求 Java 21
+    jvmToolchain(21)
+}
+
+java {
+    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
 }
 
 tasks.withType<JavaCompile> {
