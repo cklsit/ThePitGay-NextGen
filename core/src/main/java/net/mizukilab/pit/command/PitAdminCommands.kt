@@ -642,12 +642,14 @@ class PitAdminCommands {
     @Execute(name = "flushMythicItems")
     fun flushPlayerItem(@Context player: Player, @Arg("player_name") @Key("pit.players") playerName: String) {
         try {
-            val player1 = Bukkit.getPlayer(playerName)
+            val player1 = Bukkit.getPlayer(playerName) ?: run {
+                player.sendMessage("玩家不在线")
+                return
+            }
             val inventory = player1.inventory
             inventory.forEachIndexed { index, itemStack ->
                 val mmItem = ThePit.getInstance().itemFactory.getItemFromStack(itemStack)
                 if (mmItem != null) {
-                    inventory.remove(index)
                     inventory.setItem(index, mmItem.toItemStack())
                 }
             }
@@ -772,9 +774,9 @@ class PitAdminCommands {
     @Execute(name = "internalName")
     fun internalName(@Context player: Player, @Arg("name") @Key("pit.items") internalName: String) {
         try {
-            player.inventory.itemInMainHand = ItemBuilder(player.inventory.itemInMainHand)
+            player.inventory.setItemInMainHand(ItemBuilder(player.inventory.itemInMainHand)
                 .internalName(internalName)
-                .build()
+                .build())
             player.sendMessage("§a已修改手持物品的内部名为: §f$internalName")
         } catch (ignored: java.lang.Exception) {
             player.sendMessage("Error")
