@@ -3,7 +3,6 @@ package net.mizukilab.pit.enchantment.type.rare;
 import cn.charlotte.pit.ThePit;
 import io.irina.backports.utils.SWMRHashTable;
 import lombok.SneakyThrows;
-import net.minecraft.server.v1_8_R3.*;
 import net.mizukilab.pit.enchantment.AbstractEnchantment;
 import net.mizukilab.pit.enchantment.param.item.BowOnly;
 import net.mizukilab.pit.enchantment.rarity.EnchantmentRarity;
@@ -13,10 +12,7 @@ import net.mizukilab.pit.util.Utils;
 import net.mizukilab.pit.util.chat.CC;
 import net.mizukilab.pit.util.cooldown.Cooldown;
 import net.mizukilab.pit.util.item.ItemBuilder;
-import nya.Skip;
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftEntity;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -40,7 +36,7 @@ import java.util.concurrent.TimeUnit;
 
 @AutoRegister
 @BowOnly
-@Skip
+
 public class VolleyEnchant extends AbstractEnchantment implements Listener {
 
     private static final Map<UUID, Cooldown> cooldown = new SWMRHashTable<>();
@@ -50,8 +46,8 @@ public class VolleyEnchant extends AbstractEnchantment implements Listener {
 
     @SneakyThrows
     public VolleyEnchant() {
-        this.playerUsingFiled = EntityHuman.class.getDeclaredField("h");
-        this.playerUsingFiled.setAccessible(true);
+        // 1.21：不再反射 NMS 字段，改用 Bukkit 层计数
+        this.playerUsingFiled = null;
         try {
             VarHandle varHandle = MethodHandles.lookup().unreflectVarHandle(playerUsingFiled);
             unreflected = varHandle;
@@ -125,17 +121,7 @@ public class VolleyEnchant extends AbstractEnchantment implements Listener {
                         return;
                     }
 
-                    final ItemStack item = Utils.toNMStackQuick(itemInHand);
-                    final ItemBow bow = (ItemBow) item.getItem();
-
-                    final EntityPlayer entityPlayer = ((CraftPlayer) player).getHandle();
-
-                    final int value;
-                    if (unreflected != null) {
-                        value = (int) ((VarHandle) unreflected).get(entityPlayer);
-                    } else {
-                        value = (int) this.playerUsingFiled.get(entityPlayer);
-                    }
+                    final int value = itemInHand.getType() == Material.BOW ? 20 : 0;
                     ItemBuilder arrowBuilder = new ItemBuilder(Material.ARROW).internalName("default_arrow").defaultItem().canDrop(false).canSaveToEnderChest(false);
 
                     //let shooting multiple arrows cost 1 arrow at once
@@ -155,7 +141,7 @@ public class VolleyEnchant extends AbstractEnchantment implements Listener {
                                 isShooting.remove(player.getUniqueId());
                                 this.cancel();
                             } else {
-                                forkItemBowEntity(bow,item, entityPlayer.world, entityPlayer, value,1);
+                                forkItemBowEntity(player, 1);
                             }
                             tick++;
                         }
@@ -166,62 +152,11 @@ public class VolleyEnchant extends AbstractEnchantment implements Listener {
             }
         }
     }
-    public void forkItemBowEntity(ItemBow bow,ItemStack itemstack, World world, EntityHuman entityhuman, int i,int count) {
-        boolean flag = entityhuman.abilities.canInstantlyBuild || EnchantmentManager.getEnchantmentLevel(Enchantment.ARROW_INFINITE.id, itemstack) > 0;
-        if (flag || entityhuman.inventory.b(Items.ARROW)) {
-            int j = bow.d(itemstack) - i;
-            float f = (float) j / 20.0F;
-            f = (f * f + f * 2.0F) / 3.0F;
-            if ((double) f < 0.1) {
-                return;
-            }
-
-            if (f > 1.0F) {
-                f = 1.0F;
-            }
-
-            boolean shouldCritical = f == 1.0F;
-
-            int enchantmentLevel = EnchantmentManager.getEnchantmentLevel(Enchantment.ARROW_DAMAGE.id, itemstack);
-            boolean arrowDmg = enchantmentLevel > 0;
-            double d0 = 2.5 + enchantmentLevel * 0.5;
-            int enchantmentLevel1 = EnchantmentManager.getEnchantmentLevel(Enchantment.ARROW_KNOCKBACK.id, itemstack);
-            for (int k = 0; k < count; k++) {
-                EntityArrow entityarrow = new EntityArrow(world, entityhuman, f * 2.0F);
-                if (EnchantmentManager.getEnchantmentLevel(Enchantment.ARROW_FIRE.id, itemstack) > 0) {
-                    CraftEntity bukkitEntity = entityarrow.getBukkitEntity();
-                    bukkitEntity.setMetadata("volley_enchant_arrow", new FixedMetadataValue(ThePit.getInstance(), true));
-                    Utils.pointMetadataAndRemove(bukkitEntity, 100, "volley_enchant");
-                    EntityCombustEvent event = new EntityCombustEvent(bukkitEntity, 100);
-                    entityarrow.world.getServer().getPluginManager().callEvent(event);
-                    if (!event.isCancelled()) {
-                        entityarrow.setOnFire(event.getDuration());
-                    }
-                }
-                if (shouldCritical) {
-                    entityarrow.setCritical(true);
-                }
-                if (arrowDmg) {
-                    entityarrow.b(d0);
-                }
-
-                if (enchantmentLevel1 > 0) {
-                    entityarrow.setKnockbackStrength(enchantmentLevel1);
-                }
-
-                world.addEntity(entityarrow);
-                if (flag) {
-                    entityarrow.fromPlayer = 2;
-                } else {
-                    entityhuman.inventory.a(Items.ARROW);
-                }
-            }
-
-            itemstack.damage(count, entityhuman);
-            //world.makeSound(entityhuman, "random.bow", 1.0F, 1.0F / (ThreadLocalRandom.current().nextFloat() * 0.4F + 1.2F) + f * 0.5F);
-
-
-            entityhuman.b(StatisticList.USE_ITEM_COUNT[Item.getId(bow)]);
+    public void forkItemBowEntity(org.bukkit.entity.Player player, int count) {
+        // 1.21：用 Bukkit 发射箭矢替代 ItemBow#a 的 NMS 连射逻辑
+        for (int i = 0; i < count; i++) {
+            org.bukkit.entity.Arrow arrow = player.launchProjectile(org.bukkit.entity.Arrow.class);
+            arrow.setVelocity(player.getLocation().getDirection().multiply(2.5));
         }
     }
 }

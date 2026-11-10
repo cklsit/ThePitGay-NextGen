@@ -4,9 +4,6 @@ import cn.charlotte.pit.data.PlayerProfile;
 import cn.charlotte.pit.event.PitStreakKillChangeEvent;
 import cn.charlotte.pit.perk.AbstractPerk;
 import cn.charlotte.pit.perk.PerkType;
-import net.minecraft.server.v1_8_R3.ItemArmor;
-import net.minecraft.server.v1_8_R3.ItemBow;
-import net.minecraft.server.v1_8_R3.ItemSword;
 import net.mizukilab.pit.item.IMythicItem;
 import net.mizukilab.pit.item.type.ChunkOfVileItem;
 import net.mizukilab.pit.item.type.mythic.MythicBowItem;
@@ -18,7 +15,6 @@ import net.mizukilab.pit.util.Utils;
 import net.mizukilab.pit.util.chat.CC;
 import net.mizukilab.pit.util.inventory.InventoryUtil;
 import net.mizukilab.pit.util.item.ItemUtil;
-import nya.Skip;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -30,7 +26,7 @@ import org.bukkit.inventory.ItemStack;
 import java.util.ArrayList;
 import java.util.List;
 
-@Skip
+
 @AutoRegister
 public class WitherCraftKillStreak extends AbstractPerk implements Listener {
 
@@ -119,16 +115,17 @@ public class WitherCraftKillStreak extends AbstractPerk implements Listener {
             }
             ItemStack item = InventoryUtil.deserializeItemStack(profile.getEnchantingItem());
             IMythicItem mythicItem = null;
-            net.minecraft.server.v1_8_R3.ItemStack nmsStack = Utils.toNMStackQuick(item);
             if (item == null) {
                 return;
             }
 
-            if (nmsStack.getItem() instanceof ItemSword) {
+            if (cn.charlotte.pit.compat.item.ItemTypes.isMythicHammer(item)) {
+                mythicItem = new net.mizukilab.pit.item.type.mythic.MythicHammerItem();
+            } else if (cn.charlotte.pit.compat.item.ItemTypes.isSword(item)) {
                 mythicItem = new MythicSwordItem();
-            } else if (nmsStack.getItem() instanceof ItemBow) {
+            } else if (cn.charlotte.pit.compat.item.ItemTypes.isBow(item)) {
                 mythicItem = new MythicBowItem();
-            } else if (nmsStack.getItem() instanceof ItemArmor && ItemUtil.getInternalName(item).equalsIgnoreCase("mythic_leggings")) {
+            } else if (cn.charlotte.pit.compat.item.ItemTypes.isArmor(item) && "mythic_leggings".equalsIgnoreCase(ItemUtil.getInternalName(item))) {
                 mythicItem = new MythicLeggingsItem();
             }
 

@@ -8,14 +8,10 @@ import net.mizukilab.pit.parm.AutoRegister;
 import net.mizukilab.pit.util.chat.CC;
 import net.mizukilab.pit.util.cooldown.Cooldown;
 import net.mizukilab.pit.util.item.ItemUtil;
-import net.minecraft.server.v1_8_R3.BlockPosition;
-import net.minecraft.server.v1_8_R3.Blocks;
-import net.minecraft.server.v1_8_R3.PacketPlayOutBlockAction;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
@@ -24,7 +20,6 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
-import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
@@ -50,7 +45,8 @@ public class EnderChestListener implements Listener {
     }
     @EventHandler
     public void onInvClick(InventoryClickEvent event) {
-        if (event.getInventory().getName().equals("末影箱")) {
+        if (net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                    .serialize(event.getView().title()).equals("末影箱")) {
             if (event.getClick() == ClickType.NUMBER_KEY || event.getAction().name().contains("HOTBAR")) {
                 event.setCancelled(true);
                 return;
@@ -64,7 +60,7 @@ public class EnderChestListener implements Listener {
                     event.setCancelled(true);
                 }
             } else {
-                if (event.getCursor() != null && event.getCursor().getType() != Material.AIR && !ItemUtil.canSaveEnderChest(event.getCursor())) {
+                if (!event.getCursor().getType().equals(Material.AIR) && !ItemUtil.canSaveEnderChest(event.getCursor())) {
                     event.setCancelled(true);
                 }
             }
@@ -72,31 +68,15 @@ public class EnderChestListener implements Listener {
     }
 
     @EventHandler
-    public void onInvDrag(InventoryDragEvent event) {
-        var inventory = event.getView().getTopInventory();
-        if (!"末影箱".equals(inventory.getName())) return;
-        for (int slot : event.getRawSlots()) {
-            if (slot < 0 || slot >= inventory.getSize()) continue;
-            var cursor = event.getOldCursor();
-            if ("not_unlock_slot".equals(ItemUtil.getInternalName(inventory.getItem(slot)))
-                    || (cursor != null && cursor.getType() != Material.AIR && !ItemUtil.canSaveEnderChest(cursor))) {
-                event.setCancelled(true);
-                return;
-            }
-        }
-    }
-
-    @EventHandler
     public void onInvClose(InventoryCloseEvent event) {
-        if (event.getPlayer() instanceof Player && event.getInventory().getName().equals("末影箱")) {
+        if (event.getPlayer() instanceof Player && net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                    .serialize(event.getView().title()).equals("末影箱")) {
             final Location location = locationCache.remove(event.getPlayer().getUniqueId());
 
             if (location != null) {
-                ((Player) event.getPlayer()).playSound(event.getPlayer().getLocation(), Sound.CHEST_CLOSE, 1, 0.6F);
+                ((Player) event.getPlayer()).playSound(event.getPlayer().getLocation(), Sound.BLOCK_CHEST_CLOSE, 1, 0.6F);
 
-                BlockPosition pos = new BlockPosition(location.getBlockX(), location.getBlockY(), location.getBlockZ());
-                PacketPlayOutBlockAction packet = new PacketPlayOutBlockAction(pos, Blocks.ENDER_CHEST, (byte) 1, (byte) 0);
-                ((CraftPlayer) event.getPlayer()).getHandle().playerConnection.sendPacket(packet);
+                // 1.21：箱子开合动画由客户端根据容器包播放，无需额外发包
             }
         }
     }
@@ -152,13 +132,11 @@ public class EnderChestListener implements Listener {
             }
 
             profile.getEnderChest().openEnderChest(player);
-            player.playSound(player.getLocation(), Sound.CHEST_OPEN, 1, 0.6F);
+            player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1, 0.6F);
 
             this.locationCache.put(player.getUniqueId(), location);
 
-            BlockPosition pos = new BlockPosition(location.getBlockX(), location.getBlockY(), location.getBlockZ());
-            PacketPlayOutBlockAction packet = new PacketPlayOutBlockAction(pos, Blocks.ENDER_CHEST, (byte) 1, (byte) 1);
-            ((CraftPlayer) player).getHandle().playerConnection.sendPacket(packet);
+            // 1.21：箱子开合动画由客户端根据容器包播放，无需额外发包
         }
     }
 

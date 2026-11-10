@@ -13,7 +13,6 @@ import net.mizukilab.pit.util.music.PositionSongPlayer;
 import net.mizukilab.pit.util.music.Song;
 import io.irina.backports.utils.SWMRHashTable;
 import lombok.SneakyThrows;
-import net.minecraft.server.v1_8_R3.PacketPlayInFlying;
 import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.Location;
@@ -57,7 +56,11 @@ public class JerryEnchant5 extends AbstractEnchantment implements ITickTask, Mov
             }
         }.runTaskTimer(ThePit.getInstance(), 20, 20);
 
+        try {
+            iSpigot.INSTANCE.addMovementHandler(this);
+        } catch (NoClassDefFoundError ignore) {
 
+        }
     }
 
     @Override
@@ -115,7 +118,7 @@ public class JerryEnchant5 extends AbstractEnchantment implements ITickTask, Mov
 
             this.playerMap.put(target.getUniqueId(), player);
         } else {
-            target.getWorld().playEffect(target.getLocation().clone().add(0, 3, 0), Effect.NOTE, 1);
+            target.getWorld().spawnParticle(org.bukkit.Particle.NOTE, target.getLocation().clone().add(0, 3, 0), 1);
         }
     }
 
@@ -125,7 +128,7 @@ public class JerryEnchant5 extends AbstractEnchantment implements ITickTask, Mov
     }
 
     @Override
-    public void handleUpdateLocation(Player player, Location location, Location location1, PacketPlayInFlying packetPlayInFlying) {
+    public void handleUpdateLocation(Player player, Location location, Location location1, Object packetPlayInFlying) {
         PositionSongPlayer songPlayer = this.playerMap.get(player.getUniqueId());
         if (songPlayer != null) {
             songPlayer.setTargetLocation(player.getPlayer().getLocation());
@@ -133,7 +136,7 @@ public class JerryEnchant5 extends AbstractEnchantment implements ITickTask, Mov
     }
 
     @Override
-    public void handleUpdateRotation(Player player, Location location, Location location1, PacketPlayInFlying packetPlayInFlying) {
+    public void handleUpdateRotation(Player player, Location location, Location location1, Object packetPlayInFlying) {
 
     }
 }

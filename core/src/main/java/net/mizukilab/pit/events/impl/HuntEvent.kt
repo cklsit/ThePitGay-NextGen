@@ -6,7 +6,7 @@ import cn.charlotte.pit.event.PitKillEvent
 import cn.charlotte.pit.events.AbstractEvent
 import cn.charlotte.pit.events.trigger.type.INormalEvent
 import cn.charlotte.pit.events.trigger.type.addon.IScoreBoardInsert
-import net.minecraft.server.v1_8_R3.EnumParticle
+import org.bukkit.Particle
 import net.mizukilab.pit.config.NewConfiguration.eventOnlineRequired
 import net.mizukilab.pit.util.ParticleBuilder
 import net.mizukilab.pit.util.PlayerUtil
@@ -36,10 +36,9 @@ class HuntEvent : AbstractEvent(), INormalEvent, Listener,
 
     override fun getEventName() = "猎杀"
 
-    override fun requireOnline(): Int = eventOnlineRequired[eventInternalName] ?: 10
+    override fun requireOnline(): Int = eventOnlineRequired[eventInternalName]!!
 
     override fun onActive() {
-        killMap.clear()
         isActive = true
         CC.boardCast("&c&l猎杀!\n&7五分钟内获得：\n  &b速度 x2\n  &a跳跃提升 x3\n&7效果\n&7每击杀15名玩家将获得 &6声望 +1 &7最高可获得5声望.")
         Bukkit.getPluginManager()
@@ -48,37 +47,42 @@ class HuntEvent : AbstractEvent(), INormalEvent, Listener,
     }
 
     private fun runEffectTask() {
-        trackTask(object : BukkitRunnable() {
+        object : BukkitRunnable() {
             override fun run() {
                 if (isActive) {
                     Bukkit.getOnlinePlayers().forEach {
                         playerEffect(it)
-                        ParticleBuilder(it.location.clone().add(0.0, 2.0, 0.0), EnumParticle.REDSTONE)
+                        ParticleBuilder(it.location.clone().add(0.0, 2.0, 0.0), Particle.DUST)
                             .setCount(3).play()
                     }
                 } else {
+                    Bukkit.getOnlinePlayers().forEach { removeEffect(it) }
                     cancel()
                 }
             }
-        }.runTaskTimer(ThePit.getInstance(), 0L, 20L))
+        }.runTaskTimer(ThePit.getInstance(), 0L, 20L)
     }
 
     override fun onInactive() {
         HandlerList.unregisterAll(this)
         isActive = false
-        killMap.clear()
         CC.boardCast("&c&l猎杀! &7已结束")
     }
 
     private fun playerEffect(player: Player) {
-        PlayerUtil.addPotionEffect(player, PotionEffect(PotionEffectType.SPEED, 40, 1, true))
-        PlayerUtil.addPotionEffect(player, PotionEffect(PotionEffectType.JUMP, 40, 2, true))
+        PlayerUtil.addPotionEffect(player, PotionEffect(PotionEffectType.SPEED, 114514, 1, true))
+        PlayerUtil.addPotionEffect(player, PotionEffect(PotionEffectType.JUMP_BOOST, 114514, 2, true))
+    }
+
+    private fun removeEffect(player: Player) {
+        player.removePotionEffect(PotionEffectType.SPEED)
+        player.removePotionEffect(PotionEffectType.JUMP_BOOST)
     }
 
     @EventHandler
     fun onJoin(event: PlayerJoinEvent) {
         if (isActive) {
-            event.player.sendMessage(CC.translate("&c&l猎杀!\n&7五分钟内获得：\n  &b速度 x2\n  &a跳跃提升 x3\n&7效果\n&7每击杀15名玩家将获得 &6声望 +1"))
+            event.player.sendMessage(CC.translate("&c&l猎杀!\n&7五分钟内获得：\n  &b速度 x2\n  &a跳跃提升 x3\n&7效果\n&7每击杀8名玩家将获得 &6声望 +1"))
         }
     }
 
@@ -99,7 +103,7 @@ class HuntEvent : AbstractEvent(), INormalEvent, Listener,
                     profile?.renown = profile?.renown?.plus(1) ?: 0
                     eventData.kill = 0
                     event.killer.sendMessage(CC.translate("&c&l猎杀! &6声望 +1"))
-                    event.killer.playSound(event.killer.location, Sound.NOTE_PLING, 0.5f, 0.5f)
+                    event.killer.playSound(event.killer.location, Sound.BLOCK_NOTE_BLOCK_PLING, 0.5f, 0.5f)
                 }
             }
         }

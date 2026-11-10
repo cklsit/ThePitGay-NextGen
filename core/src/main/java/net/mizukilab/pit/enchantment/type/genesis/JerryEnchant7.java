@@ -12,8 +12,7 @@ import net.mizukilab.pit.util.cooldown.Cooldown;
 import net.mizukilab.pit.util.music.PositionSongPlayer;
 import net.mizukilab.pit.util.music.Song;
 import lombok.SneakyThrows;
-import net.minecraft.server.v1_8_R3.EnumParticle;
-import net.minecraft.server.v1_8_R3.PacketPlayInFlying;
+import org.bukkit.Particle;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -73,7 +72,7 @@ public class JerryEnchant7 extends AbstractEnchantment implements ITickTask, Mov
 
     private void registerMovementHandler() {
         try {
-            
+            iSpigot.INSTANCE.addMovementHandler(this);
         } catch (NoClassDefFoundError ignore) {
         }
     }
@@ -117,7 +116,7 @@ public class JerryEnchant7 extends AbstractEnchantment implements ITickTask, Mov
         if (songPlayer == null) {
             initializeSongPlayer(target);
         } else {
-            PlayerUtil.sendParticle(target.getLocation().add(0, 3, 0), EnumParticle.NOTE, 2);
+            PlayerUtil.sendParticle(target.getLocation().add(0, 3, 0), Particle.NOTE, 2);
         }
     }
 
@@ -151,7 +150,7 @@ public class JerryEnchant7 extends AbstractEnchantment implements ITickTask, Mov
     }
 
     @Override
-    public void handleUpdateLocation(Player player, Location from, Location to, PacketPlayInFlying packet) {
+    public void handleUpdateLocation(Player player, Location from, Location to, Object packet) {
         PositionSongPlayer songPlayer = playerMap.get(player.getUniqueId());
         if (songPlayer != null) {
             songPlayer.setTargetLocation(player.getLocation());
@@ -159,6 +158,6 @@ public class JerryEnchant7 extends AbstractEnchantment implements ITickTask, Mov
     }
 
     @Override
-    public void handleUpdateRotation(Player player, Location from, Location to, PacketPlayInFlying packet) {
+    public void handleUpdateRotation(Player player, Location from, Location to, Object packet) {
     }
 }

@@ -1,8 +1,5 @@
 package net.mizukilab.pit.enchantment.type.rare;
 
-import net.minecraft.server.v1_8_R3.EntityPlayer;
-import net.minecraft.server.v1_8_R3.ItemBow;
-import net.minecraft.server.v1_8_R3.ItemStack;
 import net.mizukilab.pit.enchantment.AbstractEnchantment;
 import net.mizukilab.pit.enchantment.IActionDisplayEnchant;
 import net.mizukilab.pit.enchantment.param.item.BowOnly;
@@ -13,9 +10,7 @@ import net.mizukilab.pit.util.Utils;
 import net.mizukilab.pit.util.chat.RomanUtil;
 import net.mizukilab.pit.util.cooldown.Cooldown;
 import net.mizukilab.pit.util.time.TimeUtil;
-import nya.Skip;
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -35,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 
 @AutoRegister
 @BowOnly
-@Skip
+
 public class MegaLongBowEnchant extends AbstractEnchantment implements Listener, IActionDisplayEnchant {
 
     private static final HashMap<UUID, Cooldown> cooldown = new HashMap<>();
@@ -67,7 +62,7 @@ public class MegaLongBowEnchant extends AbstractEnchantment implements Listener,
 
     @Override
     public String getUsefulnessLore(int enchantLevel) {
-        return "&7射箭时无需蓄力即可让箭矢以最大蓄力状态射出,"
+        return "射箭时无需蓄力即可让箭矢以最大蓄力状态射出,"
                 + "/s&7同时为自身施加 &a跳跃提升 " + RomanUtil.convert(enchantLevel + 1) + " &f(00:02)"
                 + "/s&7此附魔每秒只能触发一次.";
     }
@@ -88,12 +83,10 @@ public class MegaLongBowEnchant extends AbstractEnchantment implements Listener,
         if (itemInHand.getType() == Material.BOW) {
             if (cooldown.getOrDefault(player.getUniqueId(), new Cooldown(0)).hasExpired()) {
                 cooldown.put(player.getUniqueId(), new Cooldown(1, TimeUnit.SECONDS));
-                player.addPotionEffect(new PotionEffect(PotionEffectType.JUMP, 2 * 20, level), false);
+                player.addPotionEffect(new PotionEffect(PotionEffectType.JUMP_BOOST, 2 * 20, level), false);
                 event.setCancelled(true);
-                final EntityPlayer ePlayer = ((CraftPlayer) player).getHandle();
-                final ItemStack itemStack = Utils.toNMStackQuick(itemInHand);
-                final ItemBow bow = (ItemBow) itemStack.getItem();
-                bow.a(itemStack, ePlayer.world, ePlayer, 0);
+                // 1.21：直接发射一支箭矢替代 ItemBow#a 的 NMS 逻辑
+                player.launchProjectile(org.bukkit.entity.Arrow.class);
             }
         }
     }
