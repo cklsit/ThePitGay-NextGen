@@ -26,6 +26,8 @@ group = "top.mcrw"
 
 version = "V"
 repositories {
+    maven("https://repo.papermc.io/repository/maven-public/")
+    maven("https://repo.codemc.io/repository/maven-public/")
     exclusiveContent {
         forRepository { maven("https://repo.panda-lang.org/releases") }
         filter { includeGroup("dev.rollczi") }
@@ -105,14 +107,11 @@ tasks.named<ShadowJar>("shadowJar") {
     mergeServiceFiles()
 }
 dependencies {
-    implementation(project(":mythic-framework-bukkit"))
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.mockito:mockito-inline:4.11.0")
 
-    compileOnly(fileTree("../packLib"))
-    // PandaSpigot adds the tracker/spawn events used by the source tree.
-    compileOnly(files(rootProject.file(providers.gradleProperty("pandaSpigotJar")
-        .orElse("libs/pandaspigot-221.jar").get())))
+    // P1：构建目标从 Spigot 1.8.8 切到 Paper 1.21.8
+    compileOnly("io.papermc.paper:paper-api:1.21.8-R0.1-SNAPSHOT")
     compileOnly(fileTree(mapOf("dir" to "../libs", "include" to listOf("*.jar"),
         "exclude" to listOf("citizens*.jar", "Citizens*.jar"))))
     implementation(libs.reflectionhelper)
