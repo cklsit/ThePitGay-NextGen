@@ -26,11 +26,11 @@ class GoldenHelmet : IMythicItem(), Listener {
     }
 
     override fun getItemDisplayName(): String {
-        return "&6国王的王冠"
+        return "&6国王的皇冠"
     }
 
     override fun getItemDisplayMaterial(): Material {
-        return Material.GOLDEN_HELMET
+        return Material.GOLD_HELMET
     }
 
     override fun isEnchanted(): Boolean {
@@ -40,20 +40,13 @@ class GoldenHelmet : IMythicItem(), Listener {
     override fun loadFromItemStack(item: ItemStack?) {
         item ?: return
 
-        if (!cn.charlotte.pit.compat.item.ItemData.hasAny(item)) return
+        val nmsItem = Utils.toNMStackQuick(item)
+        val tag = nmsItem?.tag ?: return
+        val extra = tag.getCompound("extra") ?: return
         this.uuid = ItemUtil.getUUIDObj(item)
-        this.maxLive = (cn.charlotte.pit.compat.item.ItemData.getInt(item, "maxLive") ?: 0)
-        this.live = (cn.charlotte.pit.compat.item.ItemData.getInt(item, "live") ?: 0)
-        if (cn.charlotte.pit.compat.item.ItemData.has(item, "forceCanTrade")) {
-            if (cn.charlotte.pit.compat.item.ItemData.getBoolean(item, "forceCanTrade")) {
-                this.forceCanTrade = 1;
-            } else {
-                this.forceCanTrade = 0;
-            }
-        }
-        if (cn.charlotte.pit.compat.item.ItemData.has(item, "customName")) {
-            this.customName = cn.charlotte.pit.compat.item.ItemData.getString(item, "customName")
-        }
+        this.maxLive = extra.getInt("maxLive")
+        this.live = extra.getInt("live")
+        loadNameData(item, extra)
 
     }
 

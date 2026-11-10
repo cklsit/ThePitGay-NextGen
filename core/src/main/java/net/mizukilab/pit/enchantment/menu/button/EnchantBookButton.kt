@@ -29,7 +29,7 @@ class EnchantBookButton(
     }
 
     private val noneItem: ItemStack
-        get() = ItemBuilder(Material.WHITE_STAINED_GLASS_PANE)
+        get() = ItemBuilder(Material.STAINED_GLASS_PANE)
             .durability(15)
             .name("&d放入附魔卷轴")
             .lore(
@@ -45,13 +45,14 @@ class EnchantBookButton(
         if (item == null || item.type == Material.AIR) {
             return
         }
-        if (InventoryUtil.isInvFull(player)) {
+        val emptySlot = player.inventory.firstEmpty()
+        if (emptySlot < 0) {
             player.sendMessage("&c你的背包已满.")
             return
         }
+        player.inventory.setItem(emptySlot, item)
         profile.enchantingBook = null
-        player.inventory.addItem(item)
-        player.playSound(player.location, Sound.ENTITY_CHICKEN_EGG, 1f, 0.65f)
+        player.playSound(player.location, Sound.CHICKEN_EGG_POP, 1f, 0.65f)
         menu!!.openMenu(player)
     }
 }

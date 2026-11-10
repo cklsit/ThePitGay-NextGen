@@ -56,7 +56,7 @@ class ToTheMoonMegaStreak : AbstractPerk(), IPlayerKilledEntity, IPlayerDamaged,
     }
 
     override fun getIcon(): Material {
-        return Material.END_STONE
+        return Material.ENDER_STONE
     }
 
     override fun requireCoins(): Double {
@@ -152,7 +152,7 @@ class ToTheMoonMegaStreak : AbstractPerk(), IPlayerKilledEntity, IPlayerDamaged,
             Bukkit.getOnlinePlayers().forEach { player: Player? ->
                 player!!.playSound(
                     player.location,
-                    Sound.ENTITY_WITHER_SPAWN,
+                    Sound.WITHER_SPAWN,
                     0.8f,
                     1.5f
                 )

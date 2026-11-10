@@ -6,6 +6,7 @@ import net.mizukilab.pit.enchantment.rarity.EnchantmentRarity;
 import net.mizukilab.pit.parm.listener.IPlayerRespawn;
 import net.mizukilab.pit.util.cooldown.Cooldown;
 import net.mizukilab.pit.util.time.TimeUtil;
+import nya.Skip;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -14,7 +15,7 @@ import org.bukkit.potion.PotionEffectType;
  * @Author: Misoryan
  * @Created_In: 2021/2/24 18:53
  */
-
+@Skip
 @ArmorOnly
 public class RespawnResistanceEnchant extends AbstractEnchantment implements IPlayerRespawn {
 
@@ -50,6 +51,6 @@ public class RespawnResistanceEnchant extends AbstractEnchantment implements IPl
 
     @Override
     public void handleRespawn(int enchantLevel, Player myself) {
-        myself.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, (enchantLevel + 1) * 10 * 20, (enchantLevel >= 3 ? 1 : 0)), true);
+        myself.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, (enchantLevel + 1) * 10 * 20, (enchantLevel >= 3 ? 1 : 0)), true);
     }
 }

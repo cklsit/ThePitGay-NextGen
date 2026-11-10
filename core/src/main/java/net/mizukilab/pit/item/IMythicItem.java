@@ -1,31 +1,40 @@
 package net.mizukilab.pit.item;
 
 import cn.charlotte.pit.ThePit;
-import cn.charlotte.pit.compat.item.ItemData;
 import cn.charlotte.pit.data.sub.EnchantmentRecord;
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.*;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import net.minecraft.server.v1_8_R3.*;
+import net.mizukilab.pit.Util;
 import net.mizukilab.pit.config.NewConfiguration;
 import net.mizukilab.pit.enchantment.AbstractEnchantment;
 import net.mizukilab.pit.enchantment.rarity.EnchantmentRarity;
+import net.mizukilab.pit.enchantment.type.dark_normal.SomberEnchant;
 import net.mizukilab.pit.item.type.ArmageddonBoots;
 import net.mizukilab.pit.item.type.mythic.MagicFishingRod;
 import net.mizukilab.pit.item.type.mythic.MythicBowItem;
 import net.mizukilab.pit.item.type.mythic.MythicLeggingsItem;
 import net.mizukilab.pit.item.type.mythic.MythicSwordItem;
+import net.mizukilab.pit.util.Einstein;
 import net.mizukilab.pit.util.Utils;
 import net.mizukilab.pit.util.chat.RomanUtil;
 import net.mizukilab.pit.util.item.ItemBuilder;
+import net.mizukilab.pit.util.item.ItemUtil;
 import net.mizukilab.pit.util.random.RandomUtil;
+import nya.Skip;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import static net.mizukilab.pit.enchantment.rarity.EnchantmentRarity.RAGE_RARE;
 
 /**
  * @Author: EmptyIrony
@@ -34,9 +43,13 @@ import java.util.UUID;
 @Data()
 @Getter
 @Setter
-
+@Skip
 public abstract class IMythicItem extends AbstractPitItem {
 
+    @Getter
+    private final static String defUUIDString = "00000000-0000-0000-0000-000000000001";
+    @Getter
+    private final static UUID defUUID = new UUID(0,1);
     public int maxLive;
     public int live;
     public int tier;
@@ -45,12 +58,9 @@ public abstract class IMythicItem extends AbstractPitItem {
     public String version;
     public String prefix;
     public boolean boostedByGem = false;
-    @Getter
-    private final static String defUUIDString = "00000000-0000-0000-0000-000000000001";
-    @Getter
-    private final static UUID defUUID = UUID.fromString("00000000-0000-0000-0000-000000000001");
     public String customName = null;
 
+    public boolean saved = false;
     public boolean boostedByBook = false;
 
     public UUID uuid;
@@ -62,29 +72,63 @@ public abstract class IMythicItem extends AbstractPitItem {
     public IMythicItem() {
     }
 
-    public static void clearCache(ItemStack e) {
+    /** Legacy addon hook after editing the NBT of an existing item. */
+    public static void clearCache(ItemStack stack) {
+        ThePit plugin = ThePit.getInstance();
+        if (plugin != null && plugin.getItemFactory() instanceof net.mizukilab.pit.item.factory.ItemFactory factory) {
+            factory.invalidate(stack);
+        }
     }
 
     public void resetUUID() {
         this.uuid = defUUID;
     }
 
+    /** Compare the small NBT list without rebuilding items or allocating split strings. */
+    public boolean hasSameEnchantments(NBTTagCompound extra) {
+        if (extra == null) return false;
+        NBTTagList stored = extra.getList("ench", 8);
+        if (stored.size() != enchantments.size()) return false;
+        for (var entry : enchantments.object2IntEntrySet()) {
+            String name = entry.getKey().getNbtName();
+            boolean found = false;
+            for (int i = 0; i < stored.size(); i++) {
+                String value = stored.getString(i);
+                int split = name.length();
+                if (value.length() <= split + 1 || value.charAt(split) != ':' || !value.startsWith(name)) continue;
+                try {
+                    if (Integer.parseInt(value, split + 1, value.length(), 10) == entry.getIntValue()) {
+                        found = true;
+                        break;
+                    }
+                } catch (NumberFormatException malformedLevel) {
+                    return false;
+                }
+            }
+            if (!found) return false;
+        }
+        return true;
+    }
+
+    public boolean matchesEnchantmentSource(ItemStack stack) {
+        NBTTagCompound extra = ItemUtil.getExtra(stack);
+        return extra != null && uuid != null && uuid.toString().equals(ItemUtil.getUUID(extra))
+                && getInternalName().equals(ItemUtil.getInternalName0(extra)) && hasSameEnchantments(extra);
+    }
+    public boolean canUseBook() {
+        return !(isBoostedByBook() || isRage() || isDark());
+    }
     @Override
     public ItemStack toItemStack() {
-        List<String> lore = new ObjectArrayList<>();
+        List<String> lore = new LinkedList<>();
         String name = getItemDisplayName();
         if (this.color == null) {
-            this.color = (MythicColor) RandomUtil.helpMeToChooseOne(MythicColor.RED
+            this.color = RandomUtil.helpMeToChooseOne(MythicColor.RED
                     , MythicColor.ORANGE, MythicColor.BLUE, MythicColor.GREEN, MythicColor.YELLOW);
         }
 
         //Guardian Enchant for Archangel Chestplate
 
-        if (isEnchanted()) {
-            if (tier == 0) {
-                tier = 3;
-            }
-        }
 
         if (this instanceof MythicLeggingsItem) {
             name = color.getChatColor() + (tier > 0 ? RomanUtil.convert(tier) + " 阶" : "") + color.getDisplayName() + "色" + getItemDisplayName();
@@ -102,8 +146,6 @@ public abstract class IMythicItem extends AbstractPitItem {
             }
         } else if (this instanceof MythicSwordItem) {
             name = (tier >= 3 ? "&c" : "&e") + (tier > 0 ? RomanUtil.convert(tier) + " 阶" : "") + getItemDisplayName();
-        } else if (this instanceof net.mizukilab.pit.item.IMythicHammer) {
-            name = (tier >= 3 ? "&c" : "&6") + (tier > 0 ? RomanUtil.convert(tier) + " 阶" : "") + getItemDisplayName();
         } else if (this instanceof MythicBowItem) {
             name = (tier >= 3 ? "&c" : "&b") + (tier > 0 ? RomanUtil.convert(tier) + " 阶" : "") + getItemDisplayName();
         } else if (this instanceof MagicFishingRod) {
@@ -111,20 +153,23 @@ public abstract class IMythicItem extends AbstractPitItem {
         }
 
         int rareAmount = 0;
+        int darkRareAmount = 0;
         int opAmount = 0;
         int uberAmount = 0;
         int enchantTotalLevel = 0;
 
 
-        for (AbstractEnchantment abstractEnchantment : enchantments.keySet()) {
-            int enchantLevel = enchantments.get(abstractEnchantment);
+        for (var s : enchantments.object2IntEntrySet()) {
+            int enchantLevel = s.getIntValue();
             enchantTotalLevel += enchantLevel;
-
+            AbstractEnchantment abstractEnchantment = s.getKey();
             if (abstractEnchantment.getRarity() == EnchantmentRarity.RARE) {
                 rareAmount++;
                 if (color == MythicColor.RAGE && abstractEnchantment.getMaxEnchantLevel() == enchantLevel) {
                     this.prefix = "不可思议的";
                 }
+            } else if (abstractEnchantment.getRarity() == EnchantmentRarity.DARK_RARE) {
+                darkRareAmount++;
             } else if (abstractEnchantment.getRarity() == EnchantmentRarity.OP) {
                 opAmount++;
             } else if (abstractEnchantment.getRarity() == EnchantmentRarity.UBER_LIMITED_RARE || abstractEnchantment.getRarity() == EnchantmentRarity.UBER_LIMITED) {
@@ -135,24 +180,21 @@ public abstract class IMythicItem extends AbstractPitItem {
         if (enchantTotalLevel >= 8) {
             this.prefix = switch (color) {
                 case RAGE -> "狂躁的";
-                case DARK -> "邪恶的";
                 default -> "传说中的";
             };
         }
 
         if (this.maxLive >= 100) {
-            if (this instanceof net.mizukilab.pit.item.IMythicHammer) {
-                // 神话之锤本身就是高生命物品，「精制的」这类前缀对它是冗余信息
-            } else if (color == MythicColor.DARK) {
+            if (color == MythicColor.DARK) {
                 name = color.getChatColor() + (tier > 0 ? RomanUtil.convert(tier) + " 阶" : "") + "恶魔之甲";
             } else {
                 this.prefix = "精制的";
             }
         }
 
-        if (rareAmount >= 3 && this.maxLive >= 100 && !(this instanceof net.mizukilab.pit.item.IMythicHammer)) {
+        if (rareAmount >= 3 && this.maxLive >= 100) {
             this.prefix = "万里挑一的";
-        } else if (rareAmount == 2 && this.maxLive >= 100 && !(this instanceof net.mizukilab.pit.item.IMythicHammer)) {
+        } else if (rareAmount == 2 && this.maxLive >= 100) {
             this.prefix = "奇迹般的";
         } else if (rareAmount >= 3) {
             this.prefix = "不朽的";
@@ -160,7 +202,7 @@ public abstract class IMythicItem extends AbstractPitItem {
             this.prefix = "不凡的";
         }
 
-        if (enchantTotalLevel >= 7 && this.maxLive >= 100 && !(this instanceof net.mizukilab.pit.item.IMythicHammer)) {
+        if (enchantTotalLevel >= 7 && this.maxLive >= 100) {
             this.prefix = "强大的";
         }
 
@@ -179,22 +221,18 @@ public abstract class IMythicItem extends AbstractPitItem {
             name = customName;
         }
 
-        // 未附魔的神话物品不显示生命行（生命值只在附魔后才有意义）
-        if (maxLive != 0 && isEnchanted()) {
+        if (maxLive != 0) {
             lore.add(("&7生命: " + (live / (maxLive * 1.0) <= 0.6 ? (live / (maxLive * 1.0) <= 0.3 ? "&c" : "&e") : "&a") + live + "&7/" + maxLive)
                     + (isBoostedByGem() ? "&a ♦" : "") + (isBoostedByGlobalGem() ? "&b ♦" : "") + (boostedByBook ? "&6 ᥀" : ""));
             lore.add("");
         }
 
         if (isEnchanted()) {
-            final AbstractEnchantment somber = ThePit.getInstance().getEnchantmentFactor().getEnchantmentMap().get("somber_enchant");
-            if (color == MythicColor.DARK && !enchantments.containsKey(somber)) {
-                enchantments.put(somber, 1);
-            }
             boolean genesisFound = false;
 
-            for (Map.Entry<AbstractEnchantment, Integer> entry : enchantments.entrySet()) {
-                getEnchantLore(lore, entry, enchantments.entrySet());
+            var entries = enchantments.object2IntEntrySet();
+            for (Object2IntMap.Entry<AbstractEnchantment> entry : entries) {
+                getEnchantLore(lore, entry, entries);
                 if (entry.getKey().getRarity() == EnchantmentRarity.GENESIS) {
                     genesisFound = true;
                 }
@@ -209,6 +247,7 @@ public abstract class IMythicItem extends AbstractPitItem {
             } else {
                 lore.add(NewConfiguration.INSTANCE.getWatermarks());
             }
+
 
             if (genesisFound) {
                 lore.add(color.getChatColor() + "阵营活动奖励");
@@ -239,39 +278,18 @@ public abstract class IMythicItem extends AbstractPitItem {
         }
         if (uuid != null) {
             boolean equals = uuid == null || defUUID.equals(uuid);
-            lore.add("&8" + (equals ? "Refresh on table" : uuid.toString()));
+            boolean saved = this.saved;
+            String uuidColor = "&8";
+            if (saved) {
+                if (MythicColor.DARK.getChatColor().equals(color.getChatColor())) uuidColor = "&d";
+                if (MythicColor.RAGE.getChatColor().equals(color.getChatColor())) uuidColor = "&c";
+                if ("mythic_sword".equals(this.getInternalName())) uuidColor = "&e";
+                if ("mythic_bow".equals(this.getInternalName())) uuidColor = "&b";
+            }
+            lore.add(uuidColor + (equals ? "Refresh on table" : uuid.toString()));
         }
 
-        // 神话之锤：汇总攻速（C2）、击退抗性（12/63）与命中范围（35）到物品属性
-        double atsScalar = 0.0D;
-        double kbResistance = 0.0D;
-        double reachBonus = 0.0D;
-        for (Map.Entry<AbstractEnchantment, Integer> e : enchantments.entrySet()) {
-            if (!(e.getKey() instanceof net.mizukilab.pit.enchantment.type.hammer.HammerEnchantBase hb)) {
-                continue;
-            }
-            int lv = e.getValue();
-            double v = hb.valueAt(lv);
-            String nbt = hb.getNbtName();
-            switch (nbt) {
-                case "hammer_023", "hammer_065" -> {
-                    double t0 = 1.0D / 0.6D;
-                    atsScalar += t0 / (t0 + v) - 1.0D;
-                }
-                case "hammer_051" -> atsScalar += v / 100.0D;
-                case "hammer_012", "hammer_063" -> kbResistance += v / 100.0D;
-                case "hammer_035" -> reachBonus += v;
-                default -> {
-                }
-            }
-        }
-        atsScalar = Math.max(-0.30D, Math.min(0.30D, atsScalar));
-        kbResistance = Math.max(0.0D, Math.min(1.0D, kbResistance));
-        reachBonus = Math.max(0.0D, Math.min(0.7D, reachBonus));
-
-        double mythicItemDamage = this instanceof IMythicSword sword ? sword.getItemDamage()
-                : (this instanceof net.mizukilab.pit.item.IMythicHammer hammer ? hammer.getItemDamage() : -1.0D);
-        if (mythicItemDamage >= 0) {
+        if (this instanceof IMythicSword mythicSword) {
             builder
                     .lore(lore)
                     .internalName(getInternalName())
@@ -283,10 +301,7 @@ public abstract class IMythicItem extends AbstractPitItem {
                     .canDrop(false)
                     .canTrade(true)
                     .enchant(enchantments)
-                    .itemDamage(mythicItemDamage)
-                    .attackSpeed(atsScalar)
-                    .knockbackResistance(kbResistance)
-                    .entityInteractionRange(reachBonus)
+                    .itemDamage(mythicSword.getItemDamage())
                     .maxLive(this.maxLive)
                     .tier(this.tier)
                     .makeBoostedByGem(this.boostedByGem)
@@ -314,7 +329,9 @@ public abstract class IMythicItem extends AbstractPitItem {
                     .tier(this.tier)
                     .recordEnchantments(enchantmentRecords);
         }
-
+        if (saved) {
+            builder.saved(true);
+        }
         if (dyeColor != null) {
             builder.dyeColor(dyeColor.name());
         }
@@ -345,115 +362,188 @@ public abstract class IMythicItem extends AbstractPitItem {
     public boolean isBoostedByGlobalGem() {
         return this.boostedByGlobalGem;
     }
+    public boolean isDark(){
+        return this.color == MythicColor.DARK;
+    }
+    public boolean isRage(){
+        return this.color == MythicColor.RAGE;
+    }
+
+    /** Restore persistent rename state even when a cached instance is reused. */
+    protected void loadNameData(ItemStack item, NBTTagCompound extra) {
+        this.forceCanTrade = extra.hasKey("forceCanTrade") ? (extra.getBoolean("forceCanTrade") ? 1 : 0) : -1;
+        NBTBase storedName = extra.get("customName");
+        this.customName = storedName instanceof NBTTagString name ? name.a_() : null;
+    }
 
     @Override
     public void loadFromItemStack(ItemStack item) {
+        resetEnch();
+        enchantmentRecords.clear();
+        tier = 0;
         if (item == null || item.getType() == Material.AIR) {
             return;
         }
-        // 1.21：物品数据由 NBT 迁移到 PDC，统一走 ItemData
-        if (!ItemData.hasAny(item)) {
+        net.minecraft.server.v1_8_R3.ItemStack nmsItem = Utils.toNMStackQuick(item);
+        NBTTagCompound tag = nmsItem.getTag();
+        if (tag == null) {
+            return;
+        }
+        NBTTagCompound extra = tag.getCompound("extra");
+        if (extra == null) {
             return;
         }
 
-        this.boostedByGem = ItemData.getBoolean(item, "boostedByGem");
-        this.boostedByGlobalGem = ItemData.getBoolean(item, "boostedByGlobalGem");
-        this.boostedByBook = ItemData.getBoolean(item, "boostedByBook");
+        //natives
+        this.boostedByGem = extra.getBoolean("boostedByGem");
 
-        String prefixValue = ItemData.getString(item, "prefix");
-        if (prefixValue != null) {
-            this.prefix = prefixValue;
+        this.boostedByGlobalGem = extra.getBoolean("boostedByGlobalGem");
+
+        this.boostedByBook = extra.getBoolean("boostedByBook");
+
+        //for raw type opti
+        NBTBase prefix1 = extra.get("prefix");
+        if (prefix1 instanceof NBTTagString) {
+            this.prefix = ((NBTTagString) prefix1).a_();
+        }
+        //0.12% -> 0.06%
+
+        loadNameData(item, extra);
+        this.saved = extra.getBoolean("saved");
+
+        NBTBase version = extra.get("version");
+        if (version instanceof NBTTagString verStr) {
+            this.version = verStr.a_();
         }
 
-        String customNameValue = ItemData.getString(item, "customName");
-        if (customNameValue != null) {
-            this.customName = customNameValue;
+
+        NBTBase dyeColor1 = extra.get("dyeColor");
+        if (dyeColor1 instanceof NBTTagString) {
+            this.dyeColor = DyeColor.valueOf(((NBTTagString) dyeColor1).a_());
+
         }
 
-        String versionValue = ItemData.getString(item, "version");
-        if (versionValue != null) {
-            this.version = versionValue;
+        NBTBase uuid1 = extra.get("uuid");
+        if (uuid1 instanceof NBTTagString gg) {
+            this.uuid = UUID.fromString(gg.a_());
         }
 
-        String dyeColorValue = ItemData.getString(item, "dyeColor");
-        if (dyeColorValue != null) {
-            this.dyeColor = DyeColor.valueOf(dyeColorValue);
-        }
-
-        String uuidValue = ItemData.getString(item, "uuid");
-        if (uuidValue != null) {
-            this.uuid = UUID.fromString(uuidValue);
-        }
-
-        String mythicColor = ItemData.getString(item, "mythic_color");
+        NBTBase mythicColor = extra.get("mythic_color");
         if (mythicColor == null) {
             this.color = (MythicColor) RandomUtil.helpMeToChooseOne(
                     MythicColor.RED, MythicColor.ORANGE, MythicColor.BLUE, MythicColor.GREEN, MythicColor.YELLOW);
         } else {
-            this.color = MythicColor.valueOfInternalName(mythicColor);
-            if (color == null) {
-                this.color = (MythicColor) RandomUtil.helpMeToChooseOne(
-                        MythicColor.RED, MythicColor.ORANGE, MythicColor.BLUE, MythicColor.GREEN, MythicColor.YELLOW);
+            if (mythicColor instanceof NBTTagString) {
+                String internalColor = ((NBTTagString) mythicColor).a_();
+                this.color = MythicColor.valueOfInternalName(internalColor);
+                if (color == null) {
+                    this.color = (MythicColor) RandomUtil.helpMeToChooseOne(
+                            MythicColor.RED, MythicColor.ORANGE, MythicColor.BLUE, MythicColor.GREEN, MythicColor.YELLOW);
+                }
             }
         }
 
-        Integer maxLiveValue = ItemData.getInt(item, "maxLive");
-        this.maxLive = maxLiveValue == null ? 0 : maxLiveValue;
-        Integer liveValue = ItemData.getInt(item, "live");
-        this.live = liveValue == null ? 0 : liveValue;
-        // 存量物品自愈：历史版本重铸时可能把 live 补到上限之上
-        if (this.maxLive > 0 && this.live > this.maxLive) {
-            this.live = this.maxLive;
-        }
-        if (ItemData.has(item, "forceCanTrade")) {
-            this.forceCanTrade = ItemData.getBoolean(item, "forceCanTrade") ? 1 : 0;
-        }
-
-        if (!ItemData.has(item, "ench")) {
+        this.maxLive = extra.getInt("maxLive");
+        this.live = extra.getInt("live");
+        if (!extra.hasKey("ench")) { //TODO
             return;
         }
 
-        String recordsString = ItemData.getString(item, "records");
-        if (recordsString != null) {
-            for (String recordString : Utils.splitByCharAt(recordsString, ';')) {
-                final String[] split = Utils.splitByCharAt(recordString, '|');
-                if (split.length >= 3) {
-                    enchantmentRecords.add(new EnchantmentRecord(split[0], split[1], Long.parseLong(split[2])));
-                }
-            }
-        }
-
-        this.enchantments = new Object2IntOpenHashMap<>();
-        this.enchantments.defaultReturnValue(-1);
-        for (String entry : ItemData.getStringList(item, "ench")) {
-            int index = entry.lastIndexOf(':');
-            if (index <= 0) {
-                continue;
-            }
-            try {
-                cn.charlotte.pit.compat.item.ItemData.set(item, "ench_debug", entry);
-                int level = Integer.parseInt(entry.substring(index + 1));
-                var enchantment = ThePit.getInstance().getEnchantmentFactor()
-                        .getEnchantmentMap().get(entry.substring(0, index));
-                if (enchantment != null) {
-                    this.enchantments.put(enchantment, level);
-                }
-            } catch (NumberFormatException ignored) {
-            }
-        }
-
-        if (!ItemData.has(item, "tier") && isEnchanted()) {
+        readRecords(extra);
+        //nano
+        NBTTagList ench = extra.getList("ench", 8);
+        Utils.readEnchantments(enchantments, ench);
+        if (!extra.hasKey("tier") && isEnchanted()) {
             if (color == MythicColor.DARK) {
                 this.tier = 2;
             } else {
                 this.tier = 3;
             }
-        } else if (ItemData.has(item, "tier")) {
-            if (!isEnchanted()) {
-                this.tier = 0;
-            } else {
-                Integer tierValue = ItemData.getInt(item, "tier");
-                this.tier = tierValue == null ? 0 : tierValue;
+        } else {
+            if (extra.hasKey("tier")) {
+                if (!isEnchanted()) {
+                    this.tier = 0;
+                } else {
+                    this.tier = extra.getInt("tier");
+                }
+            }
+        }
+       // enchCheck(item);
+    }
+    public void enchCheck(ItemStack stack) {
+        boolean changed = false;
+        int count = 0;
+        int rageCount = 0;
+        int maxEnchCount = 8;
+        ObjectIterator<Map.Entry<AbstractEnchantment, Integer>> iterator = this.enchantments.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<AbstractEnchantment, Integer> next = iterator.next();
+            Integer value = next.getValue();
+            if (next.getKey().getRarity() == EnchantmentRarity.RAGE || next.getKey().getRarity() == RAGE_RARE) {
+                rageCount++;
+                if (rageCount >= 2) {
+                    iterator.remove();
+                    changed = true;
+                    continue;
+                }
+            }
+
+            int remaining = maxEnchCount - count;
+            if (remaining <= 0 || value <= 0) {
+                iterator.remove();
+                changed = true;
+                continue;
+            }
+            int allowed = Math.min(value, remaining);
+            count += allowed;
+            if (allowed != value) {
+                changed = true;
+                next.setValue(allowed);
+            }
+        }
+        if (changed) {
+            ItemStack itemStack = toItemStack();
+            NBTTagCompound tag = Utils.toNMStackQuick(itemStack).getTag();
+            Utils.toNMStackQuick(stack).setTag((NBTTagCompound) tag.clone());
+        }
+    }
+
+    private void readRecords(NBTTagCompound extra) {
+        enchantmentRecords.clear();
+        final NBTBase recordsStringRaw = extra.get("records");
+        if (recordsStringRaw instanceof NBTTagString) {
+            String recordsString = ((NBTTagString) recordsStringRaw).a_();
+            for (String recordString : Utils.splitByCharAt(recordsString, ';')) {
+                final String[] split = Utils.splitByCharAt(recordString, '|');
+                if (split.length >= 3) {
+                    long timestamp;
+                    try {
+                        timestamp = Long.parseLong(split[2]);
+                    } catch (NumberFormatException malformedTimestamp) {
+                        timestamp = 0L;
+                    }
+                    enchantmentRecords.add(
+                            new EnchantmentRecord(
+                                    split[0],
+                                    split[1],
+                                    timestamp
+                            )
+                    );
+                }
+            }
+            // Leave the source NBT intact until toItemStack writes all parsed records.
+        } else if (recordsStringRaw instanceof NBTTagList k) {
+            for (int i = 0; i < k.size(); i++) {
+                NBTTagCompound nbtTagCompound = k.get(i);
+                NBTBase name = nbtTagCompound.get("name");
+                NBTBase reason = nbtTagCompound.get("reason");
+                NBTBase timeStamp = nbtTagCompound.get("timeStamp");
+                if (name instanceof NBTTagString nm && reason instanceof NBTTagString ra && timeStamp instanceof NBTTagLong ts) {
+                    enchantmentRecords.add(
+                            new EnchantmentRecord(
+                                    nm.a_(), ra.a_(), ts.c())
+                    );
+                }
             }
         }
     }
@@ -477,15 +567,14 @@ public abstract class IMythicItem extends AbstractPitItem {
     public String toString() {
         return "IMythicItem(maxLive=" +
                 this.getMaxLive() + ", live=" +
-                this.getLive() + ", tier=" + this.getTier() + "" +
+                this.getLive() + ", tier=" + this.getTier() +
                 ", color=" + this.getColor() + ", dyeColor=" + this.getDyeColor() + ", prefix=" + this.getPrefix() + ")";
     }
 
     public boolean equals(final Object o) {
         if (o == this) return true;
-        if (!(o instanceof IMythicItem)) return false;
-        final IMythicItem other = (IMythicItem) o;
-        if (!other.canEqual((Object) this)) return false;
+        if (!(o instanceof IMythicItem other)) return false;
+        if (!other.canEqual(this)) return false;
         if (!super.equals(o)) return false;
         if (this.getMaxLive() != other.getMaxLive()) return false;
         if (this.getLive() != other.getLive()) return false;

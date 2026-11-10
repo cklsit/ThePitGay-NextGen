@@ -9,6 +9,7 @@ import net.mizukilab.pit.parm.listener.IPlayerRespawn;
 import net.mizukilab.pit.util.cooldown.Cooldown;
 import net.mizukilab.pit.util.item.ItemBuilder;
 import com.google.common.util.concurrent.AtomicDouble;
+import nya.Skip;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -19,7 +20,7 @@ import org.bukkit.entity.Player;
  */
 
 @ArmorOnly
-
+@Skip
 public class CreativeEnchant extends AbstractEnchantment implements IPlayerKilledEntity, IPlayerRespawn {
 
     @Override
@@ -58,13 +59,13 @@ public class CreativeEnchant extends AbstractEnchantment implements IPlayerKille
     @Override
     @PlayerOnly
     public void handlePlayerKilled(int enchantLevel, Player myself, Entity target, AtomicDouble coins, AtomicDouble experience) {
-        ItemBuilder woodBuilder = new ItemBuilder(Material.OAK_PLANKS).canDrop(false).canSaveToEnderChest(false).deathDrop(true).canTrade(false).removeOnJoin(true).internalName("creative_enchantment_item");
+        ItemBuilder woodBuilder = new ItemBuilder(Material.WOOD).canDrop(false).canSaveToEnderChest(false).deathDrop(true).canTrade(false).removeOnJoin(true).internalName("creative_enchantment_item");
         myself.getInventory().addItem(woodBuilder.amount(6 * enchantLevel).build());
     }
 
     @Override
     public void handleRespawn(int enchantLevel, Player myself) {
-        ItemBuilder woodBuilder = new ItemBuilder(Material.OAK_PLANKS).canDrop(false).canSaveToEnderChest(false).deathDrop(true).canTrade(false).removeOnJoin(true).internalName("creative_enchantment_item");
+        ItemBuilder woodBuilder = new ItemBuilder(Material.WOOD).canDrop(false).canSaveToEnderChest(false).deathDrop(true).canTrade(false).removeOnJoin(true).internalName("creative_enchantment_item");
         myself.getInventory().addItem(woodBuilder.amount(16 * enchantLevel).build());
     }
 }

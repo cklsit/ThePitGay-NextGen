@@ -1,17 +1,22 @@
 package net.mizukilab.pit.enchantment.type.normal;
 
 import cn.charlotte.pit.data.PlayerProfile;
+import com.google.common.util.concurrent.AtomicDouble;
 import lombok.SneakyThrows;
+import net.minecraft.server.v1_8_R3.PacketPlayInFlying;
 import net.mizukilab.pit.enchantment.AbstractEnchantment;
 import net.mizukilab.pit.enchantment.param.item.ArmorOnly;
 import net.mizukilab.pit.enchantment.rarity.EnchantmentRarity;
 import net.mizukilab.pit.item.IMythicItem;
+import net.mizukilab.pit.parm.AutoRegister;
 import net.mizukilab.pit.util.PlayerUtil;
+import net.mizukilab.pit.util.Utils;
 import net.mizukilab.pit.util.cooldown.Cooldown;
+import nya.Skip;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Listener;
 import spg.lgdev.handler.MovementHandler;
-import spg.lgdev.iSpigot;
 
 /**
  * @Author: Starry_Killer
@@ -19,13 +24,14 @@ import spg.lgdev.iSpigot;
  */
 
 @ArmorOnly
-
-public class TrotEnchant extends AbstractEnchantment implements MovementHandler {
+@Skip
+@AutoRegister
+public class TrotEnchant extends AbstractEnchantment implements MovementHandler, Listener {
 
     @SneakyThrows
     public TrotEnchant() {
         try {
-            iSpigot.INSTANCE.addMovementHandler(this);
+
         } catch (NoClassDefFoundError ignore) {
         }
     }
@@ -61,41 +67,39 @@ public class TrotEnchant extends AbstractEnchantment implements MovementHandler 
     }
 
     @Override
-    public void handleUpdateLocation(Player player, Location location, Location location1, Object packetPlayInFlying) {
-        IMythicItem leggings = (IMythicItem) PlayerProfile.getPlayerProfileByUuid(player.getUniqueId()).leggings;
-        float walkSpeed = player.getWalkSpeed();
-        boolean b = PlayerUtil.shouldIgnoreEnchant(player);
-        if (leggings != null && !b) {
-            int level = this.getItemEnchantLevel(leggings);
-            if (level == 1) {
-                if (walkSpeed != 0.21F) {
-                    player.setWalkSpeed(0.21F);
-                }
-            } else if (level == 2) {
-                if (walkSpeed != 0.22F) {
-                    player.setWalkSpeed(0.22F);
-                }
-            } else if (level == 3) {
-
-                if (walkSpeed != 0.24F) {
-                    player.setWalkSpeed(0.24F);
-                }
-            } else {
-                if (walkSpeed != 0.2F) {
-                    player.setWalkSpeed(0.2F);
-                }
-            }
-
-        } else {
-
-            if (walkSpeed != 0.2F) {
-                player.setWalkSpeed(0.2F);
-            }
-        }
+    public void handleUpdateLocation(Player player, Location location, Location location1, PacketPlayInFlying packetPlayInFlying) {
     }
 
     @Override
-    public void handleUpdateRotation(Player player, Location location, Location location1, Object packetPlayInFlying) {
+    public void handleUpdateSpeed(Player player, AtomicDouble speed, Location in, Location out) {
+        IMythicItem leggings = (IMythicItem) PlayerProfile.getPlayerProfileByUuid(player.getUniqueId()).leggings;
+        boolean shouldIgnoreEnchant = PlayerUtil.shouldIgnoreEnchant(player);
+        float targetSpeed = 0.2F;
+        if (leggings != null && !shouldIgnoreEnchant) {
+            int level = this.getItemEnchantLevel(leggings);
+            switch (level) {
+                case 1:
+                    targetSpeed = 0.21F; // 增加5%速度
+                    break;
+                case 2:
+                    targetSpeed = 0.22F; // 增加10%速度
+                    break;
+                case 3:
+                    targetSpeed = 0.24F; // 增加20%速度
+                    break;
+                default:
+                    break;
+            }
 
+            Location location = player.getLocation().add(0.0, 0.5, 0.0);
+            if (this.getItemEnchantLevel(player.getInventory().getLeggings()) < 1) return;
+            Utils.sendRedstoneParticle(player, location, 255f, 255f, 255f);
+        }
+        speed.set(targetSpeed);
     }
+
+    @Override
+    public void handleUpdateRotation(Player player, Location location, Location location1, PacketPlayInFlying packetPlayInFlying) {
+    }
+
 }

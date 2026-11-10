@@ -1,0 +1,318 @@
+package net.mizukilab.pit.handlers;
+
+import cn.charlotte.pit.ThePit;
+import cn.charlotte.pit.data.PlayerProfile;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import lombok.Data;
+import lombok.Getter;
+import net.mizukilab.pit.config.NewConfiguration;
+import net.mizukilab.pit.config.PitWorldConfig;
+import net.mizukilab.pit.enchantment.menu.MythicWellMenu;
+import net.mizukilab.pit.item.MythicColor;
+import net.mizukilab.pit.util.ParticleUtil;
+import net.mizukilab.pit.util.inventory.InventoryUtil;
+import net.mizukilab.pit.util.item.ItemUtil;
+import net.mizukilab.pit.util.menu.Menu;
+import nya.Skip;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.Sound;
+import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.scheduler.BukkitRunnable;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * @Author: EmptyIrony
+ * @Date: 2021/2/11 21:10
+ */
+@Getter
+@Skip
+public class AnimationHandler implements Runnable {
+
+    private final Map<UUID, AnimationData> animations = new ConcurrentHashMap<>();
+    private final Location[] animationLocations;
+    public AnimationData holdOrGetAnimation(Player player){
+        return animations.compute(player.getUniqueId(), (id, data) ->
+                data == null || data.getPlayer() != player ? new AnimationData(player) : data);
+    }
+
+    public void releaseAnimation(Player player, AnimationData data) {
+        if (animations.remove(player.getUniqueId(), data)) sendReset(player);
+    }
+    public AnimationHandler() {
+        final PitWorldConfig pitWorldConfig = ThePit.getInstance().getPitConfig();
+        final Location loc = pitWorldConfig.getEnchantLocation();
+        final Location center;
+        if (loc == null) {
+            center = new Location(Bukkit.getWorlds().get(0), 0, 0, 0);
+        } else {
+            center = loc.clone().add(0.0, -1.0, 0.0);
+        }
+        this.animationLocations = new Location[]{
+                center.clone().add(-1, 0, 0),   // 19: 左中
+                center.clone().add(-1, 0, -1),  // 10: 左上
+                center.clone().add(0, 0, -1),   // 11: 中上
+                center.clone().add(1, 0, -1),   // 12: 右上
+                center.clone().add(1, 0, 0),    // 21: 右中
+                center.clone().add(1, 0, 1),    // 30: 右下
+                center.clone().add(0, 0, 1),    // 29: 中下
+                center.clone().add(-1, 0, 1)    // 28: 左下
+        };
+    }
+
+    @Override
+    public void run() {
+        synchronized (animations) {
+            final Object2ObjectOpenHashMap<UUID, AnimationData> removeMap = new Object2ObjectOpenHashMap<>(animations);
+            if (!NewConfiguration.INSTANCE.getRapidEnchanting()) {
+                removeMap.forEach((uuid, animationData) -> {
+                    Player player = animationData.getPlayer();
+                    if (!player.isOnline()) {
+                        animations.remove(uuid);
+                        return;
+                    }
+                    if (animationData.isStartEnchanting() && !animationData.isFinished()) {
+                        return;
+                    }
+
+                    if (!(Menu.find(player) instanceof MythicWellMenu)) {
+                        animations.remove(uuid);
+                    }
+                });
+            } else {
+                removeMap.forEach((uuid, animationData) -> {
+                    Player player = animationData.getPlayer();
+                    if (!player.isOnline() ||
+                            !(Menu.find(player) instanceof MythicWellMenu)) {
+                        animations.remove(uuid);
+                    }
+                });
+            }
+
+            for (AnimationData data : animations.values()) {
+                data.animationGlobalTick++;
+                Player player1 = data.getPlayer();
+                Menu menu = Menu.find(player1);
+
+                if (data.isFinished()) {
+                    Player player = player1;
+                    PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
+                    MythicColor foundColor = data.resolveColor(profile.getEnchantingItem());
+                    if (foundColor == null) {
+                        continue;
+                    }
+
+                    if (!Objects.equals(data.finishedColor, foundColor)) {
+                        for (Location location : animationLocations) {
+                            player.sendBlockChange(location, Material.STAINED_GLASS, foundColor.getColorByte());
+                        }
+                        data.finishedColor = foundColor;
+                    }
+                    continue;
+                }
+
+                if (data.isStartEnchanting()) {
+                    Player player = player1;
+                    PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
+                    MythicColor foundColor = data.resolveColor(profile.getEnchantingItem());
+                    if (foundColor == null) {
+                        continue;
+                    }
+                    handleEnchantingAnimation(data, player, foundColor, menu);
+                } else {
+                    if (data.animationTick % 4 != 0) {
+                        data.animationTick++;
+                        continue;
+                    }
+
+                    int realTick = (data.animationTick / 4) % 8;
+
+                    refreshMenu(menu, player1);
+
+                    if (data.animationTick > 0) {
+                        int prevIndex = (realTick - 1 + 8) % 8;
+                        data.player.sendBlockChange(animationLocations[prevIndex], Material.STAINED_GLASS, (byte) 0);
+                    }
+
+                    Location location = animationLocations[realTick];
+                    data.player.sendBlockChange(location, Material.STAINED_GLASS, data.color);
+                }
+                data.animationTick++;
+            }
+        }
+    }
+
+    private void handleEnchantingAnimation(AnimationData data, Player player, MythicColor foundColor, Menu menu) {
+        int tick = data.animationTick;
+        if (tick <= 11) {
+            byte[] colors = {14, 1, 4, 5, 11, 10, 6, 0};
+            byte currentColor = colors[tick % colors.length];
+
+            for (Location location : animationLocations) {
+                player.sendBlockChange(location, Material.STAINED_GLASS, currentColor);
+            }
+            if (tick % 3 == 0) {
+                player.playSound(player.getLocation(), Sound.NOTE_PLING, 1, 1.5F + (tick / 3) * 0.1F);
+                spawnParticles(player, "SPELL_MOB", foundColor);
+            }
+        } else if (tick <= 35) {
+            int rotationIndex = ((tick - 12) / 3) % 8;
+            sendStart(player);
+            player.sendBlockChange(animationLocations[rotationIndex], Material.STAINED_GLASS, foundColor.getColorByte());
+
+            if ((tick - 12) % 3 == 0) {
+                float pitch = 0.5F + ((tick - 12) / 3) * 0.15F;
+                player.playSound(player.getLocation(), Sound.NOTE_PIANO, 1, pitch);
+                spawnSpiralParticles(player, foundColor);
+            }
+        } else if (tick <= 59) {
+            int burstIndex = ((tick - 36) / 3) % 8;
+
+            for (int i = 0; i <= burstIndex; i++) {
+                player.sendBlockChange(animationLocations[i], Material.STAINED_GLASS, foundColor.getColorByte());
+            }
+
+            if ((tick - 36) % 3 == 0) {
+                player.playSound(player.getLocation(), Sound.NOTE_PLING, 1, 1.0F + burstIndex * 0.1F);
+                player.playSound(player.getLocation(), Sound.ORB_PICKUP, 0.5F, 2.0F);
+                spawnMagicParticles(player, foundColor);
+            }
+
+            if (tick == 59) {
+                player.playSound(player.getLocation(), Sound.LEVEL_UP, 1, 1.2F);
+                player.playSound(player.getLocation(), Sound.ENDERDRAGON_GROWL, 0.5F, 1.5F);
+                spawnFinalMagicParticles(player, foundColor);
+            }
+        } else {
+            if (!data.isEnd()) return;
+            if (!data.finished) {
+                data.finished = true;
+
+                for (Location location : animationLocations) {
+                    player.sendBlockChange(location, Material.STAINED_GLASS, foundColor.getColorByte());
+                }
+
+                data.finishedColor = foundColor;
+                player.playSound(player.getLocation(), Sound.LEVEL_UP, 1, 1.0F);
+                player.playSound(player.getLocation(), Sound.ORB_PICKUP, 1, 2.0F);
+                spawnFinalBurstParticles(player, foundColor);
+
+                refreshMenu(menu, player);
+
+            }
+            return;
+        }
+        // The animator already runs on the main thread; don't enqueue a task for every frame.
+        if (tick <= 11 || (tick - 12) % 3 == 0) refreshMenu(menu, player);
+    }
+
+    private void refreshMenu(Menu menu, Player player) {
+        if (menu instanceof MythicWellMenu && player.isOnline()
+                && Menu.find(player, player.getOpenInventory().getTopInventory()) == menu) {
+            menu.openMenu(player);
+        }
+    }
+
+    private void spawnParticles(Player player, String particleType, MythicColor color) {
+        Location center = player.getLocation().add(0, 1, 0);
+        int[] rgb = ParticleUtil.getColorFromMythicColor(color.getInternalName());
+        ParticleUtil.createMagicCircleParticles(player, center, 1.5, rgb[0], rgb[1], rgb[2]);
+        player.playSound(center, Sound.FIZZ, 0.5F, 1.5F);
+    }
+
+    private void spawnSpiralParticles(Player player, MythicColor color) {
+        Location center = player.getLocation().add(0, 1, 0);
+        int[] rgb = ParticleUtil.getColorFromMythicColor(color.getInternalName());
+
+        ParticleUtil.createSpiralParticles(player, center, rgb[0], rgb[1], rgb[2]);
+        player.playSound(player.getLocation(), Sound.PORTAL, 0.3F, 2.0F);
+    }
+
+    private void spawnMagicParticles(Player player, MythicColor color) {
+        Location center = player.getLocation().add(0, 1, 0);
+        int[] rgb = ParticleUtil.getColorFromMythicColor(color.getInternalName());
+
+        ParticleUtil.createMagicParticles(player, center, rgb[0], rgb[1], rgb[2]);
+        player.playSound(player.getLocation(), Sound.PORTAL, 0.3F, 1.5F);
+    }
+
+    private void spawnFinalMagicParticles(Player player, MythicColor color) {
+        Location center = player.getLocation().add(0, 1, 0);
+        int[] rgb = ParticleUtil.getColorFromMythicColor(color.getInternalName());
+
+        ParticleUtil.createSpiralParticles(player, center, rgb[0], rgb[1], rgb[2]);
+        player.playSound(player.getLocation(), Sound.FIREWORK_TWINKLE, 1.0F, 1.5F);
+    }
+
+
+    private void spawnFinalBurstParticles(Player player, MythicColor color) {
+        Location center = player.getLocation().add(0, 1, 0);
+        int[] rgb = ParticleUtil.getColorFromMythicColor(color.getInternalName());
+        ParticleUtil.createFinalBurstParticles(player, center, rgb[0], rgb[1], rgb[2]);
+        player.playSound(player.getLocation(), Sound.FIREWORK_LARGE_BLAST, 1.0F, 1.0F);
+        player.playSound(player.getLocation(), Sound.FIREWORK_TWINKLE, 1.0F, 1.5F);
+    }
+
+
+    public void sendReset(Player player) {
+        AnimationData data = animations.get(player.getUniqueId());
+        if (data != null) data.finishedColor = null;
+        for (Location location : animationLocations) {
+            Block block = location.getBlock();
+            player.sendBlockChange(location, block.getType(), block.getData());
+        }
+    }
+
+    public void sendStart(Player player) {
+        for (Location location : animationLocations) {
+            player.sendBlockChange(location, Material.STAINED_GLASS, (byte) 0);
+        }
+    }
+
+    @Data
+    public static class AnimationData {
+
+        private final Player player;
+        private int animationGlobalTick = 0;
+        private int animationTick = 0;
+        private byte color = (byte) 6;
+        private boolean startEnchanting = false;
+        private boolean end = true;
+        private boolean finished = false;
+        private String colorSource;
+        private MythicColor cachedColor;
+        private MythicColor finishedColor;
+
+        public MythicColor resolveColor(String source) {
+            if (!Objects.equals(colorSource, source)) {
+                String name = ItemUtil.getItemStringData(InventoryUtil.deserializeItemStack(source), "mythic_color");
+                cachedColor = null;
+                for (MythicColor candidate : MythicColor.values()) {
+                    if (candidate.getInternalName().equals(name)) { cachedColor = candidate; break; }
+                }
+                colorSource = source;
+            }
+            return cachedColor;
+        }
+
+        public void reset() {
+            animationTick = 0;
+            startEnchanting = false;
+            end = true;
+            finished = false;
+            colorSource = null;
+            cachedColor = null;
+            finishedColor = null;
+        }
+
+        public AnimationData(Player player) {
+            this.player = player;
+        }
+
+    }
+}

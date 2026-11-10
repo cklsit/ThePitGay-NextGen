@@ -1,4 +1,4 @@
-package net.mizukilab.pit.perk.type.streak.addon.uber
+package net.mizukilab.pit.perk.type.prestige
 
 import cn.charlotte.pit.ThePit
 import cn.charlotte.pit.data.PlayerProfile
@@ -10,10 +10,13 @@ import cn.charlotte.pit.perk.PerkType
 import com.google.common.util.concurrent.AtomicDouble
 import net.mizukilab.pit.enchantment.param.event.PlayerOnly
 import net.mizukilab.pit.getPitProfile
+import net.mizukilab.pit.item.type.UberDrop
+import net.mizukilab.pit.item.type.UberPlusDrop
 import net.mizukilab.pit.parm.listener.IAttackEntity
 import net.mizukilab.pit.parm.listener.IPlayerDamaged
 import net.mizukilab.pit.parm.listener.IPlayerKilledEntity
 import net.mizukilab.pit.parm.listener.ITickTask
+import net.mizukilab.pit.sendMessage
 import net.mizukilab.pit.util.PlayerUtil
 import net.mizukilab.pit.util.chat.CC
 import net.mizukilab.pit.util.chat.MessageType
@@ -26,6 +29,7 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
 import org.bukkit.event.entity.EntityRegainHealthEvent
+import org.bukkit.inventory.ItemStack
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
 import java.util.concurrent.atomic.AtomicBoolean
@@ -132,7 +136,7 @@ class UberSteakPlus : AbstractPerk(), MegaStreak, Listener, IPlayerKilledEntity,
                 MessageType.COMBAT,
                 "&c&l超级连杀! ${event.playerProfile.formattedNameWithRoman} &7激活了 ${this.displayName} &7!"
             )
-            Bukkit.getOnlinePlayers().forEach { it.playSound(it.location, Sound.ENTITY_WITHER_SPAWN, 0.8f, 1.5f) }
+            Bukkit.getOnlinePlayers().forEach { it.playSound(it.location, Sound.WITHER_SPAWN, 0.8f, 1.5f) }
         }
     }
 
@@ -166,7 +170,7 @@ class UberSteakPlus : AbstractPerk(), MegaStreak, Listener, IPlayerKilledEntity,
         }
 
         if (profile.streakKills >= 4000) {
-            PlayerUtil.addPotionEffect(myself, PotionEffect(PotionEffectType.NAUSEA, 100000, 0, false))
+            PlayerUtil.addPotionEffect(myself, PotionEffect(PotionEffectType.CONFUSION, 100000, 0, false))
         }
     }
 
@@ -227,9 +231,16 @@ class UberSteakPlus : AbstractPerk(), MegaStreak, Listener, IPlayerKilledEntity,
     override fun handle(enchantLevel: Int, player: Player) {
         if (!hasUberPlus(player)) return
         val profile = ThePit.getInstance().profileOperator.namedIOperator(player.name).profile()
-        if (profile.streakKills >= 5000) {
+        if (profile.streakKills >= 5000 && profile.streakKills < 6000) {
             PlayerUtil.damage(player, PlayerUtil.DamageType.TRUE, 2.0, false)
         }
+        if (profile.streakKills >= 6000) {
+            val itemStack = UberPlusDrop()
+            PlayerUtil.damage(player, PlayerUtil.DamageType.TRUE, player.maxHealth * 10, false)
+            player.sendMessage(CC.translate("&c谢幕!!!"))
+            player.inventory.addItem(itemStack.toItemStack())
+        }
+
     }
 
     override fun loopTick(enchantLevel: Int): Int {

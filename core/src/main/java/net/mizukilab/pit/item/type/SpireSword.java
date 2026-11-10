@@ -18,7 +18,7 @@ public class SpireSword extends AbstractPitItem {
 
     private Material material;
     public SpireSword() {
-        this(Material.WOODEN_SWORD);
+        this(Material.WOOD_SWORD);
     }
     public SpireSword(Material material) {
         this.material = material;

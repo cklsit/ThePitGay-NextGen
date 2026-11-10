@@ -1,8 +1,9 @@
 package net.mizukilab.pit.util;
 
-import org.bukkit.Color;
+import net.minecraft.server.v1_8_R3.*;
+import nya.Skip;
 import org.bukkit.Location;
-import org.bukkit.Particle;
+import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
@@ -10,15 +11,22 @@ import org.bukkit.util.Vector;
  * 粒子效果工具类
  * 用于神话之井附魔动画
  */
-
+@Skip
 public class ParticleUtil {
 
     /**
      * 发送基础粒子效果
      */
-    public static void spawnParticle(Player player, org.bukkit.Particle particle, Location location, 
+    public static void spawnParticle(Player player, EnumParticle particle, Location location, 
                                    int count, double offsetX, double offsetY, double offsetZ, double speed) {
-        player.spawnParticle(particle, location, count, offsetX, offsetY, offsetZ, speed);
+        PacketPlayOutWorldParticles packet = new PacketPlayOutWorldParticles(
+            particle, true,
+            (float) location.getX(), (float) location.getY(), (float) location.getZ(),
+            (float) offsetX, (float) offsetY, (float) offsetZ,
+            (float) speed, count
+        );
+        
+        ((CraftPlayer) player).getHandle().playerConnection.sendPacket(packet);
     }
 
     /**
@@ -58,7 +66,7 @@ public class ParticleUtil {
         }
         
         // 附魔台粒子效果
-        spawnParticle(player, Particle.ENCHANT, center, 10, 0.5, 0.5, 0.5, 0.1);
+        spawnParticle(player, EnumParticle.ENCHANTMENT_TABLE, center, 10, 0.5, 0.5, 0.5, 0.1);
     }
 
     /**
@@ -66,7 +74,7 @@ public class ParticleUtil {
      */
     public static void createFinalBurstParticles(Player player, Location center, int colorR, int colorG, int colorB) {
         // 温和的完成效果
-        spawnParticle(player, Particle.FIREWORK, center, 20, 1.0, 1.0, 1.0, 0.2);
+        spawnParticle(player, EnumParticle.FIREWORKS_SPARK, center, 20, 1.0, 1.0, 1.0, 0.2);
         
         // 彩色魔法粒子环
         for (int i = 0; i < 360; i += 10) {
@@ -83,7 +91,7 @@ public class ParticleUtil {
         // 上升的魔法光柱
         for (int i = 0; i < 15; i++) {
             Location pillarLocation = center.clone().add(0, i * 0.15, 0);
-            spawnParticle(player, Particle.ENCHANT, pillarLocation, 3, 0.2, 0.1, 0.2, 0.05);
+            spawnParticle(player, EnumParticle.ENCHANTMENT_TABLE, pillarLocation, 3, 0.2, 0.1, 0.2, 0.05);
         }
         
         // 魔法星尘效果
@@ -95,7 +103,7 @@ public class ParticleUtil {
             );
             
             Location stardustLocation = center.clone().add(direction);
-            spawnParticle(player, Particle.WITCH, stardustLocation, 1, 0.1, 0.1, 0.1, 0.02);
+            spawnParticle(player, EnumParticle.SPELL_WITCH, stardustLocation, 1, 0.1, 0.1, 0.1, 0.02);
         }
     }
 
@@ -108,8 +116,14 @@ public class ParticleUtil {
         float green = g / 255.0f;
         float blue = b / 255.0f;
         
-        player.spawnParticle(Particle.DUST, location, 1,
-                new Particle.DustOptions(Color.fromRGB(r, g, b), 1.0f));
+        PacketPlayOutWorldParticles packet = new PacketPlayOutWorldParticles(
+            EnumParticle.REDSTONE, true,
+            (float) location.getX(), (float) location.getY(), (float) location.getZ(),
+            red, green, blue,
+            1.0f, 0
+        );
+        
+        ((CraftPlayer) player).getHandle().playerConnection.sendPacket(packet);
     }
 
     /**
@@ -133,7 +147,7 @@ public class ParticleUtil {
             double z = center.getZ() + Math.sin(angle) * (radius * 0.5);
             
             Location innerCircleLocation = new Location(center.getWorld(), x, center.getY(), z);
-            spawnParticle(player, Particle.ENCHANT, innerCircleLocation, 1, 0, 0, 0, 0);
+            spawnParticle(player, EnumParticle.ENCHANTMENT_TABLE, innerCircleLocation, 1, 0, 0, 0, 0);
         }
         
         // 魔法符文（星形）
@@ -143,7 +157,7 @@ public class ParticleUtil {
             double z = center.getZ() + Math.sin(angle) * (radius * 0.8);
             
             Location runeLocation = new Location(center.getWorld(), x, center.getY() + 0.1, z);
-            spawnParticle(player, Particle.WITCH, runeLocation, 3, 0.1, 0.1, 0.1, 0.05);
+            spawnParticle(player, EnumParticle.SPELL_WITCH, runeLocation, 3, 0.1, 0.1, 0.1, 0.05);
         }
     }
 

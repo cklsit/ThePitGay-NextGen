@@ -27,7 +27,7 @@ public class GoldPickaxePerk extends AbstractPerk {
 
     @Override
     public Material getIcon() {
-        return Material.GOLDEN_PICKAXE;
+        return Material.GOLD_PICKAXE;
     }
 
     @Override

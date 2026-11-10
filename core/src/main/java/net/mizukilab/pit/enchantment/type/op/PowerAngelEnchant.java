@@ -7,6 +7,7 @@ import net.mizukilab.pit.enchantment.rarity.EnchantmentRarity;
 import net.mizukilab.pit.parm.listener.IPlayerShootEntity;
 import net.mizukilab.pit.util.chat.RomanUtil;
 import net.mizukilab.pit.util.cooldown.Cooldown;
+import nya.Skip;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
@@ -18,7 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @Author: Misoryan
  * @Created_In: 2021/4/9 20:16
  */
-
+@Skip
 @BowOnly
 public class PowerAngelEnchant extends AbstractEnchantment implements IPlayerShootEntity {
 
@@ -55,7 +56,7 @@ public class PowerAngelEnchant extends AbstractEnchantment implements IPlayerSho
     @Override
     @net.mizukilab.pit.parm.type.BowOnly
     public void handleShootEntity(int enchantLevel, Player attacker, Entity target, double damage, AtomicDouble finalDamage, AtomicDouble boostDamage, AtomicBoolean cancel) {
-        attacker.removePotionEffect(PotionEffectType.RESISTANCE);
-        attacker.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 20 * 4, enchantLevel - 1), false);
+        attacker.removePotionEffect(PotionEffectType.DAMAGE_RESISTANCE);
+        attacker.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 20 * 4, enchantLevel - 1), false);
     }
 }

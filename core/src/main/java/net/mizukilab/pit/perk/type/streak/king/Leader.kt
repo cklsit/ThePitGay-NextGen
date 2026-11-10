@@ -20,7 +20,7 @@ class Leader : AbstractPerk(), Listener {
     }
 
     override fun getIcon(): Material {
-        return Material.GOLDEN_HELMET
+        return Material.GOLD_HELMET
     }
 
     override fun requireCoins(): Double {

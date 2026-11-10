@@ -12,7 +12,5 @@ object Loader {
             setApi(PitInternalImpl)
         }
         PitHook.init()
-        // 启动已合并进主插件的 ThePitAddon-MythicLand 扩展
-        cn.irina.thepitaddon.Main().enable(ThePit.getInstance())
     }
 }

@@ -19,9 +19,12 @@ import org.bukkit.inventory.ItemStack;
  * @Date: 2021/1/30 17:20
  */
 public class ItemButton extends DisplayButton {
+    private final CarePackageEvent.ChestData session;
 
     public ItemButton(ItemStack itemStack) {
         super(itemStack, true);
+        INormalEvent active = ThePit.getInstance().getEventFactory().getActiveNormalEvent();
+        session = active instanceof CarePackageEvent care ? care.getChestData() : null;
     }
 
     @Override
@@ -29,7 +32,7 @@ public class ItemButton extends DisplayButton {
         INormalEvent activeNormalEvent = ThePit.getInstance().getEventFactory().getActiveNormalEvent();
         if (activeNormalEvent instanceof CarePackageEvent event) {
             CarePackageEvent.ChestData chestData = event.getChestData();
-            if (chestData == null) {
+            if (chestData == null || chestData != session || chestData.getNum() > 0) {
                 return;
             }
 
@@ -38,7 +41,17 @@ public class ItemButton extends DisplayButton {
             }
 
             if (chestData.getRewarded().contains(player.getUniqueId())) {
-                player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1, 1);
+                player.playSound(player.getLocation(), Sound.ENDERMAN_TELEPORT, 1, 1);
+                return;
+            }
+            PlayerProfile loaded = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
+            if (!loaded.isLoaded() || loaded.isTempInvUsing()) return;
+            ItemStack candidate = PackageMenu.getItems().get(slot);
+            if (candidate == null) return;
+            String kind = ItemUtil.getInternalName(candidate);
+            if (!"xp_reward".equals(kind) && !"coin_reward".equals(kind) && !"renown_reward".equals(kind)
+                    && player.getInventory().firstEmpty() < 0) {
+                player.sendMessage(CC.translate("&c请先腾出一个背包空位。"));
                 return;
             }
             ItemStack itemStack = PackageMenu.getItems().remove(slot);
@@ -58,7 +71,7 @@ public class ItemButton extends DisplayButton {
                     player.getInventory().addItem(itemStack);
                     CC.boardCast(MessageType.EVENT, "&6&l空投! " + profile.getFormattedName() + "&7 从空投箱中找到了 " + itemStack.getItemMeta().getDisplayName());
                 }
-                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
+                player.playSound(player.getLocation(), Sound.NOTE_PLING, 1, 1);
                 chestData.getRewarded().add(player.getUniqueId());
             }
             if (PackageMenu.getItems().isEmpty()) {

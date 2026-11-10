@@ -5,6 +5,7 @@ import cn.charlotte.pit.data.PlayerProfile
 import cn.charlotte.pit.data.TradeData
 import com.mongodb.client.model.Filters
 import dev.rollczi.litecommands.annotations.argument.Arg
+import dev.rollczi.litecommands.annotations.argument.Key
 import dev.rollczi.litecommands.annotations.async.Async
 import dev.rollczi.litecommands.annotations.command.Command
 import dev.rollczi.litecommands.annotations.context.Context
@@ -18,12 +19,11 @@ import net.kyori.adventure.text.event.ClickEvent
 import net.mizukilab.pit.PitHook
 import net.mizukilab.pit.command.handler.HandHasItem
 import net.mizukilab.pit.events.impl.QuickMathEvent
+import net.mizukilab.pit.handlers.RebootRunnable.RebootTask
 import net.mizukilab.pit.item.AbstractPitItem
 import net.mizukilab.pit.item.MythicColor
 import net.mizukilab.pit.medal.impl.challenge.hidden.KaboomMedal
-import net.mizukilab.pit.runnable.RebootRunnable.RebootTask
 import net.mizukilab.pit.sendMessage
-import net.mizukilab.pit.util.Log
 import net.mizukilab.pit.util.MythicUtil
 import net.mizukilab.pit.util.PlusPlayer
 import net.mizukilab.pit.util.Utils
@@ -49,14 +49,9 @@ import kotlin.math.min
 @Command(name = "pit")
 @Permission("pit.admin")
 class PitAdminCommands {
-    @Execute(name = "dbg")
-    fun dbg(@Context player: Player){
-        Log.log = !Log.log;
-        player.sendMessage("done")
-    }
     @Execute(name = "switchMap")
     @Shortcut("swm")
-    fun switchMap(@Context player: Player, @OptionalArg("cursor") cursor: Integer) {
+    fun switchMap(@Context player: Player, @OptionalArg("cursor") @Key("pit.map-id") cursor: Int?) {
         player.sendMessage("成功切换")
         var mapSelector = ThePit.getInstance().mapSelector
         if (cursor == null) {
@@ -68,9 +63,9 @@ class PitAdminCommands {
 
     @Execute(name = "lookupAndSwitchMap")
     @Shortcut("lookupSWM")
-    fun lookupMap(@Context player: Player, @OptionalArg("cursorName") cursor: String) {
+    fun lookupMap(@Context player: Player, @OptionalArg("cursorName") @Key("pit.map-name") cursor: String?) {
         var mapSelector = ThePit.getInstance().mapSelector
-        if (cursor == null) {
+        if (cursor != null) {
             var cursorInt: Int = -1;
             ThePit.getInstance().configManager.pitConfigs.values.forEach {
                 if (it.worldName.equals(cursor)) {
@@ -90,7 +85,7 @@ class PitAdminCommands {
     @Execute(name = "createEquation")
     @Shortcut("eq")
     fun eqEvent(@Context player: Player, @Arg("eqQuest") eq: String, @Arg("eqAns") ans: String) {
-        ThePit.getApi().openEvent(QuickMathEvent(eq, ans), null)
+        ThePit.api.openEvent(QuickMathEvent(eq, ans), null)
     }
 
     @Execute(name = "giveItemInHand")
@@ -193,6 +188,7 @@ class PitAdminCommands {
         ThePit.getInstance().customEntityNPCFactory.reload()
         return CC.translate("&a成功设置寄存所NPC位置!")
     }
+
     @Execute(name = "mail")
     @Async
     fun setMailLocation(@Context player: Player): String {
@@ -265,7 +261,7 @@ class PitAdminCommands {
 
     @Execute(name = "debug")
     @Async
-    fun debug(@Context player: Player, @Arg("type") type: String): String {
+    fun debug(@Context player: Player, @Arg("type") @Key("pit.debug") type: String): String {
         val pitConfig = ThePit.getInstance().pitConfig
         if (type == "infNpc") {
             pitConfig.infinityNpcLocation = player.location
@@ -349,7 +345,7 @@ class PitAdminCommands {
     }
 
     @Execute(name = "pitLoc")
-    fun setPitLoc(@Context player: Player, @Arg("type") type: String): String {
+    fun setPitLoc(@Context player: Player, @Arg("type") @Key("pit.corner") type: String): String {
         if (type.equals("a", ignoreCase = true)) {
             ThePit.getInstance().pitConfig.pitLocA = player.location
         } else if (type.equals("b", ignoreCase = true)) {
@@ -373,7 +369,7 @@ class PitAdminCommands {
     @Async
     fun setTableNpc(@Context player: Player): String {
         ThePit.getInstance()
-            .pitConfig.enchantLocation = player.getTargetBlock(setOf(Material.ENCHANTING_TABLE), 100).location
+            .pitConfig.enchantLocation = player.getTargetBlock(setOf(Material.ENCHANTMENT_TABLE), 100).location
         ThePit.getInstance().pitConfig.save()
         return CC.translate("&a成功设置附魔方块位置: ${ThePit.getInstance().pitConfig.enchantLocation}")
     }
@@ -465,8 +461,8 @@ class PitAdminCommands {
 
     @Execute(name = "event")
     @Shortcut("event")
-    fun event(@Context player: Player, @Arg("action") /*todo*/action: String): String? {
-        val success = ThePit.getApi().openEvent(player, action)
+    fun event(@Context player: Player, @Arg("action") @Key("pit.event") action: String): String? {
+        val success = ThePit.api.openEvent(player, action)
         return if (success) {
             CC.translate("&a成功!")
         } else {
@@ -475,7 +471,7 @@ class PitAdminCommands {
     }
 
     @Execute(name = "testSound")
-    fun testSound(@Context player: Player, @Arg("sound") sound: String) {
+    fun testSound(@Context player: Player, @Arg("sound") @Key("pit.sound") sound: String) {
         ThePit.getInstance().soundFactory
             .playSound(sound, player)
     }
@@ -485,9 +481,9 @@ class PitAdminCommands {
     fun changeLives(@Context player: Player, @Arg("lives") lives: Int) {
         try {
             val stack = player.itemInHand
-            player.inventory.setItemInMainHand(MythicUtil.getMythicItem(stack).also {
-                MythicUtil.setLive(it, lives)
-            }.toItemStack())
+            player.itemInHand = MythicUtil.getMythicItem(stack).also {
+                it.live = lives
+            }.toItemStack()
         } catch (ignored: Exception) {
             player.sendMessage("Error")
         }
@@ -498,10 +494,10 @@ class PitAdminCommands {
     fun nolive(@Context player: Player) {
         try {
             val stack = player.itemInHand
-            player.inventory.setItemInMainHand(MythicUtil.getMythicItem(stack).also {
-                MythicUtil.setLive(it, 0)
-                MythicUtil.setMaxLive(it, 0)
-            }.toItemStack())
+            player.itemInHand = MythicUtil.getMythicItem(stack).also {
+                it.live = 0
+                it.maxLive = 0
+            }.toItemStack()
         } catch (ignored: Exception) {
             player.sendMessage("Error")
         }
@@ -515,12 +511,12 @@ class PitAdminCommands {
 
     @Execute(name = "changeItemInHand color")
     @HandHasItem(mythic = true)
-    fun changeColor(@Context player: Player, @Arg("color") color: String) {
+    fun changeColor(@Context player: Player, @Arg("color") @Key("pit.color") color: String) {
         try {
             val stack = player.itemInHand
-            player.inventory.setItemInMainHand(MythicUtil.getMythicItem(stack).also {
-                MythicUtil.setColor(it, MythicColor.valueOf(color.uppercase(Locale.getDefault())))
-            }.toItemStack())
+            player.itemInHand = MythicUtil.getMythicItem(stack).also {
+                it.color = MythicColor.valueOf(color.uppercase(Locale.getDefault()))
+            }.toItemStack()
         } catch (ignored: Exception) {
             player.sendMessage("Error")
         }
@@ -531,9 +527,9 @@ class PitAdminCommands {
     fun randomUUID(@Context player: Player) {
         try {
             val stack = player.itemInHand
-            player.inventory.setItemInMainHand(MythicUtil.getMythicItem(stack).also {
-                MythicUtil.setUuid(it, UUID.randomUUID())
-            }.toItemStack())
+            player.itemInHand = MythicUtil.getMythicItem(stack).also {
+                it.uuid = UUID.randomUUID()
+            }.toItemStack()
         } catch (ignored: Exception) {
             player.sendMessage("Error")
         }
@@ -544,9 +540,9 @@ class PitAdminCommands {
     fun uuid(@Context player: Player, @Arg("uuid") uuid: String) {
         try {
             val stack = player.itemInHand
-            player.inventory.setItemInMainHand(MythicUtil.getMythicItem(stack).also {
-                MythicUtil.setUuid(it, UUID.fromString(uuid))
-            }.toItemStack())
+            player.itemInHand = MythicUtil.getMythicItem(stack).also {
+                it.uuid = UUID.fromString(uuid)
+            }.toItemStack()
         } catch (ignored: Exception) {
             player.sendMessage("Error")
         }
@@ -557,9 +553,9 @@ class PitAdminCommands {
     fun rstEnch(@Context player: Player) {
         try {
             val stack = player.itemInHand
-            player.inventory.setItemInMainHand(MythicUtil.getMythicItem(stack).also {
+            player.itemInHand = MythicUtil.getMythicItem(stack).also {
                 it.resetEnch()
-            }.toItemStack())
+            }.toItemStack()
         } catch (ignored: Exception) {
             player.sendMessage("Error")
         }
@@ -567,10 +563,11 @@ class PitAdminCommands {
 
     @Execute(name = "changeItemInHand ench")
     @HandHasItem(mythic = true)
-    fun ench(@Context player: Player, @Arg("enchName") ench: String, @Arg("level") level: String) {
+    fun ench(@Context player: Player, @Arg("enchName") @Key("pit.enchants") ench: String,
+             @Arg("level") @Key("pit.enchant-level") level: String) {
         try {
             val stack = player.itemInHand
-            player.inventory.setItemInMainHand(MythicUtil.getMythicItem(stack).also {
+            player.itemInHand = MythicUtil.getMythicItem(stack).also {
                 val enchObj = ThePit.getInstance().enchantmentFactor.enchantmentMap.get(ench)
                 val levelInt = Integer.valueOf(level)
                 if (levelInt == 0) {
@@ -578,7 +575,7 @@ class PitAdminCommands {
                 } else {
                     it.enchantments[enchObj] = enchObj?.let { it1 -> min(it1.maxEnchantLevel, levelInt) }
                 }
-            }.toItemStack())
+            }.toItemStack()
         } catch (ignored: Exception) {
             player.sendMessage("Error")
         }
@@ -589,9 +586,9 @@ class PitAdminCommands {
     fun changeMaxLive(@Context player: Player, @Arg("maxLive") maxLive: Int) {
         try {
             val stack = player.itemInHand
-            player.inventory.setItemInMainHand(MythicUtil.getMythicItem(stack).also {
-                MythicUtil.setMaxLive(it, maxLive)
-            }.toItemStack())
+            player.itemInHand = MythicUtil.getMythicItem(stack).also {
+                it.maxLive = maxLive
+            }.toItemStack()
         } catch (ignored: Exception) {
             player.sendMessage("Error")
         }
@@ -643,18 +640,15 @@ class PitAdminCommands {
     }
 
     @Execute(name = "flushMythicItems")
-    fun flushPlayerItem(@Context player: Player, @Arg("player_name") playerName: String) {
+    fun flushPlayerItem(@Context player: Player, @Arg("player_name") @Key("pit.players") playerName: String) {
         try {
-            val player1 = Bukkit.getPlayer(playerName) ?: run {
-                player.sendMessage("玩家不在线")
-                return
-            }
+            val player1 = Bukkit.getPlayer(playerName)
             val inventory = player1.inventory
             inventory.forEachIndexed { index, itemStack ->
                 val mmItem = ThePit.getInstance().itemFactory.getItemFromStack(itemStack)
                 if (mmItem != null) {
-                    inventory.setItem(index, null)
-                    mmItem.toItemStack()?.let { inventory.setItem(index, it) }
+                    inventory.remove(index)
+                    inventory.setItem(index, mmItem.toItemStack())
                 }
             }
             player1.updateInventory()
@@ -665,8 +659,7 @@ class PitAdminCommands {
     }
 
     @Execute(name = "give")
-
-    fun give(@Context player: Player, @Arg("nbtName") nbtName: String, @Arg("amount") amount: String) {
+    fun give(@Context player: Player, @Arg("nbtName") @Key("pit.items") nbtName: String, @Arg("amount") amount: String) {
         try {
             val clazz = ThePit.getInstance().itemFactor.itemMap[nbtName]
             for (i in 0..Integer.valueOf(amount)) {
@@ -682,12 +675,12 @@ class PitAdminCommands {
 
     @Execute(name = "changeItemInHand tier")
     @HandHasItem(mythic = true)
-    fun changeTier(@Context player: Player, @Arg("tier") tier: Int) {
+    fun changeTier(@Context player: Player, @Arg("tier") @Key("pit.tier") tier: Int) {
         try {
             val stack = player.itemInHand
-            player.inventory.setItemInMainHand(MythicUtil.getMythicItem(stack).also {
-                MythicUtil.setTier(it, tier)
-            }.toItemStack())
+            player.itemInHand = MythicUtil.getMythicItem(stack).also {
+                it.tier = tier
+            }.toItemStack()
         } catch (ignored: Exception) {
             player.sendMessage("Error")
         }
@@ -695,7 +688,11 @@ class PitAdminCommands {
 
     @Execute(name = "trade")
     @Async
-    fun trade(@Context player: Player, @Arg("target") target: String) {
+    fun trade(@Context player: Player, @Arg("target") @Key("pit.players") target: String) {
+        if (ThePit.getInstance().eventFactory.activeEpicEvent != null) {
+            player.sendMessage("§cCould not create a trade to $target because there is a running epic event")
+            return;
+        }
         val profile = ThePit.getInstance().profileOperator
             .namedIOperator(target).profile()
         if (profile == null) {
@@ -704,13 +701,13 @@ class PitAdminCommands {
         }
         val tradeA = ThePit.getInstance()
             .mongoDB
-            .trades
-            .find("playerA", profile.uuid)
+            .tradeCollection
+            .find(Filters.eq("playerA", profile.uuid))
 
         val tradeB = ThePit.getInstance()
             .mongoDB
-            .trades
-            .find("playerB", profile.uuid)
+            .tradeCollection
+            .find(Filters.eq("playerB", profile.uuid))
 
         val data: MutableList<TradeData> = ArrayList()
         for (tradeData in tradeA) {
@@ -727,7 +724,7 @@ class PitAdminCommands {
     fun change(
         @Context player: Player,
         @Arg("target") target: Player,
-        @Arg("type") type: String,
+        @Arg("type") @Key("pit.stat") type: String,
         @Arg("value") amount: Int,
         @Flag("save") save: Boolean
     ) {
@@ -773,11 +770,11 @@ class PitAdminCommands {
     }
 
     @Execute(name = "internalName")
-    fun internalName(@Context player: Player, @Arg("name") internalName: String) {
+    fun internalName(@Context player: Player, @Arg("name") @Key("pit.items") internalName: String) {
         try {
-            player.inventory.setItemInMainHand(ItemBuilder(player.itemInHand)
+            player.itemInHand = ItemBuilder(player.itemInHand)
                 .internalName(internalName)
-                .build())
+                .build()
             player.sendMessage("§a已修改手持物品的内部名为: §f$internalName")
         } catch (ignored: java.lang.Exception) {
             player.sendMessage("Error")
@@ -822,7 +819,7 @@ class PitAdminCommands {
     }
 
     @Execute(name = "saveAll")
-    fun saveAll(@Context player: Player, @Arg("announce") shouldAnnounce: String) {
+    fun saveAll(@Context player: Player, @Arg("announce") @Key("pit.boolean") shouldAnnounce: String) {
         try {
             PlayerProfile.saveAllSync(!shouldAnnounce.toBoolean());
         } catch (t: Throwable) {

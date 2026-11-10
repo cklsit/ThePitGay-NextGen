@@ -46,16 +46,20 @@ class LuckyChestplate : IMythicItem(), Listener {
     override fun loadFromItemStack(item: ItemStack?) {
         item ?: return
 
-        if (!cn.charlotte.pit.compat.item.ItemData.hasAny(item)) return
+        val nmsItem = Utils.toNMStackQuick(item)
+        val tag = nmsItem?.tag ?: return
+        val extra = tag.getCompound("extra") ?: return
 
         this.uuid = ItemUtil.getUUIDObj(item);
-        this.maxLive = (cn.charlotte.pit.compat.item.ItemData.getInt(item, "maxLive") ?: 0)
-        this.live = (cn.charlotte.pit.compat.item.ItemData.getInt(item, "live") ?: 0)
+        this.maxLive = extra.getInt("maxLive")
+        this.live = extra.getInt("live")
+        loadNameData(item, extra)
     }
 
     override fun toItemStack(): ItemStack {
         return ItemBuilder(itemDisplayMaterial)
-            .name(itemDisplayName)
+            .name(customName ?: itemDisplayName)
+            .customName(customName)
             .lore(
                 "&7生命: " + (if (live / (maxLive * 1.0) <= 0.6) if (live / (maxLive * 1.0) <= 0.3) "&c" else "&e" else "&a") + live + "&7/" + maxLive,
                 "",
@@ -78,6 +82,12 @@ class LuckyChestplate : IMythicItem(), Listener {
             .canDrop(false)
             .canTrade(true)
             .shiny()
+            .also {
+                when (forceCanTrade) {
+                    0 -> it.forceCanTrade(false)
+                    1 -> it.forceCanTrade(true)
+                }
+            }
             .build()
 
     }
@@ -112,7 +122,7 @@ class LuckyChestplate : IMythicItem(), Listener {
                 "lucky_chestplate",
                 FixedMetadataValue(ThePit.getInstance(), System.currentTimeMillis() + 1000 * 30)
             )
-            player.playSound(player.location, Sound.BLOCK_ANVIL_USE, 1f, 1f)
+            player.playSound(player.location, Sound.ANVIL_USE, 1f, 1f)
             player.sendMessage("您抵御了一次必中伤害")
         }
     }

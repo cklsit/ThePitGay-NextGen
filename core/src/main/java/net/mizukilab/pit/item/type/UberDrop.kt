@@ -28,7 +28,7 @@ class UberDrop : AbstractPitItem(), Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     fun onInteract(event: BlockPlaceEvent) {
         val itemInHand = event.itemInHand ?: return
-        if ("uber_drop" == ItemUtil.getInternalName(itemInHand)) {
+        if ("uber_drop" == ItemUtil.getInternalName(itemInHand) && !UberPlusDrop.isPlusDrop(itemInHand)) {
             event.isCancelled = true
 
             val player = event.player
@@ -58,7 +58,7 @@ class UberDrop : AbstractPitItem(), Listener {
             var ticks = 0.3f
             object : BukkitRunnable() {
                 override fun run() {
-                    player.playSound(player.location, Sound.ENTITY_CHICKEN_EGG, 1f, ticks)
+                    player.playSound(player.location, Sound.CHICKEN_EGG_POP, 1f, ticks)
                     ticks += 0.1f
                     if (ticks >= 2.0) {
                         cancel()

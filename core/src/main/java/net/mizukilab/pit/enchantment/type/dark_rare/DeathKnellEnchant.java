@@ -12,6 +12,8 @@ import net.mizukilab.pit.parm.type.BowOnly;
 import net.mizukilab.pit.util.cooldown.Cooldown;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import real.nanoneko.register.IMagicLicense;
+
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @AutoRegister

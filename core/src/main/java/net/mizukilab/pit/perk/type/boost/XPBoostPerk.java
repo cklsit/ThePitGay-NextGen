@@ -35,7 +35,7 @@ public class XPBoostPerk extends AbstractPerk implements IPlayerKilledEntity, IP
 
     @Override
     public Material getIcon() {
-        return Material.INK_SAC;
+        return Material.getMaterial(351);
     }
 
     @Override

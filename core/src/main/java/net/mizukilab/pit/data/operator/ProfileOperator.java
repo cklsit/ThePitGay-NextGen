@@ -7,6 +7,7 @@ import cn.charlotte.pit.data.operator.IProfilerOperator;
 import com.google.common.annotations.Beta;
 import io.irina.backports.utils.SWMRHashTable;
 import net.mizukilab.pit.util.Utils;
+import nya.Skip;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -18,7 +19,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
-
+@Skip
 public class ProfileOperator implements IProfilerOperator {
 
     ThePit instance;
@@ -173,7 +174,9 @@ public class ProfileOperator implements IProfilerOperator {
             }
         }
     }
+    public final static int OPCODE_BUSY = -2;
 
+    public final static int OPCODE_FREE = -1;
     public void tick() {
         operators.removeIf((uuid, operator) -> {
             if (operator == null) {
@@ -181,12 +184,13 @@ public class ProfileOperator implements IProfilerOperator {
             }
             UUID uniqueId = operator.getUniqueId();
             Player player = Bukkit.getPlayer(uniqueId);
-            operator.tick();
+
             if (player == null || !player.isOnline()) {
-                if(operator.throwable != null){
+                operator.tick();
+                if (operator.throwable != null && !operator.isLoaded() && !operator.hasAnyOperation()) {
                     return true;
                 }
-                if (operator.profile.code == -2) {
+                if (operator.profile.code == OPCODE_BUSY) {
                     return false;
                 }
                 boolean b = !operator.hasAnyOperation();
@@ -200,16 +204,17 @@ public class ProfileOperator implements IProfilerOperator {
                             operator.fireExit = true;
                         }
                     } else {
-                        operator.heartBeat();
+                        operator.heartBeat(false);
                     }
                 }
 
                 return lastFireExit;
             } else {
+                operator.tick();
                 if (operator.fireExit) {
                     operator.fireExit = false;
                 } else {
-                    operator.heartBeat();
+                    operator.heartBeat(false);
                 }
             }
             return false;
@@ -232,19 +237,29 @@ public class ProfileOperator implements IProfilerOperator {
     }
 
     public void doSaveProfiles() {
+        if (!Bukkit.isPrimaryThread()) {
+            Bukkit.getScheduler().runTask(instance, this::doSaveProfiles);
+            return;
+        }
         operators.forEachValue(operator -> {
             Player lastBoundPlayer = operator.lastBoundPlayer;
-            operator.pendingUntilLoadedPromise(i -> {
+            if (!operator.isLoaded() || lastBoundPlayer == null || !lastBoundPlayer.isOnline()
+                    || !operator.profile().isLogin()) return;
+            operator.profile().setInventory(net.mizukilab.pit.util.inventory.InventoryUtil.playerInventoryFromPlayer(lastBoundPlayer));
+            operator.pendingIfLoaded(i -> {
                 if (lastBoundPlayer != null && lastBoundPlayer.isOnline() && !(operator.quitFlag || operator.fireExit)) {
-                    PlayerProfile playerProfile = i.disallowUnsafe();
-                    playerProfile.save(lastBoundPlayer);
+                    if (i.disallow() != i) {
+                        return;
+                    }
+                    try {
+                        // Inventory was captured on the server thread above.
+                        i.save(null);
+                    } finally {
+                        i.allow();
+                    }
                 }
-            }).promise(() -> {
-                operator.profile().allow();
             });
-
         });
-        randomGC();
 
     }
 
@@ -273,32 +288,6 @@ public class ProfileOperator implements IProfilerOperator {
     @Override
     public void forEach(Consumer<IOperator> function) {
         this.operators.values().forEach(function);
-    }
-
-    public void randomGC() {
-        if (Bukkit.getOnlinePlayers().size() <= 2) {
-            return;
-        }
-        Collection<PackedOperator> values = operators.values();
-        if (values.size() < 2) {
-            return;
-        }
-        int randomNum = ThreadLocalRandom.current().nextInt(values.size() - 2) + 1;
-
-        Iterator<PackedOperator> iterator = values.iterator();
-        PackedOperator operator = null;
-        for (int i = 0; i < randomNum; i++) {
-            operator = iterator.next();
-        }
-        if (operator != null) {
-            Player lastBoundPlayer = operator.lastBoundPlayer;
-            PackedOperator finalOperator = operator;
-            operator.pendingUntilLoaded(i -> {
-                if (lastBoundPlayer != null && lastBoundPlayer.isOnline() && !(finalOperator.quitFlag || finalOperator.fireExit)) {
-                    PlayerProfile.gcBackups(i.gcBackupIterators(), i, false);
-                }
-            });
-        }
     }
 
     public void wipe() {

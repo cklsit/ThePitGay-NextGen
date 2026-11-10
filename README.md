@@ -1,70 +1,55 @@
-# ThePitUltimate
+# ThePitGay-NextGen
 
-![Java 21](https://img.shields.io/badge/Java-21-orange)
-![Minecraft 1.8.8](https://img.shields.io/badge/Minecraft-1.8.8-brightgreen)
-![Gradle](https://img.shields.io/badge/Build-Gradle-blue)
+## What is ThePitGay-NextGen and why should I use it?
 
-一个基于 Bukkit/Spigot 1.8.8 服务端的 ThePit 小游戏插件。
+ThePitGay-NextGen is a maintenance fork of [ThePitGay](https://github.com/Patcher0/ThePitGay), continuing the ThePitStudy / ThePitPremium codebase with core fixes, plugin compatibility improvements, and performance optimizations.
 
-## 环境要求
+* Configurable gameplay and menus
+* Compatibility fixes for ThePitAddon, ThePitRepairExTend, and NPCView
+* Improved item handling, trading, and player data persistence
+* Reduced repeated work in music playback, enchantment animations, and scoreboards
 
-| 项目   | 要求                                          |
-|------|---------------------------------------------|
-| Java | JDK 21                                      |
-| 服务端  | Bukkit / Spigot / Paper / PandaSpigot 1.8.8 |
-| 必需依赖 | LuckPerms、ProtocolLib                       |
-| 可选依赖 | PlayerPoints、WorldEdit、FastAsyncWorldEdit   |
+Builds are available on [GitHub Releases](https://github.com/ImMengXin0/ThePitGay-NextGen/releases/latest). See the [changelog](CHANGELOG.md) for the accumulated fixes.
 
-首次启动时插件会通过运行时注入下载部分第三方库，请确保服务器能访问 Maven Central。
+To update, stop the server, replace the existing core with `ThePitGay-V.jar`, and restart fully. Keep your existing configuration and player data, and load only one copy of the core.
 
-## 构建
+## Features
 
-```bash
-# Windows
-./gradlew.bat --no-daemon clean build
-# Linux / macOS
-./gradlew --no-daemon clean build
-```
+* Unique equipment UUIDs and persistent custom item names
+* Trade session validation and pending item returns
+* Enchantment table viewing with membership-based privacy controls
+* Command completion, menu, scoreboard, and TAB improvements
+* A complete Angel armor set
+* Ten built-in humanoid NPC skins featuring Honkai: Star Rail characters
+* Embedded MythicNPCLib and MythicFramework Core/Bukkit; core NPCs work without Citizens
 
-产物位于 `core/build/libs/` 下，与前置依赖一并放入服务端 `plugins/` 目录即可。
+Old default NPC skins migrate automatically, while custom skin configurations are preserved. Villager and silverfish NPCs retain their original entity models.
 
-> 注意：`base/build/libs/` 下的 jar 是基础模块，不是插件入口。当前构建默认带有 `-dev` 后缀，不影响运行。
+See the [NPC migration notes](docs/MYTHIC-NPC-MIGRATION.md) for embedded-library details and extension compatibility. The older NPCView plugin independently requires Citizens and must be updated or removed when uninstalling Citizens.
 
-## 插件功能
+### Performance
 
-- 完整的神话物品与附魔系统（重要）
-- 丰富的连杀与事件系统（重要）
-- 诸多玩法NPC与菜单系统
-- 玩家排行榜与计分板系统
-- 可自定义的Tab列表与音效系统
+This fork reduces repeated item parsing, shares common scoreboard calculations, avoids unnecessary enchantment menu refreshes, and releases inactive music and NPC tasks. The current core and embedded-framework build passed 482 automated tests, with one legacy Addon test skipped because its retired class is absent from the supplied Addon build. Live-server CPU, memory, and TPS improvements have not been benchmarked.
 
-## 目录结构
+### Logging and Rollback
 
-```
-.
-├── base/                  # 基础模块、公共数据结构、Bukkit 入口、运行时依赖加载
-├── core/                  # 玩法主体：命令、事件、菜单、物品、附魔、监听器
-├── gradle/                # Gradle version catalog 与 wrapper 配置
-├── libs/                  # 本地编译依赖
-└── .github/workflows/     # 自动构建与 Release 工作流
-```
+Use `/rollback` to inspect and restore player inventory backups. Trade fixes improve session validation and item returns, but do not provide cross-player database transactions or automatic recovery from a forced shutdown.
 
-## 项目背景
+### Developer API
 
-本项目基于 [Patcher0/ThePitUltimate](https://github.com/Patcher0/ThePitUltimate)
-继续维护，该仓库为 [ThePitCommunity/ThePitPremiumOldVersion](https://github.com/ThePitCommunity/ThePitPremiumOldVersion)
-的优化分支，两者均已停止维护。本人将尽力长期维护本仓库，让代码能够继续被使用和改进，
-正如原README.md所说：
+Use the latest core build as a dependency when developing integrations. Compatibility bridges preserve legacy interfaces used by supported extensions. See the [build and test instructions](docs/BUILDING.md) for required dependencies and test fixtures.
 
-> _代码的生命不在于商业存活，而在于技术精神的延续。_
+## Contributing
 
-## 贡献
+Want to add features or fix bugs? Clone this repository, follow the [build instructions](docs/BUILDING.md), and run the relevant regression tests before submitting a pull request.
 
-欢迎提交 Issue 或 Pull Request，尤其是以下方向：
+The project uses a Java 17 compilation toolchain and targets Minecraft 1.8.8 R3 with PandaSpigot extensions. Full compatibility tests require the external plugin JARs documented in the build instructions.
 
-- JDK 21 与 1.8.8 服务端的兼容性问题
-- 依赖仓库失效、运行时依赖下载失败或构建失败
-- 可复现的玩法逻辑缺陷
-- 安全问题、异常网络行为或历史遗留代码审计
+## Special thanks
 
-提交 Issue 时请附上服务端核心类型、Java 版本、完整异常堆栈以及复现步骤。
+Thanks to the upstream ThePitGay, ThePitStudy, and ThePitPremium contributors, and to the community creators of the Minecraft character skins bundled with this fork.
+
+<a href="https://jb.gg/OpenSourceSupport"><img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.svg" width="150">
+</a>
+
+[JetBrains](https://jb.gg/OpenSourceSupport), creators of IntelliJ IDEA, supports open-source projects through its Open Source Licenses program.

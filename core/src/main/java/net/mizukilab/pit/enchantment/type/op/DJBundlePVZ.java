@@ -2,6 +2,7 @@ package net.mizukilab.pit.enchantment.type.op;
 
 import cn.charlotte.pit.ThePit;
 import lombok.SneakyThrows;
+import net.minecraft.server.v1_8_R3.PacketPlayInFlying;
 import net.mizukilab.pit.enchantment.AbstractEnchantment;
 import net.mizukilab.pit.enchantment.param.item.ArmorOnly;
 import net.mizukilab.pit.enchantment.rarity.EnchantmentRarity;
@@ -10,6 +11,7 @@ import net.mizukilab.pit.util.cooldown.Cooldown;
 import net.mizukilab.pit.util.music.NBSDecoder;
 import net.mizukilab.pit.util.music.PositionSongPlayer;
 import net.mizukilab.pit.util.music.Song;
+import nya.Skip;
 import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.Location;
@@ -24,7 +26,7 @@ import java.util.*;
  * @Author: Misoryan
  * @Created_In: 2021/3/5 14:57
  */
-
+@Skip
 @ArmorOnly
 public class DJBundlePVZ extends AbstractEnchantment implements ITickTask, MovementHandler {
 
@@ -62,7 +64,7 @@ public class DJBundlePVZ extends AbstractEnchantment implements ITickTask, Movem
         }.runTaskTimer(ThePit.getInstance(), 20, 20);
 
         try {
-            iSpigot.INSTANCE.addMovementHandler(this);
+            
         } catch (NoClassDefFoundError ignore) {
         }
     }
@@ -115,7 +117,7 @@ public class DJBundlePVZ extends AbstractEnchantment implements ITickTask, Movem
 
             this.playerMap.put(target.getUniqueId(), player);
         } else {
-            target.getWorld().spawnParticle(org.bukkit.Particle.NOTE, target.getLocation().clone().add(0, 3, 0), 1);
+            target.getWorld().playEffect(target.getLocation().clone().add(0, 3, 0), Effect.NOTE, 1);
         }
     }
 
@@ -125,7 +127,7 @@ public class DJBundlePVZ extends AbstractEnchantment implements ITickTask, Movem
     }
 
     @Override
-    public void handleUpdateLocation(Player player, Location location, Location location1, Object packetPlayInFlying) {
+    public void handleUpdateLocation(Player player, Location location, Location location1, PacketPlayInFlying packetPlayInFlying) {
         PositionSongPlayer songPlayer = this.playerMap.get(player.getPlayer().getUniqueId());
         if (songPlayer != null) {
             songPlayer.setTargetLocation(player.getPlayer().getLocation());
@@ -133,7 +135,7 @@ public class DJBundlePVZ extends AbstractEnchantment implements ITickTask, Movem
     }
 
     @Override
-    public void handleUpdateRotation(Player player, Location location, Location location1, Object packetPlayInFlying) {
+    public void handleUpdateRotation(Player player, Location location, Location location1, PacketPlayInFlying packetPlayInFlying) {
 
     }
 }

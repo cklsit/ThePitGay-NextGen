@@ -2,25 +2,26 @@ package net.mizukilab.pit
 
 import cn.charlotte.pit.ThePit
 import cn.charlotte.pit.data.CDKData
+import net.mizukilab.pit.enchantment.type.ragerare.Regularity
 import cn.charlotte.pit.events.genesis.GenesisCombatListener
 import cn.charlotte.pit.util.hologram.packet.PacketHologramRunnable
 import com.comphenix.protocol.ProtocolLibrary
 import dev.rollczi.litecommands.bukkit.LiteBukkitFactory
 import dev.rollczi.litecommands.bukkit.LiteBukkitMessages
+import dev.rollczi.litecommands.bukkit.PitTabComplete
 import dev.rollczi.litecommands.meta.Meta
 import dev.rollczi.litecommands.validator.ValidatorScope
 import net.mizukilab.pit.actionbar.ActionBarManager
-import net.mizukilab.pit.command.PitAdminCommands
-import net.mizukilab.pit.command.PitAdminDupeFixCommands
-import net.mizukilab.pit.command.PitAdminSimpleCommand
-import net.mizukilab.pit.command.PitCommands
+import net.mizukilab.pit.command.*
 import net.mizukilab.pit.command.handler.HandHasItem
 import net.mizukilab.pit.command.handler.HandHasItemValidator
 import net.mizukilab.pit.command.handler.metaKey
 import net.mizukilab.pit.config.NewConfiguration
 import net.mizukilab.pit.config.TabConfiguration
 import net.mizukilab.pit.data.operator.ProfileOperator
+import net.mizukilab.pit.enchantment.EnchantmentTable
 import net.mizukilab.pit.enchantment.type.addon.AngelArmsEnchant
+import net.mizukilab.pit.enchantment.type.addon.TerminatorEnchant
 import net.mizukilab.pit.enchantment.type.aqua.ClubRodEnchant
 import net.mizukilab.pit.enchantment.type.aqua.GrandmasterEnchant
 import net.mizukilab.pit.enchantment.type.aqua.LuckOfPondEnchant
@@ -28,15 +29,12 @@ import net.mizukilab.pit.enchantment.type.aqua.RogueEnchant
 import net.mizukilab.pit.enchantment.type.auction.FractionalReserveEnchant
 import net.mizukilab.pit.enchantment.type.auction.rare.PaparazziEnchant
 import net.mizukilab.pit.enchantment.type.auction.rare.PitMBAEnchant
-import net.mizukilab.pit.enchantment.type.custom.VollewyA
-import net.mizukilab.pit.enchantment.type.custom.Volley_B
 import net.mizukilab.pit.enchantment.type.dark_normal.*
 import net.mizukilab.pit.enchantment.type.dark_rare.*
 import net.mizukilab.pit.enchantment.type.genesis.*
 import net.mizukilab.pit.enchantment.type.normal.*
 import net.mizukilab.pit.enchantment.type.op.*
 import net.mizukilab.pit.enchantment.type.rage.*
-import net.mizukilab.pit.enchantment.type.ragerare.Regularity
 import net.mizukilab.pit.enchantment.type.ragerare.ThinkOfThePeopleEnchant
 import net.mizukilab.pit.enchantment.type.rare.*
 import net.mizukilab.pit.enchantment.type.sewer_normal.AegisEnchant
@@ -47,17 +45,18 @@ import net.mizukilab.pit.enchantment.type.sewer_rare.TrashPandaEnchant
 import net.mizukilab.pit.enchantment.type.special.SoulRipperEnchant
 import net.mizukilab.pit.events.impl.*
 import net.mizukilab.pit.events.impl.major.*
-import net.mizukilab.pit.hologram.HologramListener
 import net.mizukilab.pit.hook.ItemPapiHook
 import net.mizukilab.pit.hook.PitPapiHook
 import net.mizukilab.pit.impl.PitInternalImpl.loaded
 import net.mizukilab.pit.impl.PlayerPointsAPI
+import net.mizukilab.pit.item.TestItem
 import net.mizukilab.pit.item.factory.ItemFactory
 import net.mizukilab.pit.item.type.*
 import net.mizukilab.pit.item.type.egg.SpeedEggs
 import net.mizukilab.pit.item.type.mythic.MythicBowItem
 import net.mizukilab.pit.item.type.mythic.MythicLeggingsItem
 import net.mizukilab.pit.item.type.mythic.MythicSwordItem
+import net.mizukilab.pit.item.type.perk.Sceptre
 import net.mizukilab.pit.item.type.sewers.Milk
 import net.mizukilab.pit.item.type.sewers.Rubbish
 import net.mizukilab.pit.listener.*
@@ -68,18 +67,14 @@ import net.mizukilab.pit.menu.shop.button.type.PantsBundleShopButton
 import net.mizukilab.pit.menu.shop.button.type.SwordBundleShopButton
 import net.mizukilab.pit.menu.trade.TradeListener
 import net.mizukilab.pit.nametag.NameTagImpl
-
 import net.mizukilab.pit.npc.type.*
 import net.mizukilab.pit.npc.type.custom.SewersNpc
 import net.mizukilab.pit.npc.type.custom.WarehouseNPC
-import net.mizukilab.pit.npc.type.custom.SpacetimeMerchantNPC
-import net.mizukilab.pit.npc.type.custom.AfkPoolNPC
 import net.mizukilab.pit.park.Parker
 import net.mizukilab.pit.perk.type.boost.*
 import net.mizukilab.pit.perk.type.prestige.*
 import net.mizukilab.pit.perk.type.shop.*
-import net.mizukilab.pit.perk.type.streak.addon.uber.UberSteakPlus
-import net.mizukilab.pit.perk.type.streak.beastmode.BeastModeMegaStreak
+
 import net.mizukilab.pit.perk.type.streak.beastmode.RAndRKillStreak
 import net.mizukilab.pit.perk.type.streak.beastmode.TacticalRetreatKillStreak
 import net.mizukilab.pit.perk.type.streak.beastmode.ToughSkinKillStreak
@@ -99,31 +94,30 @@ import net.mizukilab.pit.perk.type.streak.tothemoon.ToTheMoonMegaStreak
 import net.mizukilab.pit.perk.type.streak.tothemoon.XPStack
 import net.mizukilab.pit.perk.type.streak.uber.UberStreak
 import net.mizukilab.pit.quest.type.*
-import net.mizukilab.pit.runnable.*
+import net.mizukilab.pit.handlers.*
+import net.mizukilab.pit.hologram.HologramMarco
+import net.mizukilab.pit.perk.type.streak.beastmode.BeastModeMegaStreak
 import net.mizukilab.pit.scoreboard.Scoreboard
 import net.mizukilab.pit.sound.impl.*
 import net.mizukilab.pit.tab.TabHandle
-import net.mizukilab.pit.util.CrashUtil
 import net.mizukilab.pit.util.menu.ButtonListener
 import net.mizukilab.pit.util.nametag.NametagHandler
 import net.mizukilab.pit.util.scoreboard.Assemble
 import org.bukkit.Bukkit
-import org.bukkit.configuration.file.YamlConfiguration
 import org.bukkit.event.Listener
 import org.bukkit.plugin.PluginDescriptionFile
 import real.nanoneko.EnchantedConstructor
 import real.nanoneko.ItemConstructor
 import real.nanoneko.PerkConstructor
 import spg.lgdev.iSpigot
-import java.io.InputStreamReader
-import java.util.jar.Manifest
+import java.lang.Boolean
 
 object PitHook {
     @JvmStatic
-    val gitVersion = "4a3f7b"
+    val gitVersion = "4.4.9-20261016"
 
     @JvmStatic
-    val itemVersion = "golf_uuid"
+    val itemVersion = "buuid"
     fun init() {
         loadConfig()
         loadParker()
@@ -146,48 +140,39 @@ object PitHook {
         loadTab()
         loadNpcs()
 
+
         Bukkit.getPluginManager().getPlugin("PlaceholderAPI")?.let {
             PitPapiHook.register()
             ItemPapiHook.register()
         }
-
         val description = ThePit.getInstance().description
 
         val field = PluginDescriptionFile::class.java.getDeclaredField("version")
         field.isAccessible = true
         field.set(description, gitVersion)
-
-        ActionBarDisplayRunnable.start()
-
         KingsQuests.enable()
 
         CDKData.loadAllCDKFromData()
 
         Bukkit.getPluginManager().registerEvents(SewersRunnable, ThePit.getInstance())
         SewersRunnable.runTaskTimer(ThePit.getInstance(), 10L, 10L)
-        //CleanupDupeEnch0525Runnable.runTaskTimer(ThePit.getInstance(), 20L, 20L)
-        //SpecialPlayerRunnable.runTaskTimer(ThePit.getInstance(), 1L, 1L)
-        //PrivatePlayerRunnable.runTaskTimer(ThePit.getInstance(),1L,1L)
+
         PlayerPointsAPI.init()
+        ThePit.getInstance().enchTable = EnchantmentTable(ThePit.getInstance().enchantmentFactor)
         println("Done")
-        Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), Runnable { checkBlackList() }, 40L)
-        Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), Runnable { loaded = true }, 20L)
+        if(!delayReloadEnchTable){
+            ThePit.getInstance().enchTable.reload();
+        }
+        Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), {
+            if(delayReloadEnchTable) {
+                ThePit.getInstance().enchTable.reload()
+            }
+            loaded = true
+        }, 100L)
 
     }
+    var delayReloadEnchTable = Boolean.getBoolean("delayReloadEnchTable")
 
-    private fun checkBlackList() {
-//        val blackList = listOf("Sentinel")
-//
-//        if (blackList.any {
-//            Bukkit.getPluginManager().getPlugin(it) != null
-//        } ||
-//            listOf(
-//                "org.mcmonkey.sentinel.SentinelAttackHelper",
-//                "org.mcmonkey.sentinel.SentinelPlugin"
-//            ).any { CrashUtil.isClass(it) }) {
-//            CrashUtil.doCrash()
-//        }
-    }
 
 
     private fun loadParker() {
@@ -216,14 +201,17 @@ object PitHook {
 
     private fun loadCommands() {
         LiteBukkitFactory.builder()
+            .apply { PitCommandSuggestions.register(this, ThePit.getInstance()) }
             .commands(
                 PitAdminSimpleCommand(),
                 PitAdminCommands(),
                 PitCommands(),
+                PitItemCommands(),
                 PitAdminDupeFixCommands()
             )
             .settings {
                 it.nativePermissions(true)
+                PitTabComplete.install(it)
             }
             .message(LiteBukkitMessages.INVALID_USAGE) { inv, ctx ->
                 return@message "§c用法: ".plus(buildString {
@@ -260,13 +248,14 @@ object PitHook {
 
     private fun loadRunnable() {
 
-
+        ThePit.getInstance().animator = AnimationHandler()
+        Bukkit.getScheduler().runTaskTimer(ThePit.getInstance(), ThePit.getInstance().animator, 1L, 1L)
         //AnnouncementRunnable.runTaskTimerAsynchronously(ThePit.getInstance(), 0, 40 * 60)
         TickHandler().runTaskTimer(ThePit.getInstance(), 1, 1)
-        AsyncTickHandler().runTaskTimerAsynchronously(ThePit.getInstance(), 1, 1)
+        var asyncTickHandler = AsyncTickHandler()
+        ThePit.getInstance().singleAsyncScheduler = asyncTickHandler
+        asyncTickHandler.runTaskTimerAsynchronously(ThePit.getInstance(), 0, 1)
         GoldDropRunnable().runTaskTimer(ThePit.getInstance(), 20, 20)
-
-         ProtectRunnable().runTaskTimer(ThePit.getInstance(), 20, 20)
 
         FreeExpRunnable().runTaskTimer(ThePit.getInstance(), 20 * 60 * 15, 20 * 60 * 15)
         NightVisionRunnable().runTaskTimer(ThePit.getInstance(), 20, 20)
@@ -274,11 +263,19 @@ object PitHook {
         PacketHologramRunnable().runTaskTimerAsynchronously(ThePit.getInstance(), 20, 20)
 
         LeaderBoardRunnable().runTaskTimerAsynchronously(ThePit.getInstance(), 0, 10 * 20 * 60)
-        BountyRunnable().runTaskTimerAsynchronously(
-            ThePit.getInstance(),
-            5,
-            NewConfiguration.bountyTickInterval.toLong()
-        )
+        if (Boolean.getBoolean("unsafeBounty")) {
+            Bounty().runTaskTimerAsynchronously(
+                ThePit.getInstance(),
+                5,
+                NewConfiguration.bountyTickInterval.toLong()
+            )
+        } else {
+            Bounty().runTaskTimer(
+                ThePit.getInstance(),
+                5,
+                NewConfiguration.bountyTickInterval.toLong()
+            )
+        }
     }
 
 
@@ -308,15 +305,20 @@ object PitHook {
             MythicSwordItem::class.java,
             MythicLeggingsItem::class.java,
             AngelChestplate::class.java,
+            AngelBoots::class.java,
+            AngelHelmet::class.java,
+            AngelLeggings::class.java,
             ArmageddonBoots::class.java,
             BountySolventPotion::class.java,
             ChunkOfVileItem::class.java,
             FunkyFeather::class.java,
+            TestItem::class.java,
             GoldenHelmet::class.java,
             LuckyGem::class.java,
             JewelSword::class.java,
             JumpBoostPotion::class.java,
             MythicRepairKit::class.java,
+            Sceptre::class.java,
             PitCactus::class.java,
             SpireSword::class.java,
             MusicalRune::class.java,
@@ -325,6 +327,7 @@ object PitHook {
             TotallyLegitGem::class.java,
             GlobalAttentionGem::class.java,
             UberDrop::class.java,
+            UberPlusDrop::class.java,
             MythicEnchantingTable::class.java,
             //下水道
             Rubbish::class.java,
@@ -334,7 +337,7 @@ object PitHook {
         try {
             var itemFactor = ThePit.getInstance().itemFactor
             itemFactor.registerItems(clazzList)
-            Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), Runnable {
+            Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), {
                 itemFactor.registerItems(ItemConstructor.getItems())
             }, 10)
         } catch (e: Exception) {
@@ -349,6 +352,7 @@ private fun loadEnchants() {
     val classes = mutableListOf(
         //addon
         AngelArmsEnchant::class.java,
+        TerminatorEnchant::class.java,
         //new
         VengeanceSpiritEnchant::class.java,
         SacredShieldEnchant::class.java,
@@ -526,7 +530,6 @@ private fun loadEnchants() {
         EliminatePowerEnchant::class.java,
         SpywareEnchant::class.java,
     )
-
     /*        classes += HappyNewYearEnchant::class.java
             classes += WitheredAndPiercingThroughTheHeart::class.ja
 */
@@ -543,24 +546,14 @@ private fun loadEnchants() {
 
     //  classes += Limit24520Ench::class.java
     //  classes += LimitXZQ1Ench::class.java
-    if (ThePit.getInstance().globalConfig.token == "SmallMY"){
-        classes += VollewyA::class.java
-        classes += Volley_B::class.java
-        classes -= VolleyEnchant::class.java
-    }
-    music.apply {
-        add(JerryEnchant())
-        add(JerryEnchant2())
-        add(JerryEnchant3())
-        add(JerryEnchant4())
-        add(JerryEnchant5())
-        add(JerryEnchant6())
-        add(JerryEnchant7())
-    }
-    classes += net.mizukilab.pit.enchantment.type.hammer.HammerEnchantRegistrar.classes()
+//    if (ThePit.getInstance().globalConfig.token == "SmallMY") {
+//        classes += VollewyA::class.java
+//        classes += Volley_B::class.java
+//        classes -= VolleyEnchant::class.java
+//    }
     enchantmentFactor.init(classes)
     EnchantedConstructor.apply {
-        Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), Runnable {
+        Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), {
             enchantmentFactor.init(getEnchantments())
         }, 10);
     }
@@ -574,6 +567,7 @@ private fun loadScoreBoard() {
 private fun loadNameTag() {
     val nametagHandler = NametagHandler(ThePit.getInstance(), NameTagImpl())
     nametagHandler.ticks = 20
+    ThePit.getInstance().nametagHandler = nametagHandler
 }
 
 private fun loadPerks() {
@@ -689,14 +683,11 @@ private fun loadPerks() {
         GoldStack::class.java,
         XPStack::class.java,
         SuperStreaker::class.java,
+//        Despot::class.java,
     )
 
-    if (ThePit.getInstance().globalConfig.token == "MyPitNetWork") {
-        classes += UberSteakPlus::class.java
-    }
-
     perkFactory.init(classes as Collection<Class<*>>?)
-    Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), Runnable {
+    Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), {
         perkFactory.init(PerkConstructor.getPerks())
     }, 10)
 }
@@ -743,8 +734,6 @@ private fun loadCustomEntityNpcs() {
         listOf(
             SewersNpc::class.java,
             WarehouseNPC::class.java,
-            SpacetimeMerchantNPC::class.java,
-            AfkPoolNPC::class.java,
         )
     )
     println("load Custom Entity NPCs...")
@@ -772,7 +761,7 @@ private fun loadEvents() {
         HamburgerEvent::class.java,
         RagePitEvent::class.java,
         RedVSBlueEvent::class.java,
-        BlockHeadEvent::class.java,
+//        BlockHeadEvent::class.java,
         SpireEvent::class.java,
         AuctionEvent::class.java,
         CakeEvent::class.java,
@@ -782,7 +771,7 @@ private fun loadEvents() {
         CarePackageEvent::class.java,
         EveOneBountyEvent::class.java,
         QuickMathEvent::class.java,
-        SquadsEvent::class.java,
+//        SquadsEvent::class.java,
         /*        DoubleRewardsEvent::class.java,*/
         RespawnFamilyEvent::class.java
     )
@@ -792,13 +781,12 @@ private fun loadEvents() {
 
 private fun registerListeners() {
     val classes = listOf<Class<*>>(
-
+        ExpireListener::class.java,
         CombatListener::class.java,
         GameEffectListener::class.java,
-        DataListener::class.java,
         EnderChestListener::class.java,
         ChatListener::class.java,
-        PlayerListener::class.java,
+        PlayerMarco::class.java,
         ProtectListener::class.java,
         PantsBundleShopButton::class.java,
         SwordBundleShopButton::class.java,
@@ -810,36 +798,22 @@ private fun registerListeners() {
         TradeListener::class.java,
         WarehouseListener::class.java,
         iSpigot::class.java,
-        HologramListener::class.java,
-        net.mizukilab.pit.enchantment.type.hammer.HammerCombatHandler::class.java,
-        net.mizukilab.pit.enchantment.type.hammer.HammerSpecialEffects::class.java,
-        net.mizukilab.pit.enchantment.type.hammer.HammerSpecialEffectsBatch2::class.java,
-        net.mizukilab.pit.enchantment.type.hammer.HammerConditionalEffects::class.java,
-        net.mizukilab.pit.enchantment.type.hammer.HammerSpecialEffectsBatch3::class.java,
-        net.mizukilab.pit.enchantment.type.hammer.HammerSpecialEffectsBatch4::class.java,
-        net.mizukilab.pit.enchantment.type.hammer.HammerMiscHooks::class.java,
-        net.mizukilab.pit.enchantment.type.hammer.HammerSpecialEffectsBatch5::class.java,
+        HologramMarco::class.java,
     )
     for (aClass in classes) {
         try {
             val o = aClass.getConstructor().newInstance()
+            if(o is HologramMarco){
+                ThePit.getInstance().hologramMarco = o
+            }
             Bukkit.getPluginManager().registerEvents(o as Listener, ThePit.getInstance())
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    // 神话之锤叠加封顶预算（Kotlin object，不能走反射构造）
-    Bukkit.getPluginManager().registerEvents(
-        net.mizukilab.pit.enchantment.type.hammer.HammerBudget, ThePit.getInstance()
-    )
-
-    // ProtocolLib 是可选依赖：未安装时跳过其异步监听注册
-    if (Bukkit.getPluginManager().isPluginEnabled("ProtocolLib")) {
-        ProtocolLibrary.getProtocolManager().asynchronousManager
-            .registerAsyncHandler(PacketListener()).start()
-    }
-
+    ProtocolLibrary.getProtocolManager().asynchronousManager
+        .registerAsyncHandler(PacketListener()).start()
     if (Bukkit.getPluginManager().getPlugin("MythicMobs") != null) {
         Bukkit.getPluginManager().registerEvents(MythicMobListener, ThePit.getInstance());
     }

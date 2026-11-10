@@ -38,11 +38,11 @@ public class GenesisSpawnButton extends Button {
         Material material = Material.AIR;
         if (displayTeam == GenesisTeam.ANGEL) {
             teamColor = "&b";
-            material = Material.BIRCH_DOOR;
+            material = Material.BIRCH_DOOR_ITEM;
         }
         if (displayTeam == GenesisTeam.DEMON) {
             teamColor = "&c";
-            material = Material.DARK_OAK_DOOR;
+            material = Material.DARK_OAK_DOOR_ITEM;
         }
         lines.add("&7前往至阵营专属的出生点.");
         lines.add(" ");

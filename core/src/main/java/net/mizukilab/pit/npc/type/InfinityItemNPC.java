@@ -1,8 +1,8 @@
 package net.mizukilab.pit.npc.type;
 
 import cn.charlotte.pit.ThePit;
-import net.jitse.npclib.api.skin.Skin;
-import net.jitse.npclib.api.state.NPCAnimation;
+import cn.mythicland.npclib.api.skin.Skin;
+import cn.mythicland.npclib.api.state.NPCAnimation;
 import net.mizukilab.pit.menu.admin.item.AdminItemMenu;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -44,7 +44,7 @@ public class InfinityItemNPC extends SkinNPC {
 
     @Override
     public Skin getNpcSkin() {
-        return null;
+        return net.mizukilab.pit.npc.BuiltinNpcSkins.get(getNpcInternalName());
     }
 
     @Override

@@ -1,7 +1,8 @@
 package net.mizukilab.pit.enchantment.type.rare
 
-import cn.charlotte.pit.ThePit
 import com.google.common.util.concurrent.AtomicDouble
+import net.minecraft.server.v1_8_R3.BlockPosition
+import net.minecraft.server.v1_8_R3.PacketPlayOutWorldEvent
 import net.mizukilab.pit.enchantment.AbstractEnchantment
 import net.mizukilab.pit.enchantment.param.event.PlayerOnly
 import net.mizukilab.pit.enchantment.param.item.WeaponOnly
@@ -11,6 +12,7 @@ import net.mizukilab.pit.parm.listener.IAttackEntity
 import net.mizukilab.pit.util.PlayerUtil
 import net.mizukilab.pit.util.cooldown.Cooldown
 import org.bukkit.Sound
+import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
 import java.util.concurrent.atomic.AtomicBoolean
@@ -19,7 +21,6 @@ import java.util.concurrent.atomic.AtomicBoolean
  * @Author: Misoryan
  * @Created_In: 2021/1/29 21:23
  */
-
 @WeaponOnly
 class ExecutionerEnchant : AbstractEnchantment(), IAttackEntity {
     override fun getEnchantName(): String {
@@ -59,10 +60,6 @@ class ExecutionerEnchant : AbstractEnchantment(), IAttackEntity {
     ) {
         val targetPlayer = target as Player
         for (nearbyPlayers in PlayerUtil.getNearbyPlayers(targetPlayer.location, 10.0)) {
-            var npc = ThePit.getInstance().npcFactory.hasNPC(nearbyPlayers)
-            if (npc) {
-                continue
-            }
             if (nearbyPlayers.inventory.leggings != null && thinkOfThePeople.isItemHasEnchant(nearbyPlayers.inventory.leggings)) {
                 val level = thinkOfThePeople.getItemEnchantLevel(nearbyPlayers.inventory.leggings)
                 if (level > 1) {
@@ -71,16 +68,26 @@ class ExecutionerEnchant : AbstractEnchantment(), IAttackEntity {
                 return
             }
         }
-
         if (targetPlayer.health - damage * boostDamage.get() < enchantLevel + 1) {
-            cancel.set(true)
-            finalDamage.getAndAdd(2000.0)
-            attacker.playSound(attacker.location, Sound.ENTITY_VILLAGER_DEATH, 1f, 0.5f)
+            targetPlayer.noDamageTicks = 0
+            PlayerUtil.damage(targetPlayer, PlayerUtil.DamageType.TRUE, 2 * (0.5 * enchantLevel + 0.5), false)
+            attacker.playSound(attacker.location, Sound.VILLAGER_DEATH, 1f, 0.5f)
             val deathLoc = target.getLocation()
-            // 1.21：方块破坏粒子改用 Bukkit 效果（原为 WorldEvent 2001 + 方块 id 152）
-            deathLoc.world?.playEffect(deathLoc, org.bukkit.Effect.STEP_SOUND, org.bukkit.Material.REDSTONE_BLOCK)
-            val below = deathLoc.clone().add(0.0, -1.0, 0.0)
-            below.world?.playEffect(below, org.bukkit.Effect.STEP_SOUND, org.bukkit.Material.REDSTONE_BLOCK)
+            val packetA = PacketPlayOutWorldEvent(
+                2001,
+                BlockPosition(deathLoc.blockX, deathLoc.blockY, deathLoc.blockZ),
+                152,
+                false
+            )
+            val packetB = PacketPlayOutWorldEvent(
+                2001,
+                BlockPosition(deathLoc.blockX, deathLoc.blockY - 1, deathLoc.blockZ),
+                152,
+                false
+            )
+            val connection = (attacker as CraftPlayer).handle.playerConnection
+            connection.sendPacket(packetA)
+            connection.sendPacket(packetB)
         }
     }
 

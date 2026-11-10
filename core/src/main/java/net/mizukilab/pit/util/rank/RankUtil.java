@@ -1,0 +1,151 @@
+package net.mizukilab.pit.util.rank;
+
+import cn.charlotte.pit.ThePit;
+import cn.charlotte.pit.data.PlayerProfile;
+import io.lumine.xikage.mythicmobs.MythicMobs;
+import io.lumine.xikage.mythicmobs.mobs.ActiveMob;
+import lombok.extern.java.Log;
+import net.luckperms.api.model.user.User;
+import net.md_5.bungee.api.ChatColor;
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.logging.Level;
+
+/**
+ * @author Yurinan, Misoryan
+ * @since 2021/1/5 14:55
+ */
+@Log(topic = "Minecraft")
+public class RankUtil {
+
+    public static String getPlayerRank(String name) {
+        return LuckPermsUtil.getPrefix(Bukkit.getOfflinePlayer(name).getUniqueId()); //default player rank
+    }
+
+    public static boolean isPlayerNicked(UUID uuid) {
+        return getPlayerRealColoredName(uuid).equalsIgnoreCase(getPlayerColoredName(uuid));
+    }
+
+    public static boolean isPlayerNicked(String name) {
+
+        return getPlayerRealColoredName(name).equalsIgnoreCase(getPlayerColoredName(name));
+    }
+
+    public static boolean isPlayerNicked(Player player) {
+
+        return isPlayerNicked(player.getUniqueId());
+    }
+
+
+    public static String getPlayerRankColor(String name) {
+
+        return getNameColor(Bukkit.getOfflinePlayer(name).getUniqueId()).toString(); //default rank color
+
+    }
+
+    public static String getPlayerRankColor(UUID uuid) {
+
+        return getNameColor(uuid).toString(); //default rank color
+    }
+
+    public static String getPlayerColoredName(String name) {
+
+        return getNameFormatWithPrefix(Bukkit.getOfflinePlayer(name).getUniqueId()); //[NickRank] NickName
+    }
+
+    private static Boolean mmEnable = null;
+
+    public static String getPlayerName(UUID uuid) {
+        PlayerProfile bot = net.mizukilab.pit.npc.MythicBotCombat.profile(uuid);
+        if (bot != null) return bot.getPlayerName();
+        if (uuid == PlayerProfile.CONSTANT_UUID_BOT_UNLOADED_PLAYER) {
+            return CONSTANT_BOT_NAME;
+        }
+        Player player = Bukkit.getPlayer(uuid);
+        if (player == null) {
+            if (mmEnable == null) {
+                mmEnable = Bukkit.getPluginManager().getPlugin("MythicMobs") != null;
+            }
+
+            if (mmEnable) {
+                try {
+                    Optional<ActiveMob> mob = MythicMobs.inst().getMobManager().getActiveMob(uuid);
+                    if (mob.isPresent()) {
+                        return mob.get().getType().getDisplayName();
+                    }
+                } catch (Throwable t){
+                    log.logp(Level.WARNING,"RankUtil","getPlayerName"
+                            ,"Could not get the source name through mythicmobs api, disabling",t);
+                    mmEnable = false;
+                }
+            }
+
+            User user = LuckPermsUtil.getUser(uuid);
+            if (user != null) {
+                return user.getUsername();
+            }
+
+            return CONSTANT_BOT_NAME;
+        }
+
+        return player.getDisplayName();
+    }
+
+    public static String getPlayerColoredName(UUID uuid) {
+        return getNameFormatWithPrefix(uuid); //[NickRank] NickName
+
+    }
+
+    public static String getPlayerRealColoredName(String name) {
+
+        try {
+            UUID uuid = LuckPermsUtil.userManager.lookupUniqueId(name).get();
+            if (uuid == null) {
+                return name;
+            }
+            return getNameFormat(uuid);
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    public static String getPlayerRealColoredName(UUID uuid) {
+
+        return getNameFormat(uuid); //fixme
+    }
+
+    public static String getNameFormat(UUID uuid) {
+        return getNameColor(uuid) + getPlayerName(uuid);
+    }
+
+    public final static String CONSTANT_BOT_NAME = ThePit.getInstance().getGlobalConfig().getBotName();
+
+    public static String getNameFormatWithPrefix(UUID uuid) {
+        PlayerProfile bot = net.mizukilab.pit.npc.MythicBotCombat.profile(uuid);
+        if (bot != null) return bot.getFormattedName();
+        if (uuid == PlayerProfile.CONSTANT_UUID_BOT_UNLOADED_PLAYER) {
+            return CONSTANT_BOT_NAME;
+        }
+        String playerName = getPlayerName(uuid);
+        if (playerName == null || "null".equals(playerName)) {
+            return CONSTANT_BOT_NAME;
+        }
+        return LuckPermsUtil.getPrefix(uuid) + playerName;
+    }
+
+    public static ChatColor getNameColor(UUID uuid) {
+        if (net.mizukilab.pit.npc.MythicBotCombat.profile(uuid) != null) return ChatColor.GRAY;
+        BaseComponent[] text = TextComponent.fromLegacyText(LuckPermsUtil.getPrefix(uuid));
+        ChatColor color = text[text.length - 1].getColor();
+        if (color == ChatColor.WHITE) color = ChatColor.GRAY;
+        return color;
+    }
+
+}

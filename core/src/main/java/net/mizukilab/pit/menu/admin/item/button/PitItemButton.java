@@ -2,9 +2,12 @@ package net.mizukilab.pit.menu.admin.item.button;
 
 import net.mizukilab.pit.util.item.ItemUtil;
 import net.mizukilab.pit.util.menu.Button;
+import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.ItemStack;
+
+import java.util.function.Supplier;
 
 /**
  * @Author: Misoryan
@@ -12,15 +15,20 @@ import org.bukkit.inventory.ItemStack;
  */
 public class PitItemButton extends Button {
 
-    private final ItemStack itemStack;
+    private final Supplier<ItemStack> itemSupplier;
 
     public PitItemButton(ItemStack itemStack) {
-        this.itemStack = itemStack;
+        this.itemSupplier = () -> itemStack;
+    }
+
+    /** Generates a fresh item on each click, including its unique equipment UUID. */
+    public PitItemButton(Supplier<ItemStack> itemSupplier) {
+        this.itemSupplier = itemSupplier;
     }
 
     @Override
     public ItemStack getButtonItem(Player player) {
-        return itemStack.clone();
+        return CraftItemStack.asCraftCopy(itemSupplier.get()).clone();
     }
 
     @Override

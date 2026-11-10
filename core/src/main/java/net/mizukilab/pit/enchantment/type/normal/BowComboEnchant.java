@@ -12,6 +12,7 @@ import net.mizukilab.pit.util.chat.RomanUtil;
 import net.mizukilab.pit.util.cooldown.Cooldown;
 import net.mizukilab.pit.util.time.TimeUtil;
 import com.google.common.util.concurrent.AtomicDouble;
+import nya.Skip;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -39,7 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 @AutoRegister
 @BowOnly
-
+@Skip
 public class BowComboEnchant extends AbstractEnchantment implements IPlayerShootEntity, Listener, IActionDisplayEnchant {
 
     public final HashMap<UUID, Long> hitCheck = new HashMap<>();
@@ -83,7 +84,7 @@ public class BowComboEnchant extends AbstractEnchantment implements IPlayerShoot
                 if (combo.getOrDefault(attacker.getUniqueId(), 0) >= (enchantLevel >= 2 ? 2 : 3)) {
                     combo.put(attacker.getUniqueId(), 0);
                     attacker.removePotionEffect(PotionEffectType.SPEED);
-                    attacker.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20 * 4, enchantLevel, true));
+                    attacker.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20 * 5, enchantLevel, true));
                 }
             }
         }.runTaskLater(ThePit.getInstance(), 2L);

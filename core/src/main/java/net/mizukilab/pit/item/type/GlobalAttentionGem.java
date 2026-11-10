@@ -56,7 +56,7 @@ public class GlobalAttentionGem extends AbstractPitItem implements Listener {
                 .deathDrop(false)
                 .canDrop(false)
                 .canTrade(true)
-                .enchant(Enchantment.UNBREAKING, 1)
+                .enchant(Enchantment.DURABILITY, 1)
                 .lore(
                         "&7死亡时保留",
                         "",

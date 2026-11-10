@@ -12,6 +12,7 @@ import net.mizukilab.pit.util.chat.CC;
 import net.mizukilab.pit.util.nametag.BufferedNametag;
 import net.mizukilab.pit.util.nametag.NametagAdapter;
 import net.mizukilab.pit.util.rank.RankUtil;
+import nya.Skip;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -21,8 +22,14 @@ import java.util.List;
  * @Author: EmptyIrony
  * @Date: 2021/1/1 15:56
  */
-
+@Skip
 public class NameTagImpl implements NametagAdapter {
+
+    @Override
+    public boolean isViewerIndependent() {
+        // Subclasses may override getPlate with viewer-specific formatting.
+        return getClass() == NameTagImpl.class;
+    }
 
     @Override
     public List<BufferedNametag> getPlate(Player player) {
@@ -77,8 +84,8 @@ public class NameTagImpl implements NametagAdapter {
             } else {
                 displayName = CC.translate(profile.getFormattedLevelTagTabSpec() + " " + RankUtil.getPlayerRankColor(profile.getPlayerUuid()));
                 if (profile.getChosePerk().get(5) != null) {
-                    if (profile.getChosePerk().get(5).getPerkInternalName().equalsIgnoreCase("__removed_mega_streak") && profile.getStreakKills() >= 200) {
-                        displayName = CC.translate(profile.getFormattedLevelTagTabSpec() + " " + RankUtil.getPlayerRankColor(profile.getPlayerUuid()));
+                    if (profile.getChosePerk().get(5).getPerkInternalName().equalsIgnoreCase("despot_streak") && profile.getStreakKills() >= 200) {
+                        displayName = CC.translate("&c&l暴君" + " " + RankUtil.getPlayerRankColor(profile.getPlayerUuid()));
                     }
                     if (profile.getChosePerk().get(5).getPerkInternalName().equalsIgnoreCase("over_drive") && profile.getStreakKills() >= 50) {
                         displayName = CC.translate("&e&l超速传动" + " " + RankUtil.getPlayerRankColor(profile.getPlayerUuid()));

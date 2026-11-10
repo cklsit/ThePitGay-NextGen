@@ -33,7 +33,7 @@ public class DmgReduceBoostPerk extends AbstractPerk implements IPlayerDamaged {
 
     @Override
     public Material getIcon() {
-        return Material.INK_SAC;
+        return Material.getMaterial(351);
     }
 
     @Override

@@ -5,13 +5,15 @@ import net.mizukilab.pit.enchantment.param.item.ArmorOnly;
 import net.mizukilab.pit.enchantment.rarity.EnchantmentRarity;
 import net.mizukilab.pit.parm.listener.IPlayerRespawn;
 import net.mizukilab.pit.util.cooldown.Cooldown;
+import nya.Skip;
+import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 
 /**
  * @Author: Misoryan
  * @Created_In: 2021/2/24 18:58
  */
-
+@Skip
 @ArmorOnly
 public class RespawnAbsorptionEnchant extends AbstractEnchantment implements IPlayerRespawn {
 
@@ -47,6 +49,6 @@ public class RespawnAbsorptionEnchant extends AbstractEnchantment implements IPl
 
     @Override
     public void handleRespawn(int enchantLevel, Player myself) {
-        ((org.bukkit.entity.Player) myself).setAbsorptionAmount(enchantLevel * 10);
+        ((CraftPlayer) myself).getHandle().setAbsorptionHearts(enchantLevel * 10);
     }
 }

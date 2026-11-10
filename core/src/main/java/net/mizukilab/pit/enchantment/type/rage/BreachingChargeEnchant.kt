@@ -9,6 +9,7 @@ import net.mizukilab.pit.enchantment.rarity.EnchantmentRarity
 import net.mizukilab.pit.parm.listener.IAttackEntity
 import net.mizukilab.pit.parm.listener.IPlayerShootEntity
 import net.mizukilab.pit.util.cooldown.Cooldown
+import nya.Skip
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
@@ -24,7 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * @Creator Misoryan
  * @Date 2021/5/8 19:13
  */
-
+@Skip
 @ArmorOnly
 class BreachingChargeEnchant : AbstractEnchantment(), Listener,IAttackEntity, IPlayerShootEntity,
     IActionDisplayEnchant {
@@ -66,7 +67,7 @@ class BreachingChargeEnchant : AbstractEnchantment(), Listener,IAttackEntity, IP
         if (Companion.cooldown.getOrDefault(attacker.uniqueId, Cooldown(0)).hasExpired()) {
             Companion.cooldown[attacker.uniqueId] =
                 Cooldown((4 - enchantLevel).toLong(), TimeUnit.SECONDS)
-            targetPlayer.removePotionEffect(PotionEffectType.RESISTANCE)
+            targetPlayer.removePotionEffect(PotionEffectType.DAMAGE_RESISTANCE)
         }
     }
 
@@ -84,7 +85,7 @@ class BreachingChargeEnchant : AbstractEnchantment(), Listener,IAttackEntity, IP
         if (Companion.cooldown.getOrDefault(attacker.uniqueId, Cooldown(0)).hasExpired()) {
             Companion.cooldown[attacker.uniqueId] =
                 Cooldown((4 - enchantLevel).toLong(), TimeUnit.SECONDS)
-            targetPlayer.removePotionEffect(PotionEffectType.RESISTANCE)
+            targetPlayer.removePotionEffect(PotionEffectType.DAMAGE_RESISTANCE)
         }
     }
 

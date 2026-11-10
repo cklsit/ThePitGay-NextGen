@@ -23,7 +23,7 @@ public class BowBundleShopPerk extends AbstractPerk {
 
     @Override
     public Material getIcon() {
-        return Material.CHEST_MINECART;
+        return Material.STORAGE_MINECART;
     }
 
     @Override

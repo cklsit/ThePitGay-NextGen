@@ -13,6 +13,7 @@ import net.mizukilab.pit.parm.listener.IPlayerDamaged;
 import net.mizukilab.pit.parm.listener.ITickTask;
 import net.mizukilab.pit.util.PlayerUtil;
 import net.mizukilab.pit.util.cooldown.Cooldown;
+import nya.Skip;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
@@ -26,7 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @Creator Misoryan
  * @Date 2021/5/11 16:35
  */
-
+@Skip
 @ArmorOnly
 public class EmergencyColonyEnchant extends AbstractEnchantment implements ITickTask, IPlayerDamaged {
 
@@ -132,8 +133,8 @@ public class EmergencyColonyEnchant extends AbstractEnchantment implements ITick
                 PlayerUtil.playThunderEffect(p.getLocation());
                 p.damage(20, player);
                 p.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 3 * 20, 20));
-                p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 3 * 20, 20));
-                p.addPotionEffect(new PotionEffect(PotionEffectType.MINING_FATIGUE, 3 * 20, 20));
+                p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 3 * 20, 20));
+                p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_DIGGING, 3 * 20, 20));
                 p.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, 3 * 20, 20));
             }
         }

@@ -4,6 +4,7 @@ import cn.hutool.core.lang.mutable.MutablePair;
 import io.irina.backports.utils.SWMRHashTable;
 import net.mizukilab.pit.util.Utils;
 import net.mizukilab.pit.util.chat.ActionBarUtil;
+import nya.Skip;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -16,10 +17,10 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * 不要使用SimpleEntry, 会污染HashMap
  */
-
+@Skip
 public class ActionBarManager implements IActionBarManager {
     int tick = 0;
-    Map<UUID, MutablePair<StringBuilder,Map<String, MutablePair<String, Integer>>>> multiMap = new SWMRHashTable<>();
+    SWMRHashTable<UUID, MutablePair<StringBuilder,Map<String, MutablePair<String, Integer>>>> multiMap = new SWMRHashTable<>();
     public void addActionBarOnQueue(Player player, String arg, String val, int repeat,boolean flush) {
         UUID uniqueId = player.getUniqueId();
         MutablePair<StringBuilder,Map<String, MutablePair<String, Integer>>> stringStringMap = multiMap.get(uniqueId);
@@ -36,13 +37,13 @@ public class ActionBarManager implements IActionBarManager {
     }
 
     public void tick() {
-        ((SWMRHashTable<UUID, MutablePair<StringBuilder,Map<String, MutablePair<String, Integer>>>>) multiMap).removeIf((uuid, mappedString) -> { //forEach as multimap
+        tick++; // One clock step per round, independent of the number of recipients.
+        multiMap.removeIf((uuid, mappedString) -> { //forEach as multimap
             return tickPiece(uuid, mappedString.getValue(),mappedString.getKey());
         });
     }
 
     private boolean tickPiece(UUID uuid, Map<String, MutablePair<String, Integer>> mappedString,StringBuilder builder) {
-        tick++;
         long tick = Utils.toUnsignedInt(this.tick);
         Player player = Bukkit.getPlayer(uuid); //get Players
         if (mappedString.isEmpty() || player == null || !player.isOnline()) {

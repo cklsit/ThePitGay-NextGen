@@ -8,6 +8,7 @@ import cn.charlotte.pit.event.PitProfileLoadedEvent
 import net.md_5.bungee.api.chat.BaseComponent
 import net.md_5.bungee.api.chat.HoverEvent
 import net.md_5.bungee.api.chat.TextComponent
+import net.minecraft.server.v1_8_R3.NBTTagCompound
 import net.mizukilab.pit.enchantment.param.item.WeaponOnly
 import net.mizukilab.pit.enchantment.rarity.EnchantmentRarity
 import net.mizukilab.pit.getPitProfile
@@ -23,6 +24,7 @@ import net.mizukilab.pit.util.item.ItemUtil
 import net.mizukilab.pit.util.random.RandomUtil
 import org.bukkit.Bukkit
 import org.bukkit.Material
+import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
@@ -56,16 +58,17 @@ class JewelSword : IMythicItem(), Listener {
     }
 
     override fun getItemDisplayMaterial(): Material {
-        return Material.GOLDEN_SWORD
+        return Material.GOLD_SWORD
     }
 
     override fun toItemStack(): ItemStack {
         val itemStack = super.toItemStack()
 
         if (killed >= KILL_TARGET) {
-            // 1.21：内部名写 PDC，不再操作 NMS tag
-            cn.charlotte.pit.compat.item.ItemData.set(itemStack, "internal", "mythic_sword")
-            return itemStack
+            val nmsCopy = Utils.toNMStackQuick(itemStack)
+            nmsCopy?.tag?.getCompound("extra")?.setString("internal", "mythic_sword")
+
+            return CraftItemStack.asCraftMirror(nmsCopy)
         }
 
         val lore = arrayListOf(
@@ -86,7 +89,7 @@ class JewelSword : IMythicItem(), Listener {
     }
 
     override fun loadFromItemStack(item: ItemStack) {
-        cn.charlotte.pit.compat.item.ItemData.getInt(item, "killed")?.let {
+        Utils.toNMStackQuick(item)?.tag?.getCompound("extra")?.getInt("killed")?.let {
             killed = it
         }
 
@@ -134,7 +137,7 @@ class JewelSword : IMythicItem(), Listener {
                     it.loadFromItemStack(itemOnCursor)
                 }
                 jewelSword.killed = 0
-                player.setItemOnCursor(jewelSword.toItemStack())
+                player.itemOnCursor = jewelSword.toItemStack()
             }
         }
     }
@@ -193,12 +196,14 @@ class JewelSword : IMythicItem(), Listener {
             }
 
             val itemStack = newSword.toItemStack()
-            killer.inventory.setItemInMainHand(itemStack)
+            killer.itemInHand = itemStack
 
             if (enchantment.rarity == EnchantmentRarity.RARE) {
-                // 1.21：SHOW_ITEM 悬停需要真实物品数据，这里退化为文本悬停
+                val nms = Utils.toNMStackQuick(itemStack)
+                val tag = NBTTagCompound()
+                nms?.save(tag)
                 val hoverEventComponents = arrayOf<BaseComponent>(
-                    TextComponent(itemStack.type.name)
+                    TextComponent(tag.toString())
                 )
 
                 for (p in Bukkit.getOnlinePlayers()) {
@@ -218,7 +223,7 @@ class JewelSword : IMythicItem(), Listener {
             ThePit.getInstance().soundFactory.playSound("successfully", killer)
             killer.sendMessage(CC.translate("&d晋升! &7经过坚持与努力, 您的 &d宝石之剑 &7获得了附魔!"))
         } else {
-            killer.inventory.setItemInMainHand(sword.toItemStack())
+            killer.itemInHand = sword.toItemStack()
         }
     }
 }

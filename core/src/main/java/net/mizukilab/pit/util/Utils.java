@@ -2,12 +2,13 @@ package net.mizukilab.pit.util;
 
 import cn.charlotte.pit.ThePit;
 import cn.charlotte.pit.data.PlayerProfile;
-import io.lumine.xikage.mythicmobs.items.MythicItem;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import lombok.SneakyThrows;
+import net.minecraft.server.v1_8_R3.*;
 import net.mizukilab.pit.config.PitWorldConfig;
 import net.mizukilab.pit.data.operator.PackedOperator;
 import net.mizukilab.pit.enchantment.AbstractEnchantment;
+import net.mizukilab.pit.enchantment.UnknownEnchantment;
 import net.mizukilab.pit.enchantment.rarity.EnchantmentRarity;
 import net.mizukilab.pit.item.AbstractPitItem;
 import net.mizukilab.pit.item.IMythicItem;
@@ -22,31 +23,63 @@ import net.mizukilab.pit.util.aabb.AABB;
 import net.mizukilab.pit.util.arithmetic.IntegerUtils;
 import net.mizukilab.pit.util.inventory.InventoryUtil;
 import net.mizukilab.pit.util.item.ItemUtil;
+import nya.Skip;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
-import org.bukkit.potion.PotionEffectType;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
-
+@Skip
 public class Utils {
 
+    public static void sendRedstoneParticle(
+            Player player,
+            Location location,
+            float r,
+            float g,
+            float b
+    ) {
+        CraftPlayer craftPlayer = (CraftPlayer) player;
+        World world = craftPlayer.getHandle().world;
+
+        if(world instanceof WorldServer e){
+            EntityTrackerEntry entityTrackerEntry = e.tracker.trackedEntities.get(craftPlayer.getEntityId());
+            if(entityTrackerEntry == null){
+                return;
+            }
+            PacketPlayOutWorldParticles packet = new PacketPlayOutWorldParticles(
+                    EnumParticle.REDSTONE,
+                    true,
+                    (float) location.getX(),
+                    (float) location.getY(),
+                    (float) location.getZ(),
+                    r / 255,
+                    g / 255,
+                    b / 255,
+                    1.0f,
+                    0
+            );
+            entityTrackerEntry.broadcastIncludingSelf(packet);
+        }
+    }
     /**
      * 需要Paper支持。
      *
      * @return
      */
-    public static ItemStack toNMStackQuick(ItemStack item) {
-        // 1.21：NMS ItemStack 已不存在，保留方法名以兼容调用方
+    public static net.minecraft.server.v1_8_R3.ItemStack toNMStackQuick(ItemStack item) {
         return PublicUtil.toNMStackQuick(item);
     }
-    public static final long toUnsignedInt(int data){
+    public static long toUnsignedInt(int data){
         return data & 0xFFFFFFFFL;
     }
 
@@ -68,9 +101,10 @@ public class Utils {
      * @param projectile current Entity
      */
     public static void pointMetadataAndRemove(Entity projectile, int later, String... metadata) {
-        Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), () -> {
+        ThePit instance = ThePit.getInstance();
+        Bukkit.getScheduler().runTaskLater(instance, () -> {
             for (String metadatum : metadata) {
-                projectile.removeMetadata(metadatum, ThePit.getInstance());
+                projectile.removeMetadata(metadatum, instance);
             }
         }, later);
     }
@@ -81,22 +115,42 @@ public class Utils {
      * 原理: Enchantment NBT always prepend number at the last char
      */
     @SneakyThrows
-    public static void readEnchantments(Object2IntMap<AbstractEnchantment> ment, java.util.List<String> records) {
-        for (String s : records) {
-            if (s == null) continue;
-            int splitIndex = s.lastIndexOf(':');
-            if (splitIndex <= 0) continue;
-            String enchantmentName = s.substring(0, splitIndex);
-            try {
-                int level = Integer.parseInt(s.substring(splitIndex + 1));
-                AbstractEnchantment enchantment = ThePit.getInstance()
-                        .getEnchantmentFactor()
-                        .getEnchantmentMap()
-                        .get(enchantmentName);
-                if (enchantment != null) {
-                    ment.put(enchantment, level);
+    public static void readEnchantments(Object2IntMap<AbstractEnchantment> ment, NBTTagList nbtTagList) {
+        int size = nbtTagList.size();
+        for (int i = 0; i < size; i++) {
+            String s = nbtTagList.getString(i);
+            int length = s.length();
+            int splitIndex = s.lastIndexOf(':',length - 2);
+
+            ThePit instance = ThePit.getInstance();
+            if (splitIndex != -1) {
+                String enchantmentName = s.substring(0, splitIndex);
+                try {
+                    int level = IntegerUtils.fastParse0(s,splitIndex + 1,length);
+                    AbstractEnchantment enchantment = instance
+                            .getEnchantmentFactor()
+                            .getEnchantmentMap()
+                            .get(enchantmentName);
+
+                    if (enchantment != null) {
+                        ment.put(enchantment, level);
+                    } else {
+                        UnknownEnchantment unknownEnchantment;
+                        AbstractEnchantment existing = instance.getEnchantmentFactor().getEnchantmentMap().get(enchantmentName);
+                        if (existing instanceof UnknownEnchantment) {
+                            unknownEnchantment = (UnknownEnchantment) existing;
+                        } else {
+                            unknownEnchantment = new UnknownEnchantment(enchantmentName);
+                            instance.getEnchantmentFactor().getEnchantmentMap().put(enchantmentName, unknownEnchantment);
+                        }
+                        ment.put(unknownEnchantment, level);
+                    }
+                } catch (NumberFormatException e) {
+                    String levelString = s.substring(splitIndex + 1);
+                    instance.getLogger().warning("Can't serialize level: " + levelString);
                 }
-            } catch (NumberFormatException ignored) {
+            } else {
+                instance.getLogger().warning("Can't serialize level: " + s);
             }
         }
     }
@@ -152,8 +206,8 @@ public class Utils {
     }
 
     public static String dumpNBTOnString(ItemStack stack) {
-        // 1.21：无 NBT，输出物品序列化文本用于排查
-        return String.valueOf(stack);
+        NBTTagCompound tag = Utils.toNMStackQuick(stack).getTag();
+        return tag.toString();
     }
 
     public static IMythicItem getMythicItem(ItemStack item) {
@@ -167,10 +221,8 @@ public class Utils {
         return getMythicItem0(item);
     }
     public static void playBlockBreak(Location location, Material material) {
-        // 1.21：方块破坏粒子直接用世界效果播放
-        if (location.getWorld() != null) {
-            location.getWorld().playEffect(location, org.bukkit.Effect.STEP_SOUND, material);
-        }
+        PacketPlayOutWorldEvent ppowe = new PacketPlayOutWorldEvent(2001, new BlockPosition(location.getX(), location.getY(), location.getZ()), material.getId(), false);
+        Bukkit.getOnlinePlayers().forEach(p -> ((CraftPlayer)p).getHandle().playerConnection.sendPacket(ppowe));
     }
     public static PackedOperator constructUnsafeOperator(String searchName) {
         PlayerProfile playerProfile = PlayerProfile.loadPlayerProfileByName(searchName);
@@ -181,18 +233,26 @@ public class Utils {
         packedOperator.loadAs(playerProfile);
         return packedOperator;
     }
-
+    public static boolean needToCheck(String internalName){
+        return switch (internalName) {
+            case "mythic_sword", "armageddon_boots", "angel_chestplate", "angel_boots", "angel_helmet", "angel_leggings", "kings_helmet", "lucky_chestplate",
+                 "mythic_leggings", "jewel_sword", "mythic_bow", "magic_fishing_rod" -> true;
+            default -> false;
+        };
+    }
     public static IMythicItem getMythicItem0(ItemStack item, String internalName) {
-        IMythicItem mythicItem = null;
         if (internalName == null) { //提前skip, 不需要name。
             return null;
         }
+        IMythicItem mythicItem = null;
         switch (internalName) {
             case "mythic_sword" -> mythicItem = new MythicSwordItem();
-            case "mythic_hammer" -> mythicItem = new net.mizukilab.pit.item.type.mythic.MythicHammerItem();
             case "mythic_bow" -> mythicItem = new MythicBowItem();
             case "mythic_leggings" -> mythicItem = new MythicLeggingsItem();
             case "angel_chestplate" -> mythicItem = new AngelChestplate();
+            case "angel_boots" -> mythicItem = new AngelBoots();
+            case "angel_helmet" -> mythicItem = new AngelHelmet();
+            case "angel_leggings" -> mythicItem = new AngelLeggings();
             case "armageddon_boots" -> mythicItem = new ArmageddonBoots();
             case "kings_helmet" -> mythicItem = new GoldenHelmet();
             case "lucky_chestplate" -> mythicItem = new LuckyChestplate();
@@ -213,12 +273,28 @@ public class Utils {
         return getMythicItem0(item, internalName);
     }
 
-    public static boolean canUseGen(ItemStack item) {
-        if (item == null) {
-            return false;
+    /** Combat can occur between equipment changes and the next scheduled tick. */
+    public static void refreshPlayerEquipment(Player player, PlayerProfile profile) {
+        PlayerInventory inventory = player.getInventory();
+        ItemStack hand = inventory.getItemInHand();
+        if (hand == null || hand.getType() == Material.AIR || hand.getType() == Material.LEATHER_LEGGINGS
+                || hand.getType() == Material.PAPER) {
+            profile.heldItemStack = null;
+            profile.heldItem = null;
+        } else {
+            profile.heldItemStack = hand;
+            profile.heldItem = getMythicItem(hand);
         }
+        ItemStack leggings = inventory.getLeggings();
+        profile.leggingItemStack = leggings;
+        profile.leggings = getMythicItem(leggings);
+    }
+    public static boolean canUseGem(@NotNull ItemStack item) {
 
-        final IMythicItem mythicItem = (IMythicItem) FuncsKt.toMythicItem(item);
+        return canUseGem0(false,item);
+    }
+    public static boolean canUseGem0(boolean rare, ItemStack item){
+        final IMythicItem mythicItem = Utils.getMythicItem(item);
         if (mythicItem == null || !mythicItem.isEnchanted() || mythicItem.isBoostedByGem() || mythicItem.isBoostedByGlobalGem()) {
             return false;
         }
@@ -227,12 +303,20 @@ public class Utils {
             return false;
         }
 
-        for (Map.Entry<AbstractEnchantment, Integer> entry : mythicItem.getEnchantments().entrySet()) {
-            if (entry.getKey().getRarity().getParentType() != EnchantmentRarity.RarityType.RARE && entry.getValue() < entry.getKey().getMaxEnchantLevel()) {
+        return canUseGemSeries(rare,mythicItem);
+    }
+    private static boolean canUseGemSeries(boolean rare, IMythicItem mythicItem) {
+        Object2IntMap.FastEntrySet<AbstractEnchantment> entries = mythicItem.getEnchantments().object2IntEntrySet();
+        int maxLevel = 8;
+        int countedLevel = 0;
+        for (Object2IntMap.Entry<AbstractEnchantment> entry : entries) {
+            int level = entry.getIntValue();
+            AbstractEnchantment key = entry.getKey();
+            boolean rareResult = rare == (key.getRarity().getParentType() == EnchantmentRarity.RarityType.RARE);
+            if (rareResult && key.getMaxEnchantLevel() > level) {
                 return true;
             }
         }
-
         return false;
     }
 
@@ -240,22 +324,8 @@ public class Utils {
         if (item == null) {
             return false;
         }
-
-        final IMythicItem mythicItem = (IMythicItem) FuncsKt.toMythicItem(item);
-        if (mythicItem == null || !mythicItem.isEnchanted() || mythicItem.isBoostedByGem() || mythicItem.isBoostedByGlobalGem()) {
-            return false;
-        }
-        if (mythicItem.getColor() == MythicColor.DARK) {
-            return false;
-        }
-
-        for (Map.Entry<AbstractEnchantment, Integer> entry : mythicItem.getEnchantments().entrySet()) {
-            if (entry.getKey().getRarity().getParentType() == EnchantmentRarity.RarityType.RARE && entry.getValue() < entry.getKey().getMaxEnchantLevel()) {
-                return true;
-            }
-        }
-
-        return false;
+        //?? same method?
+        return canUseGem0(true,item);
     }
 
     public static boolean isNPC(org.bukkit.entity.Entity entity) {
@@ -307,7 +377,12 @@ public class Utils {
         return material == Material.HOPPER || material == Material.ENDER_CHEST;
     }
 
+    /** Binary-compatible overload for extensions compiled against the Player API. */
     public static boolean isInArena(Player player) {
+        return isInArena((Entity) player);
+    }
+
+    public static boolean isInArena(Entity player) {
         PitWorldConfig config = ThePit.getInstance().getPitConfig();
         final AABB aabb = new AABB(config.getPitLocA().getX(), config.getPitLocA().getY(), config.getPitLocA().getZ(), config.getPitLocB().getX(), config.getPitLocB().getY(), config.getPitLocB().getZ());
 
@@ -333,7 +408,7 @@ public class Utils {
         }
 
         if (profile.getEnchantingBook() != null) {
-            return "mythic_reel".equals(ItemUtil.getInternalName(InventoryUtil.deserializeItemStack(profile.getEnchantingBook())));
+            return "mythic_reel".equals(ItemUtil.getInternalName(profile.getEnchantingBookItemStackFormed()));
         }
         return false;
     }

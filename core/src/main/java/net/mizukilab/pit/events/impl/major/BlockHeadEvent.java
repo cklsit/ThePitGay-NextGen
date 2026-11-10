@@ -9,9 +9,12 @@ import cn.charlotte.pit.events.AbstractEvent;
 import cn.charlotte.pit.events.trigger.type.IEpicEvent;
 import cn.charlotte.pit.events.trigger.type.addon.IPreparative;
 import cn.charlotte.pit.events.trigger.type.addon.IScoreBoardInsert;
+import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.properties.Property;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
+import net.minecraft.server.v1_8_R3.PacketPlayOutEntityEquipment;
 import net.mizukilab.pit.config.NewConfiguration;
 import net.mizukilab.pit.util.PlayerUtil;
 import net.mizukilab.pit.util.chat.CC;
@@ -20,6 +23,8 @@ import net.mizukilab.pit.util.inventory.InventoryUtil;
 import net.mizukilab.pit.util.item.ItemUtil;
 import net.mizukilab.pit.util.time.TimeUtil;
 import org.bukkit.*;
+import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
@@ -44,21 +49,24 @@ import java.util.stream.Collectors;
 
 public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listener, IPreparative, IScoreBoardInsert {
     private final Map<UUID, PlayerBlockHeadData> dataMap = new HashMap<>();
-    private final Map<UUID, Integer> rankMap = new HashMap<>();
     public final Map<UUID, PowerUP> pup = new HashMap<>();
-    private static final List<Material> canBeUsed = Arrays.asList(Material.STONE, Material.SHORT_GRASS, Material.DIRT, Material.COBBLESTONE, Material.OAK_PLANKS, Material.BEDROCK
+    private static final List<Material> canBeUsed = Arrays.asList(Material.STONE, Material.GRASS, Material.DIRT, Material.COBBLESTONE, Material.WOOD, Material.BEDROCK
             , Material.GOLD_ORE, Material.IRON_ORE, Material.COAL_ORE
-            , Material.OAK_LOG, Material.LAPIS_ORE,
-            Material.LAPIS_BLOCK, Material.SANDSTONE, Material.NOTE_BLOCK, Material.RED_BED, Material.STICKY_PISTON
-            , Material.WHITE_WOOL, Material.GOLD_BLOCK, Material.IRON_BLOCK, Material.BRICK, Material.TNT, Material.BOOKSHELF, Material.MOSSY_COBBLESTONE, Material.OBSIDIAN,
-            Material.DIAMOND_ORE, Material.DIAMOND_BLOCK, Material.FURNACE, Material.FURNACE, Material.REDSTONE_ORE, Material.ICE, Material.GLOWSTONE, Material.STONE_BRICKS, Material.MELON
+            , Material.LOG, Material.LAPIS_ORE,
+            Material.LAPIS_BLOCK, Material.SANDSTONE, Material.NOTE_BLOCK, Material.BED_BLOCK, Material.PISTON_STICKY_BASE
+            , Material.WOOL, Material.GOLD_BLOCK, Material.IRON_BLOCK, Material.BRICK, Material.TNT, Material.BOOKSHELF, Material.MOSSY_COBBLESTONE, Material.OBSIDIAN,
+            Material.DIAMOND_ORE, Material.DIAMOND_BLOCK, Material.FURNACE, Material.BURNING_FURNACE, Material.REDSTONE_ORE, Material.ICE, Material.GLOWSTONE, Material.SMOOTH_BRICK, Material.MELON_BLOCK
             , Material.PUMPKIN_STEM, Material.MELON_STEM,
-            Material.NETHER_BRICKS, Material.END_STONE, Material.EMERALD_ORE, Material.OBSIDIAN);
+            Material.NETHER_BRICK, Material.ENDER_STONE, Material.EMERALD_ORE, Material.OBSIDIAN).stream()
+            .filter(material -> material.isSolid() && material != Material.FURNACE && material != Material.BURNING_FURNACE)
+            .distinct().collect(Collectors.toList());
     private final Map<String, BlockData> oriBlock = new HashMap<>();
     private final List<Material> selectedMaterials = new ArrayList<>();
     private final List<Entity> entities = new ArrayList<>();
-    private final Cooldown timer = new Cooldown(5L, TimeUnit.MINUTES);
+    private Cooldown timer = new Cooldown(5L, TimeUnit.MINUTES);
     private int allblocks = 0;
+    private final Map<String, org.bukkit.block.BlockState> originalStates = new HashMap<>();
+    private final List<FallingBlock> debris = new ArrayList<>();
     private static final Random random = new Random();
 
 
@@ -92,27 +100,9 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
 
         PlayerBlockHeadData data = dataMap.get(player.getUniqueId());
 
-        if (data != null) {
-            if (System.currentTimeMillis() - get(player, "trail") < 15000) {
-                if (!player.getLocation().add(0.0, -1.0, 0.0).getBlock().getType().equals(Material.AIR) && !player.getLocation().add(0.0, -1.0, 0.0).getBlock().getType().equals(Material.WATER) && !player.getLocation().add(0.0, -1.0, 0.0).getBlock().getType().equals(Material.SNOW)) {
-                    Location belowLocation = new Location(player.getLocation().getWorld(), player.getLocation().getX(), player.getLocation().getY() - 1, player.getLocation().getZ());
-                    if (oriBlock.containsKey(loc(belowLocation))) {
-                        Player blockBelonger = oriBlock.get(loc(belowLocation)).getBelonger();
-                        if (dataMap.containsKey(blockBelonger.getUniqueId())) {
-                            dataMap.get(blockBelonger.getUniqueId()).belong--;
-                        }
-                        oriBlock.get(loc(belowLocation)).setBelonger(player);
-                        data.belong++;
-                        belowLocation.getBlock().setType(data.block);
-                    } else {
-                        BlockData blockData = new BlockData(belowLocation.getBlock().getType(), belowLocation.getBlock().getData(), player);
-                        oriBlock.put(loc(belowLocation), blockData);
-                        data.belong++;
-                        allblocks++;
-                        belowLocation.getBlock().setType(data.block);
-                    }
-                }
-            }
+        if (data == null) return;
+        if (System.currentTimeMillis() - get(player, "trail") < 15000) {
+            claimBlock(player, data, player.getLocation().clone().subtract(0, 1, 0));
         }
         entities.forEach(nearbyEntities -> {
             Location location = nearbyEntities.getLocation();
@@ -126,14 +116,14 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
             if (stand.getCustomName().contains("快速染径") && (System.currentTimeMillis() - get(player, "trail") > 15000)) {
                 refresh(player, "trail");
                 player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 15 * 20, 1));
-                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 100.0f, 1.0f);
+                player.playSound(player.getLocation(), Sound.ORB_PICKUP, 100.0f, 1.0f);
                 player.sendMessage(CC.translate("&9&l快速染径！ &7你获得了15秒的 &f速度II&7,以及你经过的地方将被你染色！"));
             }
             if (stand.getCustomName().contains("超级恢复") && (System.currentTimeMillis() - get(player, "heal") > 15000)) {
                 refresh(player, "heal");
                 player.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 99999, 1));
                 player.setHealth(player.getMaxHealth());
-                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 100.0f, 1.0f);
+                player.playSound(player.getLocation(), Sound.ORB_PICKUP, 100.0f, 1.0f);
                 player.sendMessage(CC.translate("&9&l超级恢复！ &7你获得了4颗心的额外生命!并且你的血量已恢复最大值"));
             }
             if (stand.getCustomName().contains("钻石套装") && (System.currentTimeMillis() - get(player, "diamond") > 15000)) {
@@ -167,12 +157,12 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
                         inventory.setBoots(boot);
                     }
                 }
-                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 100.0f, 1.0f);
+                player.playSound(player.getLocation(), Sound.ORB_PICKUP, 100.0f, 1.0f);
                 player.sendMessage(CC.translate("&9&l钻石套装！ &7你已装备钻石套装！"));
             }
             if (stand.getCustomName().contains("战斗加成") && (System.currentTimeMillis() - get(player, "combat") > 15000)) {
                 refresh(player, "combat");
-                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 100.0f, 1.0f);
+                player.playSound(player.getLocation(), Sound.ORB_PICKUP, 100.0f, 1.0f);
                 player.sendMessage(CC.translate("&9&l战斗加成！ &7击杀玩家后,方块爆炸的半径增加！"));
             }
             stand.remove();
@@ -192,62 +182,13 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
         if (killer != null) {
             killerData = dataMap.get(killer.getUniqueId());
         }
+        if (killer == null || killerData == null) return;
         Location killerLocation = killer.getLocation();
-        int r = 4;
-        if (System.currentTimeMillis() - get(killer, "combat") < 15000) {
-            r = 6;
-        }
+        int r = System.currentTimeMillis() - get(killer, "combat") < 15000 ? 6 : 4;
         for (int x = -r; x <= r; x++) {
             for (int z = -r; z <= r; z++) {
-                Location blockLocation = new Location(killerLocation.getWorld(), killerLocation.getX() + x, killerLocation.getY() - 1, killerLocation.getZ() + z);
-                if (!blockLocation.getBlock().getType().equals(Material.AIR) && !blockLocation.getBlock().getType().equals(Material.WATER) && !blockLocation.getBlock().getType().equals(Material.SNOW)) {
-                    if (oriBlock.containsKey(loc(blockLocation))) {
-                        Player blockBelonger = oriBlock.get(loc(blockLocation)).getBelonger();
-                        if (dataMap.containsKey(blockBelonger.getUniqueId())) {
-                            dataMap.get(blockBelonger.getUniqueId()).belong--;
-                        }
-                        oriBlock.get(loc(blockLocation)).setBelonger(killer);
-                        killerData.belong++;
-                        blockLocation.getBlock().setType(killerData.block);
-                    } else {
-                        BlockData blockData = new BlockData(blockLocation.getBlock().getType(), blockLocation.getBlock().getData(), killer);
-                        oriBlock.put(loc(blockLocation), blockData);
-                        killerData.belong++;
-                        allblocks++;
-                        blockLocation.getBlock().setType(killerData.block);
-                    }
-                } else if (!blockLocation.add(0.0, -1.0, 0.0).getBlock().getType().equals(Material.AIR) && !blockLocation.add(0.0, -1.0, 0.0).getBlock().getType().equals(Material.WATER) && !blockLocation.add(0.0, -1.0, 0.0).getBlock().getType().equals(Material.SNOW)) {
-                    if (oriBlock.containsKey(loc(blockLocation.add(0.0, -1.0, 0.0)))) {
-                        Player blockBelonger = oriBlock.get(loc(blockLocation.add(0.0, -1.0, 0.0))).getBelonger();
-                        if (dataMap.containsKey(blockBelonger.getUniqueId())) {
-                            dataMap.get(blockBelonger.getUniqueId()).belong--;
-                        }
-                        oriBlock.get(loc(blockLocation.add(0.0, -1.0, 0.0))).setBelonger(killer);
-                        killerData.belong++;
-                        blockLocation.add(0.0, -1.0, 0.0).getBlock().setType(killerData.block);
-                    } else {
-                        BlockData blockData = new BlockData(blockLocation.add(0.0, -1.0, 0.0).getBlock().getType(), blockLocation.add(0.0, -1.0, 0.0).getBlock().getData(), killer);
-                        oriBlock.put(loc(blockLocation.add(0.0, -1.0, 0.0)), blockData);
-                        killerData.belong++;
-                        allblocks++;
-                        blockLocation.add(0.0, -1.0, 0.0).getBlock().setType(killerData.block);
-                    }
-                } else if (!blockLocation.add(0.0, -2.0, 0.0).getBlock().getType().equals(Material.AIR) && !blockLocation.add(0.0, -2.0, 0.0).getBlock().getType().equals(Material.WATER) && !blockLocation.add(0.0, -2.0, 0.0).getBlock().getType().equals(Material.SNOW)) {
-                    if (oriBlock.containsKey(loc(blockLocation.add(0.0, -2.0, 0.0)))) {
-                        Player blockBelonger = oriBlock.get(loc(blockLocation.add(0.0, -2.0, 0.0))).getBelonger();
-                        if (dataMap.containsKey(blockBelonger.getUniqueId())) {
-                            dataMap.get(blockBelonger.getUniqueId()).belong--;
-                        }
-                        oriBlock.get(loc(blockLocation.add(0.0, -2.0, 0.0))).setBelonger(killer);
-                        killerData.belong++;
-                        blockLocation.add(0.0, -2.0, 0.0).getBlock().setType(killerData.block);
-                    } else {
-                        BlockData blockData = new BlockData(blockLocation.add(0.0, -2.0, 0.0).getBlock().getType(), blockLocation.add(0.0, -2.0, 0.0).getBlock().getData(), killer);
-                        oriBlock.put(loc(blockLocation.add(0.0, -2.0, 0.0)), blockData);
-                        killerData.belong++;
-                        allblocks++;
-                        blockLocation.add(0.0, -2.0, 0.0).getBlock().setType(killerData.block);
-                    }
+                for (int depth = 1; depth <= 3; depth++) {
+                    if (claimBlock(killer, killerData, killerLocation.clone().add(x, -depth, z))) break;
                 }
             }
         }
@@ -259,14 +200,15 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
         if (vector.getY() > 2.0) {
             vector.setY(2.0);
         }
-        FallingBlock fb = location.getWorld().spawnFallingBlock(location, killerData.block, (byte) 0);
-        FallingBlock fb2 = location.getWorld().spawnFallingBlock(location, killerData.block, (byte) 0);
-        FallingBlock fb3 = location.getWorld().spawnFallingBlock(location, killerData.block, (byte) 0);
-        FallingBlock fb4 = location.getWorld().spawnFallingBlock(location, killerData.block, (byte) 0);
-        FallingBlock fb5 = location.getWorld().spawnFallingBlock(location, killerData.block, (byte) 0);
-        FallingBlock fb6 = location.getWorld().spawnFallingBlock(location, killerData.block, (byte) 0);
-        FallingBlock fb7 = location.getWorld().spawnFallingBlock(location, killerData.block, (byte) 0);
-        FallingBlock fb8 = location.getWorld().spawnFallingBlock(location, killerData.block, (byte) 0);
+        World world1 = location.getWorld();
+        FallingBlock fb = world1.spawnFallingBlock(location, killerData.block, (byte) 0);
+        FallingBlock fb2 = world1.spawnFallingBlock(location, killerData.block, (byte) 0);
+        FallingBlock fb3 = world1.spawnFallingBlock(location, killerData.block, (byte) 0);
+        FallingBlock fb4 = world1.spawnFallingBlock(location, killerData.block, (byte) 0);
+        FallingBlock fb5 = world1.spawnFallingBlock(location, killerData.block, (byte) 0);
+        FallingBlock fb6 = world1.spawnFallingBlock(location, killerData.block, (byte) 0);
+        FallingBlock fb7 = world1.spawnFallingBlock(location, killerData.block, (byte) 0);
+        FallingBlock fb8 = world1.spawnFallingBlock(location, killerData.block, (byte) 0);
         double vector1 = 0.4;
         double vector2 = 0.3;
         fb.setVelocity(new Vector(vector1, 0.0, 0.0));
@@ -280,16 +222,17 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
         FallingBlock[] fallingBlocks = new FallingBlock[]{fb, fb2, fb3, fb4, fb5, fb6, fb7, fb8};
         for (FallingBlock fallingBlock : fallingBlocks) {
             fallingBlock.setDropItem(false);
+            debris.add(fallingBlock);
         }
         if (victim.getInventory().getHelmet() == null) {
-            Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), () -> victim.getInventory().setHelmet(new ItemStack(victimData.block)), 10L);
+            runEventTaskLater(() -> { if (victim.isOnline() && dataMap.get(victim.getUniqueId()) == victimData) victim.getInventory().setHelmet(new ItemStack(victimData.block)); }, 10L);
         }
         pup.remove(victim.getUniqueId());
     }
 
     @EventHandler
     public void onFallingBlockLand(EntityChangeBlockEvent event) {
-        if (event.getEntity() instanceof FallingBlock) {
+        if (event.getEntity() instanceof FallingBlock && debris.remove(event.getEntity())) {
             FallingBlock fallingBlock = (FallingBlock) event.getEntity();
             fallingBlock.remove();
             event.setCancelled(true);
@@ -297,14 +240,25 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
     }
 
     private void sendPacket(Player player) {
-        // 1.21：伪装头盔改由 PacketEvents 下发装备包
-        net.mizukilab.pit.util.VisibleApi.setFakeHelmet(player,
-                new ItemStack(dataMap.get(player.getUniqueId()).block));
+        PacketPlayOutEntityEquipment packet;
+        packet = new PacketPlayOutEntityEquipment(player.getEntityId(), 4, CraftItemStack.asNMSCopy(new ItemStack(dataMap.get(player.getUniqueId()).block)));
+        for (Player target : Bukkit.getOnlinePlayers()) {
+            if (target.equals(player)) {
+                continue;
+            }
+            ((CraftPlayer) target).getHandle()
+                    .playerConnection
+                    .sendPacket(packet);
+        }
+        //player.getInventory().setHelmet(new ItemStack(dataMap.get(player.getUniqueId()).block));
     }
 
     @Override
     public void onActive() {
-        Bukkit.getScheduler().runTask(ThePit.getInstance(), () -> {
+        this.timer = new Cooldown(5, TimeUnit.MINUTES);
+        dataMap.clear();
+        pup.clear();
+        {
             Bukkit.getPluginManager().registerEvents(this, ThePit.getInstance());
             selectedMaterials.clear();
             this.allblocks = 0;
@@ -320,7 +274,7 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
                     newdata(player);
                 }
             }
-            new BukkitRunnable() {
+            trackTask(new BukkitRunnable() {
                 @Override
                 public void run() {
                     if (BlockHeadEvent.this.timer.hasExpired()) {
@@ -349,19 +303,22 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
                         entities.addAll(curEnt);
                     }
                 }
-            }.runTaskTimer(ThePit.getInstance(), 20L, 20L);
+            }.runTaskTimer(ThePit.getInstance(), 20L, 20L));
 
-        });
+        }
     }
 
     @Override
     public void onInactive() {
-        Bukkit.getScheduler().runTask(ThePit.getInstance(), () -> {
+        {
             ThePit.getInstance().getBossBar().getBossBar().setTitle("");
+            try {
+            if (isAborting()) return;
             HashSet<Map.Entry<UUID, PlayerBlockHeadData>> entry = new HashSet<>(dataMap.entrySet());
             List collect = entry.stream().map(Map.Entry::getValue).sorted(Comparator.comparingDouble(PlayerBlockHeadData::getBelong).reversed()).collect(Collectors.toList());
-            int rank = 1;
+            int position = 0;
             for (Object data : collect) {
+                int rank = ++position;
                 Player player = Bukkit.getPlayer(((PlayerBlockHeadData) data).uuid);
                 if (player == null || !player.isOnline()) {
                     continue;
@@ -384,7 +341,7 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
                     rewardCoins += 100.0;
                 }
                 if (allblocks >= 10000) {
-                    rewardCoins = 1250;
+                    rewardCoins += 1250;
                 }
                 if (ThePit.getInstance().getPitConfig().isGenesisEnable() && profile.getGenesisData().getTier() >= 5 && rewardRenown > 0) {
                     ++rewardRenown;
@@ -421,33 +378,31 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
                     }
                 }
                 player.sendMessage(CC.GOLD + CC.CHAT_BAR);
-                ++rank;
             }
+            } finally {
             allblocks = 0;
             HandlerList.unregisterAll(this);
             for (Player player : Bukkit.getServer().getOnlinePlayers()) {
                 PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
-                profile.setTempInvUsing(false);
-                PlayerBlockHeadData data = dataMap.get(player.getUniqueId());
-                if (data != null) {
-                    dataMap.remove(player.getUniqueId());
-                }
+                if (!profile.isLoaded() || !dataMap.containsKey(player.getUniqueId()) || !profile.isTempInvUsing()) continue;
                 PlayerProfile.getPlayerProfileByUuid(player.getUniqueId()).getInventory().applyItemToPlayer(player);
+                profile.getEnderChest().rollback();
+                profile.getWarehouse().rollback();
+                profile.setTempInvUsing(false);
             }
             entities.removeIf(i -> {
                 i.remove();
                 return true;
             });
-            for (String loc : oriBlock.keySet()) {
-                Location location = toLoc(loc);
-                BlockHeadEvent.BlockData blockData = oriBlock.get(loc);
-                if (blockData != null) {
-                    location.getBlock().setType(blockData.getType());
-                }
-            }
+            for (org.bukkit.block.BlockState state : originalStates.values()) state.update(true, false);
+            originalStates.clear();
+            debris.forEach(Entity::remove);
+            debris.clear();
+            dataMap.clear();
             oriBlock.clear();
             pup.clear();
-        });
+            }
+        }
     }
 
     @Override
@@ -467,19 +422,30 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
 
     @EventHandler
     public void onSpawn(PitPlayerSpawnEvent event) {
-        PlayerBlockHeadData data = dataMap.get(event.getPlayer().getUniqueId());
-        PlayerProfile.getPlayerProfileByUuid(event.getPlayer().getUniqueId()).getInventory().applyItemToPlayer(event.getPlayer());
+        if (!dataMap.containsKey(event.getPlayer().getUniqueId())) return;
+        PlayerProfile playerProfileByUuid = PlayerProfile.getPlayerProfileByUuid(event.getPlayer().getUniqueId());
+        playerProfileByUuid.getInventory().applyItemToPlayer(event.getPlayer());
+        playerProfileByUuid.getEnderChest().rollback();
+        playerProfileByUuid.getWarehouse().rollback();
         sendPacket(event.getPlayer());
     }
 
-    @EventHandler
+    @EventHandler(priority = org.bukkit.event.EventPriority.LOWEST)
     public void onQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         PlayerBlockHeadData data = dataMap.get(player.getUniqueId());
         if (data == null) {
             return;
         }
+        PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
+        if (profile.isLoaded() && profile.isTempInvUsing()) {
+            profile.getInventory().applyItemToPlayer(player);
+            profile.getEnderChest().rollback();
+            profile.getWarehouse().rollback();
+            profile.setTempInvUsing(false);
+        }
         dataMap.remove(player.getUniqueId());
+        pup.remove(player.getUniqueId());
     }
 
     @EventHandler
@@ -498,12 +464,12 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
             rank.put(en.belong, i);
             ++i;
         }
-        return rank.get(data.belong);
+        return data == null ? -1 : rank.getOrDefault(data.belong, -1);
     }
 
     @EventHandler
     public void onArmorStandManipulate(PlayerArmorStandManipulateEvent event) {
-        event.setCancelled(true);
+        if (entities.contains(event.getRightClicked())) event.setCancelled(true);
     }
 
     public static class PlayerBlockHeadData {
@@ -518,6 +484,9 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
     }
 
     public void newdata(Player player) {
+        if (player == null || !player.isOnline() || dataMap.containsKey(player.getUniqueId())) return;
+        if (!PlayerProfile.getPlayerProfileByUuid(player.getUniqueId()).isLoaded()
+                || PlayerProfile.getPlayerProfileByUuid(player.getUniqueId()).isTempInvUsing()) return;
         PlayerBlockHeadData data;
         if (!dataMap.containsKey(player.getUniqueId())) {
             data = new PlayerBlockHeadData();
@@ -531,8 +500,10 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
         dataMap.put(player.getUniqueId(), data);
 
         PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
-        profile.setInventory(PlayerInv.fromPlayerInventory(player.getInventory()));
         profile.setTempInvUsing(true);
+        profile.setInventory(PlayerInv.fromPlayerInventory(player.getInventory()));
+        profile.getEnderChest().snapshot();
+        profile.getWarehouse().snapshot();
         sendPacket(player);
     }
 
@@ -547,14 +518,6 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
             this.type = type;
             this.data = data;
             this.belonger = belonger;
-        }
-
-        public Material getType() {
-            return type;
-        }
-
-        public byte getData() {
-            return data;
         }
 
     }
@@ -661,18 +624,31 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
         }
         stand.setCustomNameVisible(true);
         stand.setGravity(false);
-        String texture = "e3RleHR1cmVzOntTS0lOOnt1cmw6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMjBlMDFiYTI4MTNkYWJlNTVjMWM1OGYyNThiNDNlOTMxNWViYjFiZTlhZTI1NmRiZmFhYjY2YWVhZjdhODA0ZSJ9fX0=";
+        ItemStack is = new ItemStack(Material.SKULL_ITEM, 1, (short) 3);
+        SkullMeta sm = (SkullMeta) is.getItemMeta();
+        GameProfile profile = new GameProfile(UUID.randomUUID(), "");
         switch (type) {
-            case "quicktrail" -> texture = "e3RleHR1cmVzOntTS0lOOnt1cmw6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMjBlMDFiYTI4MTNkYWJlNTVjMWM1OGYyNThiNDNlOTMxNWViYjFiZTlhZTI1NmRiZmFhYjY2YWVhZjdhODA0ZSJ9fX0=";
-            case "combatboost" -> texture = "e3RleHR1cmVzOntTS0lOOnt1cmw6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMWIxODY4ZmFjZjQ5MTk1YWQzM2I4MTBlZDgwNmI0MTUwZmYwY2IxOTUzNDI4NTIxYTZhYzg3NjM3Y2M4NDViIn19fQ==";
-            case "superheal" -> texture = "ewogICJ0aW1lc3RhbXAiIDogMTY3MDY3MzA1NjI1NSwKICAicHJvZmlsZUlkIiA6ICI5ZTI3MGUwNzc1ZDg0OWI5Yjk2OTlmMzU3YjVlZjc4NiIsCiAgInByb2ZpbGVOYW1lIiA6ICJBcHBsaW5ncyIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS8zZTg0MDg4OWRjODM3NTc3ZjI1YTM2OWNkZmU4OTU2ZDI4ODgzYzk2NzIzYWM5OTQ5ZmMyZGExZjUwZjJhMWNhIgogICAgfQogIH0KfQ==";
-            case "diamondarmor" -> texture = "e3RleHR1cmVzOntTS0lOOnt1cmw6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNDM0M2Q2NGQ3YjYwNWQ1MWM1ZWE3Y2I0Y2M2N2NiOTQwNGM4YmU0ZGNiMjk3OWI0MmVlZDExOGFjMjg2NDJkMSJ9fX0=";
-            default -> {
-            }
+            case "quicktrail":
+                profile.getProperties().put("textures", new Property("texture", "e3RleHR1cmVzOntTS0lOOnt1cmw6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMjBlMDFiYTI4MTNkYWJlNTVjMWM1OGYyNThiNDNlOTMxNWViYjFiZTlhZTI1NmRiZmFhYjY2YWVhZjdhODA0ZSJ9fX0="));
+                break;
+            case "combatboost":
+                profile.getProperties().put("textures", new Property("texture", "e3RleHR1cmVzOntTS0lOOnt1cmw6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMWIxODY4ZmFjZjQ5MTk1YWQzM2I4MTBlZDgwNmI0MTUwZmYwY2IxOTUzNDI4NTIxYTZhYzg3NjM3Y2M4NDViIn19fQ=="));
+                break;
+            case "superheal":
+                profile.getProperties().put("textures", new Property("texture", "ewogICJ0aW1lc3RhbXAiIDogMTY3MDY3MzA1NjI1NSwKICAicHJvZmlsZUlkIiA6ICI5ZTI3MGUwNzc1ZDg0OWI5Yjk2OTlmMzU3YjVlZjc4NiIsCiAgInByb2ZpbGVOYW1lIiA6ICJBcHBsaW5ncyIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS8zZTg0MDg4OWRjODM3NTc3ZjI1YTM2OWNkZmU4OTU2ZDI4ODgzYzk2NzIzYWM5OTQ5ZmMyZGExZjUwZjJhMWNhIgogICAgfQogIH0KfQ=="));
+                break;
+            case "diamondarmor":
+                profile.getProperties().put("textures", new Property("texture", "e3RleHR1cmVzOntTS0lOOnt1cmw6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNDM0M2Q2NGQ3YjYwNWQ1MWM1ZWE3Y2I0Y2M2N2NiOTQwNGM4YmU0ZGNiMjk3OWI0MmVlZDExOGFjMjg2NDJkMSJ9fX0="));
+                break;
         }
-        ItemStack is = new net.mizukilab.pit.util.item.ItemBuilder(Material.PLAYER_HEAD)
-                .setSkullProperty(texture)
-                .build();
+        try {
+            Field profileField = sm.getClass().getDeclaredField("profile");
+            profileField.setAccessible(true);
+            profileField.set(sm, profile);
+        } catch (IllegalAccessException | IllegalArgumentException | NoSuchFieldException | SecurityException e) {
+            e.printStackTrace();
+        }
+        is.setItemMeta(sm);
         if (!"diamondarmor".equals(type)) {
             stand.setHelmet(is);
         } else {
@@ -682,19 +658,40 @@ public class BlockHeadEvent extends AbstractEvent implements IEpicEvent, Listene
     }
 
     public String loc(Location loc) {
-        return loc.getBlockX() + "," +
+        return loc.getWorld().getUID() + "," + loc.getBlockX() + "," +
                 loc.getBlockY() + "," +
                 loc.getBlockZ();
     }
 
     public Location toLoc(String coordinates) {
         String[] parts = coordinates.split(",");
-        if (parts.length != 3) {
-            return null;
+        if (parts.length != 3 && parts.length != 4) return null;
+        int offset = parts.length == 4 ? 1 : 0;
+        World world = offset == 1 ? Bukkit.getWorld(UUID.fromString(parts[0])) : Bukkit.getWorld("world");
+        return world == null ? null : new Location(world, Integer.parseInt(parts[offset]),
+                Integer.parseInt(parts[offset + 1]), Integer.parseInt(parts[offset + 2]));
+    }
+
+    private boolean claimBlock(Player player, PlayerBlockHeadData data, Location location) {
+        org.bukkit.block.Block block = location.getBlock();
+        Material type = block.getType();
+        if (!type.isSolid() || block.isLiquid() || type == Material.SNOW) return false;
+        String key = loc(location);
+        BlockData previous = oriBlock.get(key);
+        if (previous != null) {
+            if (player.equals(previous.getBelonger())) return true;
+            PlayerBlockHeadData owner = dataMap.get(previous.getBelonger().getUniqueId());
+            if (owner != null) owner.belong = Math.max(0, owner.belong - 1);
+            previous.setBelonger(player);
+        } else {
+            org.bukkit.block.BlockState original = block.getState();
+            if (original instanceof org.bukkit.inventory.InventoryHolder) return false;
+            originalStates.put(key, original);
+            oriBlock.put(key, new BlockData(type, block.getData(), player));
+            allblocks++;
         }
-        int x = Integer.parseInt(parts[0]);
-        int y = Integer.parseInt(parts[1]);
-        int z = Integer.parseInt(parts[2]);
-        return new Location(Bukkit.getWorld("world"), x, y, z);
+        data.belong++;
+        block.setType(data.block);
+        return true;
     }
 }

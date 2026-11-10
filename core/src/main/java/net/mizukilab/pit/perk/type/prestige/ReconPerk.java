@@ -42,7 +42,7 @@ public class ReconPerk extends AbstractPerk implements Listener,IPlayerShootEnti
 
     @Override
     public Material getIcon() {
-        return Material.ENDER_EYE;
+        return Material.EYE_OF_ENDER;
     }
 
     @Override

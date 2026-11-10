@@ -4,6 +4,15 @@ import cn.charlotte.pit.ThePit;
 import cn.charlotte.pit.data.PlayerProfile;
 import cn.charlotte.pit.events.AbstractEvent;
 import cn.charlotte.pit.events.trigger.type.INormalEvent;
+import com.boydti.fawe.FaweAPI;
+import com.sk89q.worldedit.EditSession;
+import com.sk89q.worldedit.Vector;
+import com.sk89q.worldedit.blocks.BaseBlock;
+import com.sk89q.worldedit.blocks.BlockID;
+import com.sk89q.worldedit.bukkit.BukkitUtil;
+import com.sk89q.worldedit.bukkit.BukkitWorld;
+import com.sk89q.worldedit.function.pattern.RandomPattern;
+import com.sk89q.worldedit.regions.CuboidRegion;
 import net.mizukilab.pit.config.NewConfiguration;
 import net.mizukilab.pit.config.PitWorldConfig;
 import net.mizukilab.pit.medal.impl.challenge.CakeEventMedal;
@@ -36,23 +45,16 @@ import java.util.UUID;
  */
 public class CakeEvent extends AbstractEvent implements INormalEvent, Listener {
 
-    private static java.util.List<org.bukkit.Location[]> zones;
-    private static final java.util.Map<org.bukkit.Location, org.bukkit.block.data.BlockData> ORIGINAL_BLOCKS = new java.util.HashMap<>();
+    private static CuboidRegion[] regions;
     private final DecimalFormat numFormatTwo = new DecimalFormat("0.00");
     private final DecimalFormat df = new DecimalFormat(",###,###,###,###");
+    private EditSession session;
     private AABB alignedBB;
     private Map<UUID, CakePlayerData> dataCache;
 
-    public CakeEvent() {
-        if (zones == null) {
-            PitWorldConfig config = ThePit.getInstance().getPitConfig();
-            zones = new java.util.ArrayList<>();
-            zones.add(new org.bukkit.Location[]{config.getCakeZoneAPosA(), config.getCakeZoneAPosB()});
-            zones.add(new org.bukkit.Location[]{config.getCakeZoneBPosA(), config.getCakeZoneBPosB()});
-            zones.add(new org.bukkit.Location[]{config.getCakeZoneCPosA(), config.getCakeZoneCPosB()});
-            zones.add(new org.bukkit.Location[]{config.getCakeZoneDPosA(), config.getCakeZoneDPosB()});
-        }
-    }
+    private org.bukkit.World eventWorld;
+
+    public CakeEvent() { }
 
     @Override
     public String getEventInternalName() {
@@ -66,7 +68,7 @@ public class CakeEvent extends AbstractEvent implements INormalEvent, Listener {
 
     @Override
     public int requireOnline() {
-        return NewConfiguration.INSTANCE.getEventOnlineRequired().get(getEventInternalName());
+        return NewConfiguration.INSTANCE.getEventOnlineRequired().getOrDefault(getEventInternalName(), 10);
     }
 
     @Override
@@ -75,39 +77,34 @@ public class CakeEvent extends AbstractEvent implements INormalEvent, Listener {
 
         this.dataCache = new HashMap<>();
 
-        final org.bukkit.Location[] zone = zones.get(RandomUtil.random.nextInt(zones.size()));
-        final int minX = Math.min(zone[0].getBlockX(), zone[1].getBlockX());
-        final int minY = Math.min(zone[0].getBlockY(), zone[1].getBlockY());
-        final int minZ = Math.min(zone[0].getBlockZ(), zone[1].getBlockZ());
-        final int maxX = Math.max(zone[0].getBlockX(), zone[1].getBlockX());
-        final int maxY = Math.max(zone[0].getBlockY(), zone[1].getBlockY());
-        final int maxZ = Math.max(zone[0].getBlockZ(), zone[1].getBlockZ());
-        this.alignedBB = new AABB(minX, minY, minZ, maxX, maxY, maxZ);
+        PitWorldConfig config = ThePit.getInstance().getPitConfig();
+        Location[][] zones = {{config.getCakeZoneAPosA(), config.getCakeZoneAPosB()},
+                {config.getCakeZoneBPosA(), config.getCakeZoneBPosB()},
+                {config.getCakeZoneCPosA(), config.getCakeZoneCPosB()},
+                {config.getCakeZoneDPosA(), config.getCakeZoneDPosB()}};
+        java.util.List<Location[]> valid = new java.util.ArrayList<>();
+        for (Location[] zone : zones) if (zone[0] != null && zone[1] != null && zone[0].getWorld() != null
+                && zone[0].getWorld().equals(zone[1].getWorld())) valid.add(zone);
+        if (valid.isEmpty()) throw new IllegalStateException("No valid cake regions configured");
+        Location[] zone = valid.get(RandomUtil.random.nextInt(valid.size()));
+        eventWorld = zone[0].getWorld();
+        final CuboidRegion region = new CuboidRegion(BukkitUtil.toVector(zone[0]), BukkitUtil.toVector(zone[1]));
+        final Vector pos1 = region.getPos1();
+        final Vector pos2 = region.getPos2();
+        this.alignedBB = new AABB(pos1.getX(), pos1.getY(), pos1.getZ(), pos2.getX(), pos2.getY(), pos2.getZ());
 
-        org.bukkit.World bukkitWorld = Bukkit.getWorlds().get(0);
-        Bukkit.getScheduler().runTask(ThePit.getInstance(), () -> {
-            ORIGINAL_BLOCKS.clear();
-            java.util.Random random = new java.util.Random();
-            for (int x = minX; x <= maxX; x++) {
-                for (int y = minY; y <= maxY; y++) {
-                    for (int z = minZ; z <= maxZ; z++) {
-                        org.bukkit.block.Block block = bukkitWorld.getBlockAt(x, y, z);
-                        Material target;
-                        double roll = random.nextDouble();
-                        if (roll < 0.94) {
-                            target = Material.CAKE;
-                        } else if (roll < 0.97) {
-                            target = Material.RED_TERRACOTTA;
-                        } else {
-                            target = Material.BLACK_TERRACOTTA;
-                        }
-                        if (block.getType() != target) {
-                            ORIGINAL_BLOCKS.put(block.getLocation(), block.getBlockData());
-                            block.setType(target, false);
-                        }
-                    }
-                }
-            }
+        cn.charlotte.pit.events.EventWorldEdits.build(this, () -> {
+            BukkitWorld world = new BukkitWorld(eventWorld);
+            this.session = FaweAPI.getEditSessionBuilder(world).build();
+
+            final RandomPattern pattern = new RandomPattern();
+            pattern.add(new BaseBlock(BlockID.CAKE_BLOCK), 0.94);
+            pattern.add(new BaseBlock(BlockID.STAINED_CLAY, 2), 0.03);
+            pattern.add(new BaseBlock(BlockID.STAINED_CLAY, 15), 0.03);
+
+            session.setBlocks(region, pattern);
+
+            cn.charlotte.pit.events.EventWorldEdits.flush(session);
         });
 
         Bukkit.getPluginManager()
@@ -118,15 +115,14 @@ public class CakeEvent extends AbstractEvent implements INormalEvent, Listener {
 
     @Override
     public void onInactive() {
-        Bukkit.getScheduler().runTask(ThePit.getInstance(), () -> {
-            for (java.util.Map.Entry<org.bukkit.Location, org.bukkit.block.data.BlockData> entry : ORIGINAL_BLOCKS.entrySet()) {
-                entry.getKey().getBlock().setBlockData(entry.getValue(), false);
-            }
-            ORIGINAL_BLOCKS.clear();
+        cn.charlotte.pit.events.EventWorldEdits.undo(() -> {
+            if (this.session != null) cn.charlotte.pit.events.EventWorldEdits.restore(session);
+            if (this.session != null) { cn.charlotte.pit.events.EventWorldEdits.flush(session); this.session = null; }
         });
 
         HandlerList.unregisterAll(this);
 
+        if (dataCache == null || isAborting()) return;
         for (UUID uuid : dataCache.keySet()) {
             if (dataCache.get(uuid).coins >= 5000 && Bukkit.getPlayer(uuid) != null) {
                 new CakeEventMedal().addProgress(PlayerProfile.getPlayerProfileByUuid(uuid), 1);
@@ -141,13 +137,18 @@ public class CakeEvent extends AbstractEvent implements INormalEvent, Listener {
         }
 
         final Block block = event.getClickedBlock();
+        if (block == null || alignedBB == null || !block.getWorld().equals(eventWorld)) return;
         final Location location = block.getLocation();
         final AABB blockAABB = new AABB(location.getX() - 1, location.getY() - 1, location.getZ() - 1, location.getX() + 1, location.getY() + 1, location.getZ() + 1);
         final Player player = event.getPlayer();
         final PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
 
 
-        if (alignedBB.intersectsWith(blockAABB)) {
+        if (location.getBlockX() >= alignedBB.minX && location.getBlockX() <= alignedBB.maxX
+                && location.getBlockY() >= alignedBB.minY && location.getBlockY() <= alignedBB.maxY
+                && location.getBlockZ() >= alignedBB.minZ && location.getBlockZ() <= alignedBB.maxZ) {
+            event.setCancelled(true);
+            if (!profile.isLoaded()) return;
             CakePlayerData cakePlayerData = dataCache.get(player.getUniqueId());
             if (cakePlayerData == null) {
                 cakePlayerData = new CakePlayerData();
@@ -169,14 +170,14 @@ public class CakeEvent extends AbstractEvent implements INormalEvent, Listener {
 
             cakePlayerData.cooldown = new Cooldown(100);
 
-            if (block.getType() == Material.CAKE) {
+            if (block.getType() == Material.CAKE_BLOCK) {
                 int baseCoins = 1;
 
                 if (block.getData() == 6) {
                     baseCoins += 5;
                     block.setType(Material.AIR);
                 } else {
-                    block.setBlockData(block.getBlockData().getMaterial().createBlockData());
+                    block.setData((byte) (block.getData() + 1));
                 }
                 block.getState().update();
 
@@ -189,11 +190,11 @@ public class CakeEvent extends AbstractEvent implements INormalEvent, Listener {
                 profile.grindCoins(totalCoins);
                 profile.setCoins(profile.getCoins() + totalCoins);
 
-                player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EAT, 1, 1);
+                player.playSound(player.getLocation(), Sound.EAT, 1, 1);
 
                 CC.send(MessageType.EVENT, player, "&d&l蛋糕! &6+" + totalCoins + "金币 &d" + cakePlayerData.clicked + "次吃蛋糕" + " &6(" + numFormatTwo.format(cakePlayerData.coins) + "金币在这次事件中)");
 
-            } else if (block.getType() == Material.TERRACOTTA) {
+            } else if (block.getType() == Material.STAINED_CLAY) {
                 final byte data = block.getState().getData().getData();
                 if (data == 2) {
                     block.setType(Material.AIR);
@@ -205,7 +206,7 @@ public class CakeEvent extends AbstractEvent implements INormalEvent, Listener {
                     profile.grindCoins(totalCoins);
                     profile.setCoins(profile.getCoins() + totalCoins);
 
-                    player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EAT, 1, 1);
+                    player.playSound(player.getLocation(), Sound.EAT, 1, 1);
 
                     CC.send(MessageType.EVENT, player, "&d&l蛋糕! &7吃下了 &c樱桃 &6+20金币&7!");
                 } else if (data == 15) {
@@ -213,12 +214,12 @@ public class CakeEvent extends AbstractEvent implements INormalEvent, Listener {
 
                     double totalXp = 20;
                     cakePlayerData.clicked++;
-                    cakePlayerData.coins += totalXp;
+
 
                     profile.setExperience(profile.getExperience() + totalXp);
                     profile.applyExperienceToPlayer(player);
 
-                    player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EAT, 1, 1);
+                    player.playSound(player.getLocation(), Sound.EAT, 1, 1);
 
                     CC.send(MessageType.EVENT, player, "&d&l蛋糕! &7吃下了 &4巧克力 &b+20经验&7!");
                 }
@@ -229,7 +230,7 @@ public class CakeEvent extends AbstractEvent implements INormalEvent, Listener {
 
     private boolean canEat(Location location) {
         for (Location face : LocationUtil.getFaces(location)) {
-            if (face.getBlock().getType() != Material.CAKE && face.getBlock().getType() != Material.TERRACOTTA) {
+            if (face.getBlock().getType() != Material.CAKE_BLOCK && face.getBlock().getType() != Material.STAINED_CLAY) {
                 return true;
             }
         }

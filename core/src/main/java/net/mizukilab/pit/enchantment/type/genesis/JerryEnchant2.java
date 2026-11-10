@@ -13,6 +13,7 @@ import net.mizukilab.pit.util.music.PositionSongPlayer;
 import net.mizukilab.pit.util.music.Song;
 import io.irina.backports.utils.SWMRHashTable;
 import lombok.SneakyThrows;
+import net.minecraft.server.v1_8_R3.PacketPlayInFlying;
 import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.Location;
@@ -43,12 +44,9 @@ public class JerryEnchant2 extends AbstractEnchantment implements ITickTask, Mov
         this.angle = NBSDecoder.parse(ThePit.getInstance().getClass().getClassLoader().getResourceAsStream("Eromanga.nbs"));
         this.demon = NBSDecoder.parse(ThePit.getInstance().getClass().getClassLoader().getResourceAsStream("Demons.nbs"));
 
-
         new BukkitRunnable() {
             @Override
             public void run() {
-
-
                 Set<Map.Entry<UUID, PositionSongPlayer>> entries = new HashSet<>(playerMap.entrySet());
                 for (Map.Entry<UUID, PositionSongPlayer> entry : entries) {
                     Player player = Bukkit.getPlayer(entry.getKey());
@@ -64,11 +62,6 @@ public class JerryEnchant2 extends AbstractEnchantment implements ITickTask, Mov
                 }
             }
         }.runTaskTimer(ThePit.getInstance(), 20, 20);
-
-        try {
-            iSpigot.INSTANCE.addMovementHandler(this);
-        } catch (Exception ignore) {
-        }
     }
 
     @Override
@@ -127,7 +120,7 @@ public class JerryEnchant2 extends AbstractEnchantment implements ITickTask, Mov
             this.playerMap.put(target.getUniqueId(), player);
         } else {
 
-            target.getWorld().spawnParticle(org.bukkit.Particle.NOTE, target.getLocation().clone().add(0, 3, 0), 1);
+            target.getWorld().playEffect(target.getLocation().clone().add(0, 3, 0), Effect.NOTE, 1);
         }
     }
 
@@ -138,7 +131,7 @@ public class JerryEnchant2 extends AbstractEnchantment implements ITickTask, Mov
 
 
     @Override
-    public void handleUpdateLocation(Player player, Location location, Location location1, Object packetPlayInFlying) {
+    public void handleUpdateLocation(Player player, Location location, Location location1, PacketPlayInFlying packetPlayInFlying) {
         PositionSongPlayer songPlayer = this.playerMap.get(player.getUniqueId());
         if (songPlayer != null) {
             songPlayer.setTargetLocation(player.getPlayer().getLocation());
@@ -146,7 +139,7 @@ public class JerryEnchant2 extends AbstractEnchantment implements ITickTask, Mov
     }
 
     @Override
-    public void handleUpdateRotation(Player player, Location location, Location location1, Object packetPlayInFlying) {
+    public void handleUpdateRotation(Player player, Location location, Location location1, PacketPlayInFlying packetPlayInFlying) {
 
     }
 }

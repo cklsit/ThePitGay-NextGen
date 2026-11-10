@@ -79,7 +79,7 @@ public class AuctionBidButton extends Button {
         } else {
             return new ItemStack(Material.AIR);
         }
-        return new ItemBuilder(Material.GOLDEN_HORSE_ARMOR)
+        return new ItemBuilder(Material.GOLD_BARDING)
                 .name("&6参与竞拍")
                 .lore(lines)
                 .build();
@@ -94,10 +94,12 @@ public class AuctionBidButton extends Button {
             if (!event.isAllowedToParticipate(player.getUniqueId())) {
                 return;
             }
+            final long generation = event.getGeneration();
             if (clickType == ClickType.RIGHT || clickType == ClickType.SHIFT_RIGHT) {
                 ThePit.getInstance()
                         .getSignGui()
                         .open(player, new String[]{"", "~~~~~~~~~~~~~", "请在此输入", "你的出价"}, (player1, lines) -> {
+                            if (!player.isOnline() || event.getGeneration() != generation || eventFactory.getActiveNormalEvent() != event) return;
                             player.closeInventory();
                             try {
                                 final long bidPrice = Long.parseLong(lines[0]);

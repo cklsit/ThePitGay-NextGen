@@ -59,7 +59,7 @@ public class BidHistoryButton extends Button {
         } else {
             return new ItemStack(Material.AIR);
         }
-        return new ItemBuilder(Material.FILLED_MAP)
+        return new ItemBuilder(Material.MAP)
                 .name("&e竞拍记录")
                 .lore(lines)
                 .build();

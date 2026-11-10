@@ -82,15 +82,9 @@ public class WarehouseListener implements Listener {
     }
 
     private boolean isWarehouseInventory(Inventory inventory) {
-        if (inventory == null || inventory.getViewers().isEmpty()) {
-            return false;
-        }
-        // 1.21：Inventory 不再暴露标题，改由打开该容器的玩家视图判断
-        return inventory.getViewers().stream()
-                .filter(org.bukkit.entity.HumanEntity.class::isInstance)
-                .map(viewer -> net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
-                        .serialize(viewer.getOpenInventory().title()))
-                .anyMatch(title -> title.startsWith("寄存箱 #"));
+        if (inventory == null) return false;
+        String title = inventory.getTitle();
+        return title != null && title.startsWith("寄存箱 #");
     }
 
     private void moveItemToWarehouse(Player player, Inventory warehouseInventory, org.bukkit.inventory.ItemStack item, int playerSlot) {
@@ -116,7 +110,7 @@ public class WarehouseListener implements Listener {
                         item.setAmount(itemAmount - canAdd);
                         player.getInventory().setItem(playerSlot, item);
                     }
-                    player.playSound(player.getLocation(), Sound.BLOCK_LAVA_POP, 1.0f, 1.0f);
+                    player.playSound(player.getLocation(), Sound.LAVA_POP, 1.0f, 1.0f);
                     player.updateInventory();
                     return;
                 }
@@ -138,7 +132,7 @@ public class WarehouseListener implements Listener {
         }
         warehouseInventory.setItem(emptySlot, item.clone());
         player.getInventory().setItem(playerSlot, null);
-        player.playSound(player.getLocation(), Sound.BLOCK_LAVA_POP, 1.0f, 1.0f);
+        player.playSound(player.getLocation(), Sound.LAVA_POP, 1.0f, 1.0f);
         player.updateInventory();
     }
 
@@ -161,7 +155,7 @@ public class WarehouseListener implements Listener {
                         item.setAmount(itemAmount - canAdd);
                         warehouseInventory.setItem(warehouseSlot, item);
                     }
-                    player.playSound(player.getLocation(), Sound.BLOCK_LAVA_POP, 1.0f, 1.0f);
+                    player.playSound(player.getLocation(), Sound.LAVA_POP, 1.0f, 1.0f);
                     player.updateInventory();
                     return;
                 }
@@ -173,7 +167,7 @@ public class WarehouseListener implements Listener {
         }
         player.getInventory().addItem(item.clone());
         warehouseInventory.setItem(warehouseSlot, createBarrierPlaceholder());
-        player.playSound(player.getLocation(), Sound.BLOCK_LAVA_POP, 1.0f, 1.0f);
+        player.playSound(player.getLocation(), Sound.LAVA_POP, 1.0f, 1.0f);
         player.updateInventory();
     }
 
@@ -184,7 +178,7 @@ public class WarehouseListener implements Listener {
     }
 
     private ItemStack createBarrierPlaceholder() {
-        ItemStack glass = new ItemStack(Material.WHITE_STAINED_GLASS_PANE, 1, (short) 15);
+        ItemStack glass = new ItemStack(Material.STAINED_GLASS_PANE, 1, (short) 15);
         ItemMeta meta = glass.getItemMeta();
         meta.setDisplayName("§7储存格");
         glass.setItemMeta(meta);
@@ -192,7 +186,7 @@ public class WarehouseListener implements Listener {
     }
 
     private boolean isBarrierPlaceholder(ItemStack item) {
-        if (item == null || item.getType() != Material.WHITE_STAINED_GLASS_PANE || item.getDurability() != 15) {
+        if (item == null || item.getType() != Material.STAINED_GLASS_PANE || item.getDurability() != 15) {
             return false;
         }
         ItemMeta meta = item.getItemMeta();

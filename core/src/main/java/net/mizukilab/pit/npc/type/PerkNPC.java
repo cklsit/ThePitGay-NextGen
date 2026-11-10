@@ -3,8 +3,8 @@ package net.mizukilab.pit.npc.type;
 import cn.charlotte.pit.ThePit;
 import cn.charlotte.pit.data.PlayerProfile;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.jitse.npclib.api.skin.Skin;
-import net.jitse.npclib.api.state.NPCAnimation;
+import cn.mythicland.npclib.api.skin.Skin;
+import cn.mythicland.npclib.api.state.NPCAnimation;
 import net.mizukilab.pit.menu.perk.normal.choose.PerkChooseMenu;
 import net.mizukilab.pit.util.chat.CC;
 import net.mizukilab.pit.util.level.LevelUtil;
@@ -51,10 +51,7 @@ public class PerkNPC extends SkinNPC {
 
     @Override
     public Skin getNpcSkin() {
-        return new Skin(
-                "ewogICJ0aW1lc3RhbXAiIDogMTcwNjIxMDIxOTc3MiwKICAicHJvZmlsZUlkIiA6ICJlNTZkYjMyZWVkOGQ0NTY3YWI4YmZjOWMwYmM1YWFlMCIsCiAgInByb2ZpbGVOYW1lIiA6ICJraXVnYW1lcjk1NiIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS9iOGRiNGEyNWQ1ODU5MzUzOWEzODgwMzhhMmIyYzk1Yjc0Y2ZjMTczMmEzYjY2MGJiN2E0OWE2ODNiYzBlZTMiCiAgICB9CiAgfQp9",
-                "rEMIb6AomWQkfYePDyQ8zIpcVl324A4ozAf7e4UWhvwFMMBCb/q1AUlZ5WlFtvzeA1yDJR9zka/sDF5Ati70mXTUqOQUHbMlCPJO8NR++lhbb8eaGTrWR71iFqlWQObNlLQpwRvlnfFv62a1mWLQJUO6JCdTZhCbWuvSIUUABaGx10VfBIkV7vNqzAbjlO+wzDlkEYZfMj9Y9/m3sxYDaUuk2qKGzafJ4CegU+S+lLDg55Zdl/Gs/KTxXH+LIOORLzIf1ACqfKlN912wY04YHA40vgpqSEMvS2MtM+zeaMh+l9JXjn3l4YmOdjxHjB+0jpZCNz7E0VoIN8o1V5eSxdllb+wGej5jgGuujhHlTsLI9oY/kHAQYlyXJM6fCCPj2L9Eymo6NyCAkAW+gBENzucK1/jjv4CSMxftHuAgnqVCnCr34k4WS0xJzZm4SJQg5eZySaM+cTaDoTJcy/hg6XV5aLeaddKip+TSatCk2kolZ7gI+5HmvVB1cLL06TQGkJpoSy9W08fYSbIPi682U8sfPpBQabBAHy0gMXEcaQ4wO7J8lJVBkFN3VnQ27eYipdgjghE0iyefuCd95h5aG/wPG96WvU/ZXgJfuBBgnq7XjyFRRcsrvdaCSoI5GAJ98mMfAP/cGzRRCs4BcDxkhv4z9kVPo+EaxskouBp1asc="
-        );
+        return net.mizukilab.pit.npc.BuiltinNpcSkins.get(getNpcInternalName());
     }
 
     @Override

@@ -9,6 +9,7 @@ import net.mizukilab.pit.parm.listener.IPlayerShootEntity;
 import net.mizukilab.pit.util.PlayerUtil;
 import net.mizukilab.pit.util.chat.CC;
 import net.mizukilab.pit.util.cooldown.Cooldown;
+import nya.Skip;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
@@ -25,7 +26,7 @@ import java.util.stream.Collectors;
  * @Author: EmptyIrony
  * @Date: 2021/3/6 22:52
  */
-
+@Skip
 @BowOnly
 public class MultiExchangeLocationEnchant extends AbstractEnchantment implements IPlayerShootEntity {
 
@@ -75,7 +76,7 @@ public class MultiExchangeLocationEnchant extends AbstractEnchantment implements
         players.forEach(player -> {
             final Location location = locations.get(atomicInteger.getAndIncrement());
 
-            player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1, 1);
+            player.playSound(player.getLocation(), Sound.ENDERMAN_TELEPORT, 1, 1);
             player.sendMessage(CC.translate("&5你被卷入到了时空漩涡之中...更替了你的位置"));
             player.teleport(location);
         });

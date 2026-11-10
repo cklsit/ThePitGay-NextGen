@@ -3,12 +3,13 @@ package net.mizukilab.pit.events.impl.major
 import cn.charlotte.pit.ThePit
 import cn.charlotte.pit.data.PlayerProfile
 import cn.charlotte.pit.event.PitKillEvent
-import cn.charlotte.pit.events.AbstractEvent
+import cn.charlotte.pit.events.*
 import cn.charlotte.pit.events.trigger.type.IEpicEvent
 import cn.charlotte.pit.events.trigger.type.addon.IPreparative
 import cn.charlotte.pit.events.trigger.type.addon.IScoreBoardInsert
 import cn.charlotte.pit.events.trigger.type.addon.ISortable
-import org.bukkit.Particle
+import net.minecraft.server.v1_8_R3.EnumParticle
+import net.minecraft.server.v1_8_R3.PacketPlayOutWorldParticles
 import net.mizukilab.pit.Util.Companion.chatColorToColor
 import net.mizukilab.pit.Util.Companion.chatColorToData
 import net.mizukilab.pit.enchantment.type.auction.rare.PaparazziEnchant
@@ -20,6 +21,8 @@ import net.mizukilab.pit.util.cooldown.Cooldown
 import net.mizukilab.pit.util.time.TimeUtil
 import org.bukkit.*
 import org.bukkit.block.Banner
+import org.bukkit.craftbukkit.v1_8_R3.CraftWorld
+import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer
 import org.bukkit.entity.Firework
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
@@ -33,7 +36,10 @@ import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
-import kotlin.math.*
+import kotlin.math.cos
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.sin
 import kotlin.random.Random
 
 
@@ -52,9 +58,7 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
         })
     }
 
-    private val timer by lazy {
-        Cooldown(5, TimeUnit.MINUTES)
-    }
+    private var timer = Cooldown(0)
 
     private val unusedColor by lazy {
         ArrayList(colors)
@@ -69,7 +73,7 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
 
     private var state = State.PREPARE
 
-    private val logicRunnable by lazy {
+    private fun newLogicRunnable(): BukkitRunnable =
         object : BukkitRunnable() {
             override fun run() {
                 for (banner in banners) {
@@ -77,9 +81,8 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
                 }
             }
         }
-    }
 
-    private val effectRunnable by lazy {
+    private fun newEffectRunnable(): BukkitRunnable =
         object : BukkitRunnable() {
             override fun run() {
                 for (banner in banners) {
@@ -88,7 +91,6 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
                 refreshRank()
             }
         }
-    }
 
     override fun getEventInternalName(): String {
         return "squads"
@@ -103,15 +105,24 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
     }
 
     override fun onActive() {
+        timer = Cooldown(5, TimeUnit.MINUTES)
+        teamMap.clear()
+        playerMap.clear()
+        unFullTeams.clear()
+        usedChars.clear()
+        unusedColor.clear()
+        unusedColor.addAll(colors)
+        banners.clear()
         val config = ThePit.getInstance().pitConfig
         for (location in config.squadsLocations) {
-            location.block.type = Material.WHITE_BANNER
+            val original = location.block.state
+            location.block.type = Material.STANDING_BANNER
             val blockState = location.block.state
             val banner = blockState as Banner
             banner.baseColor = DyeColor.WHITE
             banner.update()
 
-            val bannerData = BannerData(location)
+            val bannerData = BannerData(location.clone()).also { it.original = original }
             banners.add(bannerData)
         }
 
@@ -134,8 +145,9 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
                 val bDiffWorld = b.location.world != player.world
 
                 when {
-                    aDiffWorld && !bDiffWorld -> -1
-                    !aDiffWorld && bDiffWorld -> 1
+                    aDiffWorld && !bDiffWorld -> 1
+                    !aDiffWorld && bDiffWorld -> -1
+                    aDiffWorld && bDiffWorld -> 0
                     else -> a.location.distanceSquared(player.location)
                         .compareTo(b.location.distanceSquared(player.location))
                 }
@@ -156,24 +168,24 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
         }
 
         Bukkit.getPluginManager().registerEvents(this, ThePit.getInstance())
-        logicRunnable.runTaskTimerAsynchronously(ThePit.getInstance(), 20L, 20L)
-        effectRunnable.runTaskTimerAsynchronously(ThePit.getInstance(), 20L, 10L)
+        trackTask(newLogicRunnable().runTaskTimer(ThePit.getInstance(), 20L, 20L))
+        trackTask(newEffectRunnable().runTaskTimer(ThePit.getInstance(), 20L, 10L))
 
-        object : BukkitRunnable() {
+        trackTask(object : BukkitRunnable() {
             override fun run() {
                 if (timer.hasExpired()) {
                     ThePit.getInstance().eventFactory.inactiveEvent(this@SquadsEvent)
                     cancel()
                 }
             }
-        }.runTaskTimer(ThePit.getInstance(), 20L, 20L)
+        }.runTaskTimer(ThePit.getInstance(), 20L, 20L))
 
         state = State.GAMING
     }
 
     override fun onInactive() {
         for (banner in banners) {
-            banner.location.block.type = Material.AIR
+            banner.original?.update(true, false)
 
 //            if (banner.firstLine.isSpawned) {
 //                banner.firstLine.deSpawn()
@@ -186,9 +198,9 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
 //            }
         }
 
-        logicRunnable.cancel()
-        effectRunnable.cancel()
+        state = State.PREPARE
         HandlerList.unregisterAll(this)
+        if (isAborting) return
 
         refreshRank()
 
@@ -224,14 +236,14 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
             }
             if (enchantBoostLevel > 0) {
                 rewardCoins += 0.5 * enchantBoostLevel * rewardCoins
-                rewardRenown += floor(0.5 * enchantBoostLevel * rewardRenown).toInt()
+                rewardRenown += Math.floor(0.5 * enchantBoostLevel * rewardRenown).toInt()
                 val mythicLeggings = MythicLeggingsItem()
                 mythicLeggings.loadFromItemStack(player.inventory.leggings)
                 if (mythicLeggings.isEnchanted) {
                     if (mythicLeggings.maxLive > 0 && mythicLeggings.live <= 2) {
                         player.inventory.leggings = ItemStack(Material.AIR)
                     } else {
-                        mythicLeggings.live -= 2
+                        mythicLeggings.live = mythicLeggings.live - 2
                         player.inventory.leggings = mythicLeggings.toItemStack()
                     }
                 }
@@ -246,8 +258,8 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
                 }
             }
             profile.grindCoins(rewardCoins)
-            profile.coins += rewardCoins
-            profile.renown += rewardRenown
+            profile.coins = profile.coins + rewardCoins
+            profile.renown = profile.renown + rewardRenown
             player.sendMessage(CC.translate("&6你的奖励: &6+" + rewardCoins + "硬币 &e+" + rewardRenown + "声望"))
             if (rank > 0) {
                 player.sendMessage(CC.translate("&6&l你的队伍: &7获得了 &b" + team.score + " &7分数 (排名#" + rank + ")"))
@@ -299,7 +311,7 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
 
     @EventHandler
     fun onBlockBreak(event: BlockBreakEvent) {
-        if (event.block.type == Material.WHITE_BANNER) {
+        if (banners.any { it.location.block == event.block }) {
             event.isCancelled = true
         }
     }
@@ -314,7 +326,7 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
             this.playerMap[player.uniqueId] = playerData
         }
 
-        if (state == State.GAMING) {
+        if (state == State.GAMING && !teamMap.containsKey(player.uniqueId)) {
             val teamData =
                 if (unFullTeams.isEmpty()) {
                     val team = createTeam()
@@ -324,6 +336,7 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
                     unFullTeams.first()
                 }
 
+            teamMap[player.uniqueId] = teamData
             teamData.addPlayer(player)
         }
     }
@@ -334,6 +347,7 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
             return
         }
 
+        if (this.players.any { it.playerUuid == player.uniqueId }) return
         this.players.add(PlayerProfile.getPlayerProfileByUuid(player.uniqueId))
         if (this.players.size >= 3) {
             unFullTeams.remove(this)
@@ -363,6 +377,7 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
     }
 
     class BannerData(val location: Location) {
+        var original: org.bukkit.block.BlockState? = null
         companion object {
             @JvmStatic
             private val timeFormat = SimpleDateFormat("mm分ss秒")
@@ -422,18 +437,19 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
                 val capturingTeam = teams.first()
                 if (this.capturingTeam != capturingTeam) {
                     this.capturingTeam = capturingTeam
+                    this.capturingState = 0
                 }
 
                 this.capturingState++
                 this.bannerStatus = BannerStatus.CAPTURING
 
                 if (capturingState > 5) {
-                    Bukkit.getScheduler().runTask(ThePit.getInstance(), Runnable {
+                    event.runEventTask {
                         val state = this.location.block.state
-                        val banner = state as Banner
-                        banner.baseColor = DyeColor.getByDyeData(chatColorToData[capturingTeam.chatColor]!!.toByte()) ?: DyeColor.WHITE
+                        val banner = state as? Banner ?: return@runEventTask
+                        banner.baseColor = DyeColor.getByDyeData(chatColorToData[capturingTeam.chatColor]!!.toByte())
                         banner.update(true, false)
-                    })
+                    }
 
                     val first = players.first()
                     val gotPlayer =
@@ -463,10 +479,21 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
                     setCapturedHologram()
 
                     capturingTeam.banners.add(this)
-                    Bukkit.getScheduler().runTask(ThePit.getInstance(), Runnable {
-                        // 1.21：直接用真实烟花实体
-                        BoomFirework(location.clone()).spawn(chatColorToColor[capturingTeam.chatColor])
-                    })
+                    event.runEventTask {
+                        val firework = BoomFirework((location.world as CraftWorld).handle)
+                        val meta = (firework.bukkitEntity as Firework).fireworkMeta
+                        meta.addEffect(
+                            FireworkEffect.builder()
+                                .withColor(chatColorToColor[capturingTeam.chatColor]!!)
+                                .with(FireworkEffect.Type.BURST)
+                                .build()
+                        )
+                        (firework.bukkitEntity as Firework).fireworkMeta = meta
+                        firework.setPosition(location.x, location.y, location.z)
+                        if ((location.world as CraftWorld).handle.addEntity(firework)) {
+                            firework.isInvisible = true
+                        }
+                    }
                 }
             } else {
                 this.capturingState = 0
@@ -483,13 +510,15 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
 
         fun drawParticle() {
             if (bannerStatus == BannerStatus.FIGHTING) {
-                drawCircle(Particle.FLAME, null)
+                drawCircle(EnumParticle.FLAME, null)
             } else if (bannerStatus == BannerStatus.CAPTURING && capturingTeam != null) {
-                drawCircle(Particle.DUST, chatColorToColor[capturingTeam!!.chatColor]!!)
+                drawCircle(EnumParticle.REDSTONE, chatColorToColor[capturingTeam!!.chatColor]!!)
             }
         }
 
-        private fun drawCircle(effect: org.bukkit.Particle, color: Color?) {
+        private fun drawCircle(effect: EnumParticle, color: Color?) {
+            val viewers = Bukkit.getOnlinePlayers().filter { it.world == location.world && it.location.distanceSquared(location) <= 4096 }
+            if (viewers.isEmpty()) return
             val clone = location.clone()
             for (degree in 0..359) {
                 if (degree % 3 != 0) {
@@ -500,12 +529,22 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
                 val x = cos(radians) * 3
                 val y = sin(radians) * 3
                 clone.add(x, 0.0, y)
-                clone.world?.spawnParticle(
-                    org.bukkit.Particle.DUST,
-                    clone.x, clone.y, clone.z,
-                    1, 0.0, 0.0, 0.0, 1.0,
-                    org.bukkit.Particle.DustOptions(color ?: org.bukkit.Color.WHITE, 1.0f)
+                val packet = PacketPlayOutWorldParticles(
+                    effect,
+                    true,
+                    clone.x.toFloat(),
+                    clone.y.toFloat(),
+                    clone.z.toFloat(),
+                    max(1 / 255F, (color?.red ?: 0) / 255F),
+                    (color?.green ?: 0) / 255F,
+                    (color?.blue ?: 0) / 255F,
+                    1f,
+                    0,
+                    0
                 )
+                viewers.forEach {
+                    (it as CraftPlayer).handle.playerConnection.sendPacket(packet)
+                }
                 clone.subtract(x, 0.0, y)
             }
         }
@@ -606,6 +645,6 @@ class SquadsEvent : IEpicEvent, AbstractEvent(),
 
     override fun getRank(player: Player): Int {
         val team = teamMap[player.uniqueId] ?: return 100000
-        return 'Z'.code - team.char.code
+        return team.rank
     }
 }

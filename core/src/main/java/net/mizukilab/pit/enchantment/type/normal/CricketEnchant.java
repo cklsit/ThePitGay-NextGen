@@ -10,6 +10,7 @@ import net.mizukilab.pit.parm.listener.ITickTask;
 import net.mizukilab.pit.util.cooldown.Cooldown;
 import com.google.common.util.concurrent.AtomicDouble;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import nya.Skip;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -24,7 +25,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @ArmorOnly
-
+@Skip
 @AutoRegister
 public class CricketEnchant extends AbstractEnchantment implements ITickTask, IPlayerDamaged, IActionDisplayEnchant {
 
@@ -75,7 +76,7 @@ public class CricketEnchant extends AbstractEnchantment implements ITickTask, IP
     public void handle(int enchantLevel, Player player) {
         UUID uniqueId = player.getUniqueId();
 
-        if (player.getLocation().clone().add(0, -1, 0).getBlock().getType() == Material.SHORT_GRASS) {
+        if (player.getLocation().clone().add(0, -1, 0).getBlock().getType() == Material.GRASS) {
             player.addPotionEffect(L1, true);
             crickets.add(uniqueId);
         } else {

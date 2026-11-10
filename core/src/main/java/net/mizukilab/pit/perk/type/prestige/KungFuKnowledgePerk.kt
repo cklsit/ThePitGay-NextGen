@@ -31,7 +31,7 @@ class KungFuKnowledgePerk : AbstractPerk(), Listener, IAttackEntity {
     }
 
     override fun getIcon(): Material {
-        return Material.BEEF
+        return Material.RAW_BEEF
     }
 
     override fun requireCoins(): Double {
@@ -85,7 +85,7 @@ class KungFuKnowledgePerk : AbstractPerk(), Listener, IAttackEntity {
         }
 
         event.damage =
-            if (PlayerUtil.isCritical(damager)) {
+            if (PlayerUtil.critical(damager)) {
                 8.0
             } else {
                 7.3

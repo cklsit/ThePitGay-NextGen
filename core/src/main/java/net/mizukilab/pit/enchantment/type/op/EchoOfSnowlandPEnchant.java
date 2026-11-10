@@ -7,6 +7,7 @@ import net.mizukilab.pit.enchantment.param.item.ArmorOnly;
 import net.mizukilab.pit.enchantment.rarity.EnchantmentRarity;
 import net.mizukilab.pit.parm.listener.IPlayerDamaged;
 import net.mizukilab.pit.util.cooldown.Cooldown;
+import nya.Skip;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffectType;
@@ -17,7 +18,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @Author: Misoryan
  * @Created_In: 2021/1/19 15:04
  */
-
+@Skip
 @ArmorOnly
 public class EchoOfSnowlandPEnchant extends AbstractEnchantment implements IPlayerDamaged {
 
@@ -55,7 +56,7 @@ public class EchoOfSnowlandPEnchant extends AbstractEnchantment implements IPlay
     @PlayerOnly
     public void handlePlayerDamaged(int enchantLevel, Player myself, Entity attacker, double damage, AtomicDouble finalDamage, AtomicDouble boostDamage, AtomicBoolean cancel) {
         Player targetPlayer = (Player) attacker;
-        if (targetPlayer.getActivePotionEffects().contains(PotionEffectType.WEAKNESS) && targetPlayer.getActivePotionEffects().contains(PotionEffectType.SLOWNESS)) {
+        if (targetPlayer.getActivePotionEffects().contains(PotionEffectType.WEAKNESS) && targetPlayer.getActivePotionEffects().contains(PotionEffectType.SLOW)) {
             boostDamage.set(boostDamage.get() - 0.3);
             finalDamage.set(0);
         }

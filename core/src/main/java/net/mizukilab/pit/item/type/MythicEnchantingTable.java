@@ -25,7 +25,7 @@ public class MythicEnchantingTable extends AbstractPitItem implements Listener {
 
     @Override
     public Material getItemDisplayMaterial() {
-        return Material.ENCHANTING_TABLE;
+        return Material.ENCHANTMENT_TABLE;
     }
 
     ItemBuilder builder = new ItemBuilder(getItemDisplayMaterial()).internalName(getInternalName()).name(getItemDisplayName())

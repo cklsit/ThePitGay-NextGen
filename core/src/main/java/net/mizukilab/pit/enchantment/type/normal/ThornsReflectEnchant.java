@@ -7,12 +7,13 @@ import net.mizukilab.pit.enchantment.rarity.EnchantmentRarity;
 import net.mizukilab.pit.parm.listener.IPlayerDamaged;
 import net.mizukilab.pit.util.cooldown.Cooldown;
 import net.mizukilab.pit.util.random.RandomUtil;
+import nya.Skip;
 import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-
+@Skip
 @ArmorOnly
 public class ThornsReflectEnchant extends AbstractEnchantment implements IPlayerDamaged {
 
@@ -59,8 +60,8 @@ public class ThornsReflectEnchant extends AbstractEnchantment implements IPlayer
             
             Player attackerPlayer = (Player) attacker;
             attackerPlayer.damage(reflectDamage);
-            myself.playSound(myself.getLocation(), Sound.BLOCK_ANVIL_LAND, 0.5f, 1.5f);
-            attackerPlayer.playSound(attackerPlayer.getLocation(), Sound.ENTITY_PLAYER_HURT, 0.8f, 1.2f);
+            myself.playSound(myself.getLocation(), Sound.ANVIL_LAND, 0.5f, 1.5f);
+            attackerPlayer.playSound(attackerPlayer.getLocation(), Sound.HURT_FLESH, 0.8f, 1.2f);
         }
     }
 } 

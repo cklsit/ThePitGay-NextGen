@@ -41,7 +41,7 @@ class EnchantChoseButton(
                 "",
                 "&7消耗: &a一个遵纪守法的宝石",
                 "",
-                if (Utils.canUseGen(item)) {
+                if (Utils.canUseGem(item)) {
                     if (enchantLevel >= 3) "&c已达最大等级" else
                         if (enchantment.rarity.parentType == EnchantmentRarity.RarityType.RARE) "&c稀有附魔" else
                             "&a点击使用!"
@@ -57,7 +57,7 @@ class EnchantChoseButton(
         hotbarButton: Int,
         currentItem: ItemStack?
     ) {
-        if (!Utils.canUseGen(item)) {
+        if (!Utils.canUseGem(item)) {
             player.closeInventory()
             return
         }
@@ -100,7 +100,7 @@ class EnchantChoseButton(
 
             (indexedMythicItem as IMythicItem).boostedByGem = true
             player.sendMessage(CC.translate("&a&l宝石！ &7成功为你的神话之裤升级了${enchantment.enchantName}附魔"))
-            player.playSound(player.location, Sound.BLOCK_ANVIL_USE, 1f, 99f)
+            player.playSound(player.location, Sound.ANVIL_USE, 1f, 99f)
             player.inventory.setItem(index, indexedMythicItem.toItemStack())
         } else {
             return
@@ -121,7 +121,7 @@ class EnchantChoseButton(
             }
         }
 
-        player.playSound(player.location, Sound.BLOCK_ANVIL_USE, 1.5f, 1.5f)
+        player.playSound(player.location, Sound.ANVIL_USE, 1.5f, 1.5f)
     }
 
     private fun isSameEnchant(

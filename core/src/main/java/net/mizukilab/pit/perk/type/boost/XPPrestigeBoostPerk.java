@@ -27,7 +27,7 @@ public class XPPrestigeBoostPerk extends AbstractPerk {
 
     @Override
     public Material getIcon() {
-        return Material.EXPERIENCE_BOTTLE;
+        return Material.EXP_BOTTLE;
     }
 
     @Override

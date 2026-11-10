@@ -18,16 +18,43 @@ import net.mizukilab.pit.util.PlayerUtil;
 import net.mizukilab.pit.util.ProgressBar;
 import net.mizukilab.pit.util.Utils;
 import net.mizukilab.pit.util.chat.CC;
+import net.mizukilab.pit.util.chat.RomanUtil;
 import net.mizukilab.pit.util.level.LevelUtil;
 import net.mizukilab.pit.util.scoreboard.AssembleAdapter;
 import net.mizukilab.pit.util.time.TimeUtil;
+import nya.Skip;
 import org.bukkit.entity.Player;
 
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.List;
-
+@Skip
 public class Scoreboard implements AssembleAdapter {
+
+    private record RageFrame(RagePitEvent event, java.util.Map<java.util.UUID, RagePitEvent.DamageStanding> standings) { }
+    private final ThreadLocal<RageFrame> rageFrame = new ThreadLocal<>();
+
+    private static final class CommonFrame {
+        String title;
+        String date;
+    }
+    private final ThreadLocal<CommonFrame> commonFrame = new ThreadLocal<>();
+
+    @Override
+    public void beginUpdate() {
+        commonFrame.set(new CommonFrame());
+        rageFrame.remove();
+        IEpicEvent event = ThePit.getInstance().getEventFactory().getActiveEpicEvent();
+        if (event instanceof RagePitEvent rage && rage.isActive()) {
+            rageFrame.set(new RageFrame(rage, rage.getDamageStandings()));
+        }
+    }
+
+    @Override
+    public void endUpdate() {
+        commonFrame.remove();
+        rageFrame.remove();
+    }
 
     private final SimpleDateFormat dateFormat = new SimpleDateFormat(NewConfiguration.INSTANCE.getDateFormat());
     private final DecimalFormat numFormat = new DecimalFormat("0.0");
@@ -40,9 +67,17 @@ public class Scoreboard implements AssembleAdapter {
 
     @Override
     public String getTitle(Player player) {
+        CommonFrame frame = commonFrame.get();
+        if (frame == null) return currentTitle();
+        if (frame.title == null) frame.title = currentTitle();
+        return frame.title;
+    }
+
+    private String currentTitle() {
         List<String> title = NewConfiguration.INSTANCE.getScoreBoardAnimation();
         long currentTime = System.currentTimeMillis();
-        long animationInterval = NewConfiguration.INSTANCE.getMaxScoreboardAnimationInterval();
+        if (title == null || title.isEmpty()) return "&e&lTHE PIT";
+        long animationInterval = Math.max(1, NewConfiguration.INSTANCE.getMaxScoreboardAnimationInterval());
         long timeSinceStart = currentTime - animationStartTime;
         int totalFrames = title.size();
         int currentFrame = (int) ((timeSinceStart / animationInterval) % totalFrames);
@@ -57,6 +92,13 @@ public class Scoreboard implements AssembleAdapter {
         return title.get(safeIndex);
     }
 
+
+    private String currentDate(long now) {
+        CommonFrame frame = commonFrame.get();
+        if (frame == null) return dateFormat.format(now);
+        if (frame.date == null) frame.date = dateFormat.format(now);
+        return frame.date;
+    }
 
     @Override
     public List<String> getLines(Player player) {
@@ -74,7 +116,7 @@ public class Scoreboard implements AssembleAdapter {
         ThePit instance = ThePit.getInstance();
         if (NewConfiguration.INSTANCE.getScoreboardShowtime()) {
             lines.add("&7" +
-                    dateFormat.format(currentSystemTime) + " &8" + instance.getServerId());
+                    currentDate(currentSystemTime) + " &8" + instance.getServerId());
         }
 
         IEpicEvent activeEpicEvent = instance.getEventFactory().getActiveEpicEvent();
@@ -85,9 +127,12 @@ public class Scoreboard implements AssembleAdapter {
             lines.add("&f事件: &6" + event.getEventName());
             if (event instanceof RagePitEvent ragePit && ragePit.isActive()) {
                 lines.add("&f剩余: &a" + TimeUtil.millisToTimer(ragePit.getTimer().getRemaining()));
-                if (ragePit.getDamageMap().get(player.getUniqueId()) != null) {
-                    int damage = (int) (ragePit.getDamageMap().get(player.getUniqueId()).getDamage() / 2);
-                    int rank = ragePit.getDamageRank(player);
+                RageFrame frame = rageFrame.get();
+                RagePitEvent.DamageStanding standing = (frame != null && frame.event() == ragePit
+                        ? frame.standings() : ragePit.getDamageStandings()).get(player.getUniqueId());
+                if (standing != null) {
+                    int damage = (int) (standing.damage() / 2);
+                    int rank = standing.rank();
                     lines.add("&f伤害: &c" + damage + "❤ &7(#" + rank + ")");
                 }
                 int killed = ragePit.getKilled();
@@ -137,12 +182,11 @@ public class Scoreboard implements AssembleAdapter {
             }
         }
         if (prestige > 0) {
-            lines.add("&f等级: &e" + LevelUtil.getLevelTagWithRoman(prestige, level) + genesisTeam);
-        } else {
-            lines.add("&f等级: " + LevelUtil.getLevelTagWithOutAnyPS(level) + genesisTeam);
+            lines.add("&f精通: &e" + RomanUtil.convert(prestige));
         }
+        lines.add("&f等级: " + LevelUtil.getLevelTag(prestige, level) + genesisTeam);
         if (level >= NewConfiguration.INSTANCE.getMaxLevel()) {
-            lines.add("&f经验: &e&lMax");
+            lines.add("&f经验值: &b已满!");
         } else {
             if (!profile.getPlayerOption().isLevelBar() && prestige <= 100) {
                 lines.add("&f下级: &b" + numFormatTwo.format((LevelUtil.getLevelTotalExperience(prestige, level + 1) - profile.getExperience())) + " Xp");
@@ -183,41 +227,24 @@ public class Scoreboard implements AssembleAdapter {
         } else {
             statusToggle = false;
         }
-        boolean sultKill = false;
         if (statusToggle) {
-            final AbstractPerk currentStreak = PlayerUtil.getActiveMegaStreakObj(player);
-            boolean b = profile.getCombatTimer().hasExpired();
-            if (!b) {
-                lines.add(" ");
+            final AbstractPerk currentStreak = profile.getActiveMegaStreakObj();
+            final long combatRemaining = profile.getCombatTimer().getRemaining();
+            final boolean inCombat = combatRemaining > 0;
+            String status = currentStreak != null
+                    ? CC.translate(currentStreak.getDisplayName())
+                    : (inCombat ? "&c战斗中" : "&a空闲中");
+            if (inCombat) {
+                // Round up so a live combat timer never displays 0s.
+                status += "&7 (" + (long) Math.ceil(combatRemaining / 1000D) + "s)";
             }
-            if (currentStreak != null) {
-                lines.add("&f状态: " + CC.translate(currentStreak.getDisplayName()));
-            } else {
-                if (!b) {
-
-                    String combatTimerFormatted = numFormat.format(profile.getCombatTimer().getRemaining() / 1000D);
-                    lines.add("&f状态: &c战斗中" + (profile.getCombatTimer().getRemaining() / 1000D <= 5
-                            ? "&7 (" + combatTimerFormatted + "s)"
-                            : (bounty != 0
-                            ? "&7 (" + combatTimerFormatted + "s)"
-                            : ""))); // status: 占坑中 (%duration%秒) / 不在占坑中
-                }
-            }
-            if (!b) {
-
-                String e;
-                if (bounty != 0) {
-                    String genesisColor = profile.bountyColor();
-                    e = "&f连杀: &a" + numFormat.format(profile.getStreakKills()) + " " + genesisColor + "&l" + bounty + "g";
-                } else {
-                    e = "&f连杀: &a" + numFormat.format(profile.getStreakKills());
-
-                }
-                lines.add(e);
-                sultKill = true;
+            lines.add(" ");
+            lines.add("&f状态: " + status);
+            if (inCombat) {
+                lines.add("&f连杀: &a" + numFormat.format(profile.getStreakKills()));
             }
 
-            if (currentStreak == ToTheMoonMegaStreak.getInstance()) {
+            if (currentStreak != null && currentStreak == ToTheMoonMegaStreak.getInstance()) {
                 Double storedExp = ToTheMoonMegaStreak.getCache().get(player.getUniqueId());
                 if (storedExp == null) {
                     storedExp = 0.0;
@@ -229,16 +256,8 @@ public class Scoreboard implements AssembleAdapter {
             }
         }
         //if Player have a bounty:
-        if (!sultKill) {
-            if (bounty != 0) {
-                String genesisColor = profile.bountyColor();
-                if (profile.getStreakKills() < 1D) {
-                    lines.add("&f赏金: " + genesisColor + "&l" + bounty + "g");
-                } else {
-                    lines.add("&f赏金: &a" + numFormat.format(profile.getStreakKills()) + " " + genesisColor + "&l" + bounty + "g");
-
-                }
-            }
+        if (bounty != 0) {
+            lines.add("&f赏金: " + profile.bountyColor() + "&l" + bounty + "g");
         }
         //Damage reduce caused by Perks
         if (profile.getStrengthNum() > 0 && !profile.getStrengthTimer().hasExpired()) {

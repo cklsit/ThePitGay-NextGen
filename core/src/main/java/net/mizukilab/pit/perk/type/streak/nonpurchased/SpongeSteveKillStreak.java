@@ -4,10 +4,15 @@ import cn.charlotte.pit.data.PlayerProfile;
 import cn.charlotte.pit.event.PitStreakKillChangeEvent;
 import cn.charlotte.pit.perk.AbstractPerk;
 import cn.charlotte.pit.perk.PerkType;
+import cn.hutool.core.math.MathUtil;
 import net.mizukilab.pit.parm.AutoRegister;
+import net.mizukilab.pit.util.Einstein;
 import net.mizukilab.pit.util.PlayerUtil;
+import net.mizukilab.pit.util.Utils;
+import nya.Skip;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -20,7 +25,7 @@ import java.util.List;
  * @Author: Misoryan
  * @Created_In: 2021/2/21 14:28
  */
-
+@Skip
 @AutoRegister
 public class SpongeSteveKillStreak extends AbstractPerk implements Listener {
 
@@ -93,7 +98,7 @@ public class SpongeSteveKillStreak extends AbstractPerk implements Listener {
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void onStreak(PitStreakKillChangeEvent event) {
         PlayerProfile profile = event.getPlayerProfile();
-        Player myself = Bukkit.getPlayer(event.getPlayerProfile().getPlayerUuid());
+        Player myself = Bukkit.getPlayer(profile.getPlayerUuid());
         if (myself == null || !myself.isOnline()) {
             return;
         }
@@ -103,8 +108,8 @@ public class SpongeSteveKillStreak extends AbstractPerk implements Listener {
         //trigger check (every X streak)
         int streak = 25;
         if (Math.floor(event.getFrom()) % streak != 0 && Math.floor(event.getTo()) % streak == 0) {
-            float heart = (float) (((org.bukkit.entity.Player) myself)).getAbsorptionAmount();
-            (((org.bukkit.entity.Player) myself)).setAbsorptionAmount(heart + 30);
+            float heart = (((CraftPlayer) myself).getHandle()).getAbsorptionHearts();
+            (((CraftPlayer) myself).getHandle()).setAbsorptionHearts(Einstein.clampf(heart + 30, 0, 40));
         }
     }
 }

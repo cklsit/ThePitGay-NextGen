@@ -47,7 +47,7 @@ class UberStreak : AbstractPerk(), Listener, MegaStreak {
     }
 
     override fun getIcon(): Material {
-        return Material.GOLDEN_SWORD
+        return Material.GOLD_SWORD
     }
 
     override fun requireCoins(): Double {
@@ -181,7 +181,7 @@ class UberStreak : AbstractPerk(), Listener, MegaStreak {
             Bukkit.getOnlinePlayers().forEach { online: Player ->
                 online.playSound(
                     online.location,
-                    Sound.ENTITY_WITHER_SPAWN,
+                    Sound.WITHER_SPAWN,
                     0.8f,
                     1.5f
                 )

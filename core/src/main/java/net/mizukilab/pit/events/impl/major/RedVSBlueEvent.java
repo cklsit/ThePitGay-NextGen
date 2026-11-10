@@ -9,6 +9,8 @@ import cn.charlotte.pit.events.AbstractEvent;
 import cn.charlotte.pit.events.trigger.type.IEpicEvent;
 import cn.charlotte.pit.events.trigger.type.addon.IScoreBoardInsert;
 import lombok.Getter;
+import net.minecraft.server.v1_8_R3.PacketPlayOutEntityEquipment;
+import net.minecraft.server.v1_8_R3.PlayerConnection;
 import net.mizukilab.pit.config.NewConfiguration;
 import net.mizukilab.pit.item.type.mythic.MythicLeggingsItem;
 import net.mizukilab.pit.util.PlayerUtil;
@@ -20,6 +22,7 @@ import net.mizukilab.pit.util.level.LevelUtil;
 import net.mizukilab.pit.util.time.TimeUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
@@ -61,7 +64,7 @@ public class RedVSBlueEvent extends AbstractEvent implements IEpicEvent, Listene
 
     @Override
     public int requireOnline() {
-        return NewConfiguration.INSTANCE.getEventOnlineRequired().get(getEventInternalName());
+        return NewConfiguration.INSTANCE.getEventOnlineRequired().getOrDefault(getEventInternalName(), 10);
     }
 
     public boolean isRedTeam(Player player) {
@@ -91,6 +94,8 @@ public class RedVSBlueEvent extends AbstractEvent implements IEpicEvent, Listene
 
     @Override
     public void onActive() {
+        redTeam.clear(); blueTeam.clear(); kaMap.clear();
+        redKills = 0; blueKills = 0;
         Bukkit.getPluginManager()
                 .registerEvents(this, ThePit.getInstance());
 
@@ -99,7 +104,7 @@ public class RedVSBlueEvent extends AbstractEvent implements IEpicEvent, Listene
         ArrayList<? extends Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
         Collections.shuffle(players);
 
-        new BukkitRunnable() {
+        trackTask(new BukkitRunnable() {
             @Override
             public void run() {
                 if (timer.hasExpired()) {
@@ -107,7 +112,7 @@ public class RedVSBlueEvent extends AbstractEvent implements IEpicEvent, Listene
                             .getEventFactory()
                             .inactiveEvent(RedVSBlueEvent.this);
                     cancel();
-
+                    return;
                 }
                 ThePit.getInstance()
                         .getBossBar()
@@ -118,7 +123,7 @@ public class RedVSBlueEvent extends AbstractEvent implements IEpicEvent, Listene
                         .getBossBar()
                         .setProgress(timer.getRemaining() / (1000 * 60 * 5f));
             }
-        }.runTaskTimer(ThePit.getInstance(), 20, 20);
+        }.runTaskTimer(ThePit.getInstance(), 20, 20));
 
         for (Player player : players) {
             scatterTeam(player);
@@ -130,6 +135,7 @@ public class RedVSBlueEvent extends AbstractEvent implements IEpicEvent, Listene
     }
 
     private void scatterTeam(Player player) {
+        if (redTeam.contains(player.getUniqueId()) || blueTeam.contains(player.getUniqueId())) return;
         if (player.hasMetadata("NPC") || player.hasMetadata("Bot")) {
             return;
         }
@@ -167,6 +173,10 @@ public class RedVSBlueEvent extends AbstractEvent implements IEpicEvent, Listene
         try {
             HandlerList.unregisterAll(this);
             resetArmor();
+            if (isAborting()) {
+                redKills = 0; blueKills = 0; redTeam.clear(); blueTeam.clear(); kaMap.clear();
+                return;
+            }
             boolean redWin = redKills >= blueKills;
             if (redKills == blueKills) {
                 redKills++;
@@ -294,20 +304,30 @@ public class RedVSBlueEvent extends AbstractEvent implements IEpicEvent, Listene
 
 
     private void sendPacket(Player player) {
-        // 1.21：队伍头盔伪装交给 VisibleApi（PacketEvents 装备包）
+        PacketPlayOutEntityEquipment packet = null;
         if (redTeam.contains(player.getUniqueId())) {
-            net.mizukilab.pit.util.VisibleApi.setFakeHelmet(player,
-                    new ItemBuilder(Material.WHITE_WOOL).durability(14).build());
+            packet = new PacketPlayOutEntityEquipment(player.getEntityId(), 4, Utils.toNMStackQuick(new ItemBuilder(Material.WOOL).durability(14).build()));
         } else if (blueTeam.contains(player.getUniqueId())) {
-            net.mizukilab.pit.util.VisibleApi.setFakeHelmet(player,
-                    new ItemBuilder(Material.WHITE_WOOL).durability(11).build());
+            packet = new PacketPlayOutEntityEquipment(player.getEntityId(), 4, Utils.toNMStackQuick(new ItemBuilder(Material.WOOL).durability(11).build()));
+        }
+        if (packet == null) {
+            return;
+        }
+        for (Player target : Bukkit.getOnlinePlayers()) {
+            if (target.equals(player)) continue;
+            ((CraftPlayer) target).getHandle()
+                    .playerConnection
+                    .sendPacket(packet);
         }
     }
 
     private void resetArmor() {
-        // 1.21：把真实头盔重新下发给其他玩家
-        for (Player target : Bukkit.getOnlinePlayers()) {
-            net.mizukilab.pit.util.VisibleApi.setFakeHelmet(target, target.getInventory().getHelmet());
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            PlayerConnection connection = ((CraftPlayer) player).getHandle().playerConnection;
+            for (Player target : Bukkit.getOnlinePlayers()) {
+                if (player.equals(target)) continue;
+                connection.sendPacket(new PacketPlayOutEntityEquipment(target.getEntityId(), 4, Utils.toNMStackQuick(target.getInventory().getHelmet())));
+            }
         }
     }
 

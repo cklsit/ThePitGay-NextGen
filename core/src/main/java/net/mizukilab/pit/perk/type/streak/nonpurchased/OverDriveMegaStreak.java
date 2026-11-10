@@ -15,6 +15,7 @@ import net.mizukilab.pit.parm.listener.ITickTask;
 import net.mizukilab.pit.util.PlayerUtil;
 import net.mizukilab.pit.util.chat.CC;
 import net.mizukilab.pit.util.chat.MessageType;
+import nya.Skip;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -34,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @Author: EmptyIrony
  * @Date: 2021/1/14 23:37
  */
-
+@Skip
 @AutoRegister
 public class OverDriveMegaStreak extends AbstractPerk implements Listener, IPlayerKilledEntity, ITickTask, IPlayerDamaged, IPlayerBeKilledByEntity, MegaStreak {
 
@@ -125,7 +126,7 @@ public class OverDriveMegaStreak extends AbstractPerk implements Listener, IPlay
         //trigger check (get X streak)
         if (event.getFrom() < trigger && event.getTo() >= trigger) {
             CC.boardCast(MessageType.COMBAT, "&c&l超级连杀! " + event.getPlayerProfile().getFormattedNameWithRoman() + " &7激活了 &e&l超速传动 &7!");
-            Bukkit.getOnlinePlayers().forEach(player -> player.playSound(player.getLocation(), Sound.ENTITY_WITHER_SPAWN, 0.8F, 1.5F));
+            Bukkit.getOnlinePlayers().forEach(player -> player.playSound(player.getLocation(), Sound.WITHER_SPAWN, 0.8F, 1.5F));
         }
     }
 
@@ -190,8 +191,8 @@ public class OverDriveMegaStreak extends AbstractPerk implements Listener, IPlay
             if (myself.getHealth() > tier * 0.2) {
                 myself.setHealth(Math.max(0.1, myself.getHealth() - tier * 0.2));
             } else {
+                myself.setHealth(0);
                 cancel.set(true);
-                finalDamage.getAndAdd(9999);
             }
         }
     }

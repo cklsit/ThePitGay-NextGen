@@ -1,6 +1,7 @@
 package net.mizukilab.pit.sound.impl
 
 import net.mizukilab.pit.util.sound.AbstractPitSound
+import nya.Skip
 import org.bukkit.Sound
 import org.bukkit.entity.Player
 
@@ -8,7 +9,7 @@ import org.bukkit.entity.Player
  * @author Araykal
  * @since 2025/5/16
  */
-
+@Skip
 object CherrySound : AbstractPitSound() {
     override fun getMusicInternalName(): String {
         return "cherry_sound"
@@ -24,7 +25,7 @@ object CherrySound : AbstractPitSound() {
         }
 
         pitch?.let {
-            val sound = Sound.BLOCK_NOTE_BLOCK_BASEDRUM
+            val sound = Sound.NOTE_STICKS
             player.playSound(player.location, sound, 2.5f, it)
         }
 

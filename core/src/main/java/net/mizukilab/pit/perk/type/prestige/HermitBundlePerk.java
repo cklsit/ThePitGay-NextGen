@@ -28,7 +28,7 @@ public class HermitBundlePerk extends AbstractPerk {
 
     @Override
     public Material getIcon() {
-        return Material.RED_BED;
+        return Material.BED;
     }
 
     @Override

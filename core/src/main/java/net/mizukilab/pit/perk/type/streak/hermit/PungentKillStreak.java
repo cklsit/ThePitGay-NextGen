@@ -8,6 +8,7 @@ import net.mizukilab.pit.util.PlayerUtil;
 import net.mizukilab.pit.util.chat.CC;
 import net.mizukilab.pit.util.item.ItemBuilder;
 import net.mizukilab.pit.util.item.ItemUtil;
+import nya.Skip;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -26,7 +27,7 @@ import java.util.List;
  * @Author Misoryan
  * @Date 2022/11/22 19:47
  */
-
+@Skip
 @AutoRegister
 public class PungentKillStreak extends AbstractPerk implements Listener {
 
@@ -135,8 +136,8 @@ public class PungentKillStreak extends AbstractPerk implements Listener {
             //effect goes here
             PlayerUtil.getNearbyPlayers(player.getLocation(), 3).forEach(p -> {
                 if (!p.getName().equals(player.getName())) {
-                    p.removePotionEffect(PotionEffectType.SLOWNESS);
-                    p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 3 * 20, 0));
+                    p.removePotionEffect(PotionEffectType.SLOW);
+                    p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 3 * 20, 0));
                 }
             });
         }

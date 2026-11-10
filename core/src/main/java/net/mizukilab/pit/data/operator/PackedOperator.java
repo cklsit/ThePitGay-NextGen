@@ -4,26 +4,35 @@ import cn.charlotte.pit.ThePit;
 import cn.charlotte.pit.data.PlayerProfile;
 import cn.charlotte.pit.data.operator.IOperator;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.ToString;
+import net.mizukilab.pit.util.Log;
+import nya.Skip;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.LinkedList;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Consumer;
-
+@Skip
 @ToString
 public class PackedOperator implements IOperator {
-    Throwable throwable;
+    volatile Throwable throwable;
+    volatile long nextSaveAttemptAt;
     ExecutionPolicy policy;
     ThePit pit;
     long lastHeartBeat = 0;
-
+    @Getter
     Player lastBoundPlayer = null;
     @NotNull
     PlayerProfile profile = PlayerProfile.NONE_PROFILE;
@@ -49,20 +58,28 @@ public class PackedOperator implements IOperator {
     }
 
     public void heartBeat() {
+        heartBeat(true);
+    }
+
+    // The regular async sweep only maintains operator state. TickHandler updates
+    // online entity state in its existing main-thread loop, without N scheduled tasks.
+    void heartBeat(boolean updatePlayerState) {
         Player player = Bukkit.getPlayer(profile.getPlayerUuid());
         if (player != null && player.isOnline()) {
             this.quitFlag = false;
             this.fireExit = false;
+            if (updatePlayerState && profile.isLoaded()) {
+                this.profile.onTick(player);
+            }
         }
         this.lastHeartBeat = System.currentTimeMillis();
+
     }
 
     public void loadAs(UUID uuid, String name) {
         lastBoundPlayer = Bukkit.getPlayer(uuid);
         synchronized (operations) {
-            operations.add(() -> {
-                loadAs0(uuid, name);
-            });
+            operations.add(() -> loadAs0(uuid, name));
         }
         this.heartBeat();
     }
@@ -78,6 +95,9 @@ public class PackedOperator implements IOperator {
     }
 
     public void loadAs0(UUID uuid, String name) {
+
+        Instant instant = Instant.now();
+        Log.WriteLine("Loading " + uuid + "'s data");
         if (profile != PlayerProfile.NONE_PROFILE) {
             return;
         }
@@ -89,10 +109,12 @@ public class PackedOperator implements IOperator {
         }
         PlayerProfile.bootstrapProfile(rawProfile);
         profile = rawProfile;
+
+        Log.WriteLine("Loaded " + uuid + "'s data, costs " + ChronoUnit.MILLIS.between(instant, Instant.now()) + "ms");
     }
 
-    final ObjectArrayList<Runnable> operations = new ObjectArrayList<>(); //safer
-    Set<Runnable> pendingExecuting = new CopyOnWriteArraySet<>(); //正常情况下就一个
+    final LinkedList<Runnable> operations = new LinkedList<>(); //safer
+    ObjectLinkedOpenHashSet<Runnable> pendingExecuting = new ObjectLinkedOpenHashSet<>(); //正常情况下就一个
 
     public void fail(Throwable throwable) {
         pending(i -> {
@@ -102,39 +124,45 @@ public class PackedOperator implements IOperator {
 
     public boolean hasAnyOperation() {
         synchronized (operations) {
-            return !operations.isEmpty() && !this.pendingExecuting.isEmpty();
+            return !operations.isEmpty() || !this.pendingExecuting.isEmpty();
+        }
+    }
+    public boolean hasAnyExecutingOp() {
+        synchronized (operations) {
+            return !this.pendingExecuting.isEmpty();
         }
     }
 
-    boolean fireExit = false;
-    boolean quitFlag = false;
+    volatile boolean fireExit = false;
+    volatile boolean quitFlag = false;
 
     //为了防止掉数据做的妥协
     public synchronized boolean save(boolean fireExit, boolean quitFlag) {
-        if (System.currentTimeMillis() - lastHeartBeat > 1000) {
-            this.fireExit = fireExit;
-            if (this.fireExit) {
-                if (!quitFlag) {
-                    pending(prof -> {
-                        prof.disallowUnsafe();
-                        prof.save(null);
-                        prof.allow();
-                    });
-                }
-            }
-            return true;
-        }
-        if (quitFlag && !this.quitFlag) {
-            pending(prof -> {
-                PlayerProfile playerProfile = prof.disallowUnsafe();
-                PlayerProfile save = playerProfile.save(null);
-                pending(unk -> {
-                    save.allow();
-                });
-            });
+        if (!this.quitFlag) {
+            pending(this::saveProfile);
             this.quitFlag = true;
         }
+        this.fireExit = fireExit;
         return true;
+    }
+
+    private void saveProfile(PlayerProfile profile) {
+        if (profile.disallow() != profile) {
+            pending(this::saveProfile);
+            return;
+        }
+        try {
+            profile.save(null);
+            throwable = null;
+            nextSaveAttemptAt = 0;
+        } catch (RuntimeException failure) {
+            // Saving replaces the same profile document and can be retried safely.
+            nextSaveAttemptAt = System.currentTimeMillis() + 5000;
+            pending(this::saveProfile);
+            throw failure;
+        } finally {
+            profile.allow();
+        }
     }
 
     public void pendingIfLoaded(Consumer<PlayerProfile> profile) {
@@ -170,6 +198,10 @@ public class PackedOperator implements IOperator {
     }
 
     public void drainTask() {
+        if (System.currentTimeMillis() < nextSaveAttemptAt) return;
+        if(hasAnyExecutingOp()){
+            return;
+        } //we need to ensure the tasks is done
         Runnable currentOperation = gainTask();
         if (currentOperation == null) return;
 
@@ -178,6 +210,8 @@ public class PackedOperator implements IOperator {
 
     public void drainTasksOnCurrentThread() {
         while (true) {
+            if (System.currentTimeMillis() < nextSaveAttemptAt) break;
+            if (profile.code == ProfileOperator.OPCODE_BUSY) break;
             Runnable runnable = gainTask();
             if (runnable == null) {
                 break;
@@ -214,19 +248,21 @@ public class PackedOperator implements IOperator {
                 operation = next;
                 break;
             }
-
             pendingExecuting.add(operation);
             final Runnable operationFinaled = operation;
 
             currentOperation = () -> {
                 try {
                     operationFinaled.run();
-                    operations.remove(operationFinaled);
-                    pendingExecuting.remove(operationFinaled);
                     policy.success(PackedOperator.this);
                 } catch (Exception e) {
                     throwable = e;
                     policy.fail(PackedOperator.this, e);
+                } finally {
+                    synchronized (operations) {
+                        operations.remove(operationFinaled);
+                        pendingExecuting.remove(operationFinaled);
+                    }
                 }
             };
         }

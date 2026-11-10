@@ -8,8 +8,11 @@ import net.mizukilab.pit.parm.AutoRegister;
 import net.mizukilab.pit.util.PlayerUtil;
 import net.mizukilab.pit.util.Utils;
 import net.mizukilab.pit.util.cooldown.Cooldown;
+import net.minecraft.server.v1_8_R3.EntityPlayer;
+import nya.Skip;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
@@ -25,7 +28,7 @@ import java.text.DecimalFormat;
  * @Author: Misoryan
  * @Created_In: 2021/1/30 15:33
  */
-
+@Skip
 @BowOnly
 @AutoRegister
 public class TrueDamageArrowEnchant extends AbstractEnchantment implements Listener {
@@ -100,12 +103,12 @@ public class TrueDamageArrowEnchant extends AbstractEnchantment implements Liste
                 Bukkit.getScheduler().runTask(ThePit.getInstance(), () -> {
                     final int noDamageTicks = player.getNoDamageTicks(); //emptyirony u suck
                     //victim.setNoDamageTicks(0); //buggy code
-                    org.bukkit.entity.Player handle = victim;
-                    float absorptionHearts = (float) handle.getAbsorptionAmount();
+                    EntityPlayer handle = ((CraftPlayer) victim).getHandle();
+                    float absorptionHearts = handle.getAbsorptionHearts();
                     double v = getTrueDamageRate(level) * event.getFinalDamage();
                     double b = absorptionHearts - v;
-                    handle.setAbsorptionAmount(Math.max(0, b));
-                    if (handle.getAbsorptionAmount() <= 0) {
+                    handle.setAbsorptionHearts((float) Math.max(0, b));
+                    if (handle.getAbsorptionHearts() <= 0) {
                         PlayerUtil.damage(player, (Player) event.getEntity(), PlayerUtil.DamageType.TRUE, v + b, true);
 
                     }

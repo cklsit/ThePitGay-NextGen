@@ -5,17 +5,17 @@ import cn.charlotte.pit.data.PlayerProfile;
 import cn.charlotte.pit.data.sub.DroppedEntityData;
 import cn.charlotte.pit.data.sub.PerkData;
 import cn.charlotte.pit.data.sub.PlacedBlockData;
-import net.jitse.npclib.internal.NPC_Entity;
+import cn.mythicland.npclib.nms.v1_8_R3.NPC_v1_8_R3;
 import net.mizukilab.pit.medal.impl.challenge.ObsidianBreakMedal;
 import net.mizukilab.pit.npc.AbstractPitNPC;
 import net.mizukilab.pit.parm.AutoRegister;
-import net.mizukilab.pit.runnable.ClearRunnable;
-import net.mizukilab.pit.util.Log;
+import net.mizukilab.pit.handlers.GlobalSweeper;
 import net.mizukilab.pit.util.PlayerUtil;
 import net.mizukilab.pit.util.Utils;
 import net.mizukilab.pit.util.chat.CC;
 import net.mizukilab.pit.util.cooldown.Cooldown;
 import net.mizukilab.pit.util.item.ItemUtil;
+import nya.Skip;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -32,7 +32,6 @@ import org.bukkit.event.weather.WeatherChangeEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.plugin.RegisteredListener;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
@@ -44,7 +43,7 @@ import java.util.concurrent.TimeUnit;
  * @Date: 2020/12/30 22:48
  */
 @AutoRegister
-
+@Skip
 public class ProtectListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -99,8 +98,8 @@ public class ProtectListener implements Listener {
 
             Set<Material> BLOCKED_MATERIALS = EnumSet.of(
                     Material.WATER,
-                    Material.WATER,
-                    Material.LILY_PAD
+                    Material.STATIONARY_WATER,
+                    Material.WATER_LILY
             );
 
             Location temp = location.clone();
@@ -130,7 +129,7 @@ public class ProtectListener implements Listener {
                     if (PlayerUtil.isVenom(event.getPlayer()) || PlayerUtil.isEquippingSomber(event.getPlayer())) {
                         return;
                     }
-                    TNTPrimed tntPrimed = (TNTPrimed) event.getPlayer().getWorld().spawnEntity(event.getBlockPlaced().getLocation(), EntityType.TNT);
+                    TNTPrimed tntPrimed = (TNTPrimed) event.getPlayer().getWorld().spawnEntity(event.getBlockPlaced().getLocation(), EntityType.PRIMED_TNT);
                     tntPrimed.setFuseTicks(30);
 
                     tntPrimed.setMetadata("internal", new FixedMetadataValue(ThePit.getInstance(), "tnt_enchant_item"));
@@ -146,7 +145,7 @@ public class ProtectListener implements Listener {
                     if (PlayerUtil.isVenom(event.getPlayer()) || PlayerUtil.isEquippingSomber(event.getPlayer())) {
                         return;
                     }
-                    TNTPrimed tntPrimed = (TNTPrimed) event.getPlayer().getWorld().spawnEntity(event.getBlockPlaced().getLocation(), EntityType.TNT);
+                    TNTPrimed tntPrimed = (TNTPrimed) event.getPlayer().getWorld().spawnEntity(event.getBlockPlaced().getLocation(), EntityType.PRIMED_TNT);
                     tntPrimed.setFuseTicks(0);
 
                     tntPrimed.setMetadata("internal", new FixedMetadataValue(ThePit.getInstance(), "tnt_enchant_item"));
@@ -168,7 +167,7 @@ public class ProtectListener implements Listener {
                     existTime = (long) (baseTime * (1 + (0.6 * entry.getValue().getLevel())));
                 }
             }
-            if (event.getBlockPlaced().getType() == Material.OAK_PLANKS) {
+            if (event.getBlockPlaced().getType() == Material.WOOD) {
                 existTime = 30L;
             }
             /*
@@ -178,7 +177,7 @@ public class ProtectListener implements Listener {
             }
 
              */
-            ClearRunnable.getClearRunnable().placeBlock(event.getBlock().getLocation(), new Cooldown(existTime, TimeUnit.SECONDS));
+            GlobalSweeper.get().placeBlock(event.getBlock().getLocation(), new Cooldown(existTime, TimeUnit.SECONDS));
         }
     }
 
@@ -190,7 +189,7 @@ public class ProtectListener implements Listener {
     @Deprecated
     public boolean hasNPC(Entity e) { //inline support TODO removed in future
         for (AbstractPitNPC abstractPitNPC : ThePit.getInstance().getNpcFactory().getPitNpc()) {
-            NPC_Entity npc = (NPC_Entity) abstractPitNPC.getNpc();
+            NPC_v1_8_R3 npc = (NPC_v1_8_R3) abstractPitNPC.getNpc();
             if (npc.getEntityId() ==e.getEntityId()) {
                 return true;
             }
@@ -209,8 +208,8 @@ public class ProtectListener implements Listener {
 
             Set<Material> BLOCKED_MATERIALS = EnumSet.of(
                     Material.WATER,
-                    Material.WATER,
-                    Material.LILY_PAD
+                    Material.STATIONARY_WATER,
+                    Material.WATER_LILY
             );
 
             Location location = event.getBlockClicked().getLocation();
@@ -242,7 +241,7 @@ public class ProtectListener implements Listener {
             data.setTimer(new Cooldown(30, TimeUnit.SECONDS));
             data.setEntity(event.getEntity());
 
-            ClearRunnable.getClearRunnable()
+            GlobalSweeper.get()
                     .getEntityData()
                     .add(data);
         }
@@ -326,7 +325,7 @@ public class ProtectListener implements Listener {
         }
         Block block = event.getBlock();
 
-        PlacedBlockData placedBlockData = ClearRunnable.getClearRunnable()
+        PlacedBlockData placedBlockData = GlobalSweeper.get()
                 .getPlacedBlock().get(block.getLocation());
         if (placedBlockData == null) {
             if (!profile.isEditingMode()) {
@@ -349,7 +348,7 @@ public class ProtectListener implements Listener {
             }
         }
 
-        ClearRunnable.getClearRunnable().getPlacedBlock().remove(block.getLocation());
+        GlobalSweeper.get().getPlacedBlock().remove(block.getLocation());
         event.setCancelled(true);
         block.setType(Material.AIR);
     }
@@ -399,10 +398,8 @@ public class ProtectListener implements Listener {
 
     @EventHandler
     private void onChunkUnload(ChunkUnloadEvent e) {
-        // 1.21：区块卸载事件不再支持取消，改为记录日志便于排查
-        ThePit.getInstance().getLogger().fine("chunk unload: " + e.getChunk().getX() + "," + e.getChunk().getZ());
+        e.setCancelled(true);
     }
-
 
     @EventHandler
     public void onShoot(ProjectileLaunchEvent event) {

@@ -11,6 +11,8 @@ import net.mizukilab.pit.parm.listener.IPlayerShootEntity;
 import net.mizukilab.pit.util.Utils;
 import net.mizukilab.pit.util.cooldown.Cooldown;
 import com.google.common.util.concurrent.AtomicDouble;
+import net.minecraft.server.v1_8_R3.ItemArmor;
+import nya.Skip;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -22,7 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @Author: Misoryan
  * @Created_In: 2021/1/17 18:26
  */
-
+@Skip
 @WeaponOnly
 @BowOnly
 @ArmorOnly
@@ -64,7 +66,7 @@ public class DiamondBreakerEnchant extends AbstractEnchantment implements IAttac
         Player victim = (Player) target;
         for (ItemStack armor : victim.getInventory().getArmorContents()) {
             if (armor != null && armor.getType() != Material.AIR && armor.getType().name().contains("DIAMOND")) {
-                if (cn.charlotte.pit.compat.item.ItemTypes.isArmor(armor)) {
+                if (Utils.toNMStackQuick(armor).getItem() instanceof ItemArmor) {
                     boostDamage.set(boostDamage.get() + (0.04 * enchantLevel));
                 }
             }
@@ -77,7 +79,7 @@ public class DiamondBreakerEnchant extends AbstractEnchantment implements IAttac
         Player victim = (Player) target;
         for (ItemStack armor : victim.getInventory().getArmorContents()) {
             if (armor != null && armor.getType() != Material.AIR && armor.getType().name().contains("DIAMOND")) {
-                if (cn.charlotte.pit.compat.item.ItemTypes.isArmor(armor)) {
+                if (Utils.toNMStackQuick(armor).getItem() instanceof ItemArmor) {
                     boostDamage.set(boostDamage.get() + (0.04 * enchantLevel));
                 }
             }

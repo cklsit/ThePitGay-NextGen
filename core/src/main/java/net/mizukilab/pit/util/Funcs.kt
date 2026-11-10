@@ -30,11 +30,8 @@ fun Inventory.countItem(matcher: (itemStack: ItemStack) -> Boolean): Int {
     return amount
 }
 
-/**
- * 1.21 起不再有 NMS ItemStack，保留函数名以兼容调用方，直接返回 Bukkit 物品。
- */
-inline fun ItemStack.toNMS(): ItemStack {
-    return this
+inline fun ItemStack.toNMS(): net.minecraft.server.v1_8_R3.ItemStack {
+    return Utils.toNMStackQuick(this);
 }
 
 

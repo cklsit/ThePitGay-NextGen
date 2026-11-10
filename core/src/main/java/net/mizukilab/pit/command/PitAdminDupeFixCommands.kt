@@ -8,8 +8,8 @@ import dev.rollczi.litecommands.annotations.command.Command
 import dev.rollczi.litecommands.annotations.context.Context
 import dev.rollczi.litecommands.annotations.execute.Execute
 import dev.rollczi.litecommands.annotations.permission.Permission
-import net.mizukilab.pit.runnable.dupe.CleanupDupeEnch0525Runnable
-import net.mizukilab.pit.runnable.dupe.CleanupDupeEnchTheKMGodRunnable
+import net.mizukilab.pit.handlers.dupe.CleanupDupeEnch0525Runnable
+import net.mizukilab.pit.handlers.dupe.CleanupDupeEnchTheKMGodRunnable
 import net.mizukilab.pit.util.inventory.InventoryUtil
 import net.mizukilab.pit.util.item.ItemUtil
 import org.bukkit.Material
@@ -34,7 +34,7 @@ class PitAdminDupeFixCommands {
         val visited = Collections.synchronizedSet(HashSet<String>())
         val searchedPlayer = Collections.synchronizedSet(HashSet<String>())
 
-        val size = ThePit.getInstance().mongoDB.profiles.findAll().size.toLong()
+        val size = ThePit.getInstance().mongoDB.profileCollection.countDocuments()
         sender.sendMessage("发现玩家总数: $size")
 
         val perDetect = ceil(size / 64.0).toInt()
@@ -46,7 +46,10 @@ class PitAdminDupeFixCommands {
             val builder = StringBuilder()
             builder.append("Ids: ")
 
-            ThePit.getInstance().mongoDB.profiles.findAll().forEach { profile ->
+            ThePit.getInstance().mongoDB.profileCollection.find()
+                .skip(count.getAndAdd(perDetect))
+                .limit(perDetect)
+                .forEach { profile ->
                     try {
                         if (!searchedPlayer.add(profile.uuid)) {
                             return@forEach
@@ -55,12 +58,12 @@ class PitAdminDupeFixCommands {
                         var coalCounts = 0
                         var featherCounts = 0
                         var gemCounts = 0
-
+                        var armorCounts = 0;
                         var dupe = false
 
                         profile.inventory.contents.toList().forEachIndexed { index, itemStack ->
                             if (itemStack != null) {
-                                if (itemStack.type == Material.GOLDEN_SWORD || itemStack.type == Material.BOW || itemStack.type == Material.LEATHER_LEGGINGS) {
+                                if (itemStack.type == Material.GOLD_SWORD || itemStack.type == Material.BOW || itemStack.type == Material.LEATHER_LEGGINGS) {
                                     val uuid = ItemUtil.getUUID(itemStack) ?: return@forEachIndexed
                                     val success = visited.add(uuid)
                                     if (!success) {
@@ -84,7 +87,7 @@ class PitAdminDupeFixCommands {
 
                         profile.inventory.armorContents.toList().forEachIndexed { index, itemStack ->
                             if (itemStack != null) {
-                                if (itemStack.type == Material.GOLDEN_SWORD || itemStack.type == Material.BOW || itemStack.type == Material.LEATHER_LEGGINGS) {
+                                if (itemStack.type == Material.GOLD_SWORD || itemStack.type == Material.BOW || itemStack.type == Material.LEATHER_LEGGINGS) {
                                     val uuid = ItemUtil.getUUID(itemStack) ?: return@forEachIndexed
                                     val success = visited.add(uuid)
                                     if (!success) {
@@ -108,7 +111,7 @@ class PitAdminDupeFixCommands {
 
                         profile.enderChest.inventory.toList().forEachIndexed { index, itemStack ->
                             if (itemStack != null) {
-                                if (itemStack.type == Material.GOLDEN_SWORD || itemStack.type == Material.BOW || itemStack.type == Material.LEATHER_LEGGINGS) {
+                                if (itemStack.type == Material.GOLD_SWORD || itemStack.type == Material.BOW || itemStack.type == Material.LEATHER_LEGGINGS) {
                                     val uuid = ItemUtil.getUUID(itemStack) ?: return@forEachIndexed
                                     val success = visited.add(uuid)
                                     if (!success) {
@@ -177,8 +180,8 @@ class PitAdminDupeFixCommands {
     @Execute(name = "0526")
     @Async
     fun fix0526(@Context sender: CommandSender) {
-        val profiles = ThePit.getInstance().mongoDB.profiles.findAll()
-        profiles.forEach { profile ->
+        val profileCollection = ThePit.getInstance().mongoDB.profileCollection
+        profileCollection.find().forEach { profile ->
             var count = 0
             profile.inventory.apply {
                 contents = contents.map { itemStack ->
@@ -204,7 +207,11 @@ class PitAdminDupeFixCommands {
                     }
                 }.second)
             }
-            ThePit.getInstance().mongoDB.profiles.replaceOne("uuid", profile.uuid.toString(), profile)
+            profileCollection.replaceOne(
+                Filters.eq("uuid", profile.uuid),
+                profile,
+                ReplaceOptions().upsert(true)
+            )
             if (count > 0) {
                 sender.sendMessage("已处理玩家${profile.playerName} 的 $count 个物品")
             }
@@ -220,8 +227,8 @@ class PitAdminDupeFixCommands {
     @Execute(name = "kami")
     @Async
     fun kami(@Context sender: CommandSender) {
-        val profiles = ThePit.getInstance().mongoDB.profiles.findAll()
-        profiles.forEach { profile ->
+        val profileCollection = ThePit.getInstance().mongoDB.profileCollection
+        profileCollection.find().forEach { profile ->
             var count = 0
             profile.inventory.apply {
                 contents = contents.map { itemStack ->
@@ -247,7 +254,11 @@ class PitAdminDupeFixCommands {
                     }
                 }.second)
             }
-            ThePit.getInstance().mongoDB.profiles.replaceOne("uuid", profile.uuid.toString(), profile)
+            profileCollection.replaceOne(
+                Filters.eq("uuid", profile.uuid),
+                profile,
+                ReplaceOptions().upsert(true)
+            )
             if (count > 0) {
                 sender.sendMessage("已处理玩家${profile.playerName} 的 $count 个物品")
             }

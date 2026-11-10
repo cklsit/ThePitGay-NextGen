@@ -10,6 +10,7 @@ import net.mizukilab.pit.parm.listener.IAttackEntity;
 import net.mizukilab.pit.parm.listener.IPlayerShootEntity;
 import net.mizukilab.pit.util.PlayerUtil;
 import net.mizukilab.pit.util.cooldown.Cooldown;
+import nya.Skip;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
@@ -32,7 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @Author: Misoryan
  * @Created_In: 2021/2/21 13:58
  */
-
+@Skip
 @AutoRegister
 public class FightOrFlightKillStreak extends AbstractPerk implements Listener, IAttackEntity, IPlayerShootEntity {
 
@@ -83,11 +84,11 @@ public class FightOrFlightKillStreak extends AbstractPerk implements Listener, I
         list.add(" ");
         list.add("&7触发时:");
         list.add("  &7如自身生命值低于上限的 &c50% &7:");
-        list.add("  &f▶ &7立刻获得 &b速度 I &f(00:07)");
-        list.add("  &f▶ &7立刻获得 &3抗性提升 I &f(00:07)");
+        list.add("  &f▶ &7立刻获得 &b速度 I &f(00:08)");
+        list.add("  &f▶ &7立刻获得 &3抗性提升 I &f(00:08)");
         list.add(" ");
         list.add("  &7反之:");
-        list.add("  &f▶ &7立刻获得效果 &c攻击伤害 +20% &f(00:07)");
+        list.add("  &f▶ &7立刻获得效果 &c攻击伤害 +25% &f(00:08)");
         return list;
     }
 
@@ -126,10 +127,10 @@ public class FightOrFlightKillStreak extends AbstractPerk implements Listener, I
         int streak = 5;
         if (Math.floor(event.getFrom()) % streak != 0 && Math.floor(event.getTo()) % streak == 0) {
             if (myself.getHealth() / myself.getMaxHealth() < 0.5) {
-                myself.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20 * 7, 0), true);
-                myself.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 20 * 7, 0), true);
+                myself.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20 * 8, 0), true);
+                myself.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 20 * 8, 0), true);
             } else {
-                strength.put(myself.getUniqueId(), new Cooldown(7, TimeUnit.SECONDS));
+                strength.put(myself.getUniqueId(), new Cooldown(8, TimeUnit.SECONDS));
             }
         }
     }
@@ -138,7 +139,7 @@ public class FightOrFlightKillStreak extends AbstractPerk implements Listener, I
     public void handleAttackEntity(int enchantLevel, Player attacker, Entity target, double damage, AtomicDouble finalDamage, AtomicDouble boostDamage, AtomicBoolean cancel) {
         strength.putIfAbsent(attacker.getUniqueId(), new Cooldown(0));
         if (!strength.get(attacker.getUniqueId()).hasExpired()) {
-            boostDamage.getAndAdd(0.2);
+            boostDamage.getAndAdd(0.25);
         }
     }
 
@@ -146,7 +147,7 @@ public class FightOrFlightKillStreak extends AbstractPerk implements Listener, I
     public void handleShootEntity(int enchantLevel, Player attacker, Entity target, double damage, AtomicDouble finalDamage, AtomicDouble boostDamage, AtomicBoolean cancel) {
         strength.putIfAbsent(attacker.getUniqueId(), new Cooldown(0));
         if (!strength.get(attacker.getUniqueId()).hasExpired()) {
-            boostDamage.getAndAdd(0.2);
+            boostDamage.getAndAdd(0.25);
         }
     }
 }

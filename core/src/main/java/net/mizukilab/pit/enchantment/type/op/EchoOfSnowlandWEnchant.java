@@ -8,6 +8,7 @@ import net.mizukilab.pit.enchantment.param.item.WeaponOnly;
 import net.mizukilab.pit.enchantment.rarity.EnchantmentRarity;
 import net.mizukilab.pit.parm.listener.IAttackEntity;
 import net.mizukilab.pit.util.cooldown.Cooldown;
+import nya.Skip;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
@@ -19,7 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @Author: Misoryan
  * @Created_In: 2021/1/19 14:57
  */
-
+@Skip
 @WeaponOnly
 public class EchoOfSnowlandWEnchant extends AbstractEnchantment implements IAttackEntity {
 
@@ -59,11 +60,11 @@ public class EchoOfSnowlandWEnchant extends AbstractEnchantment implements IAtta
         Player targetPlayer = (Player) target;
         if (PlayerProfile.getPlayerProfileByUuid(attacker.getUniqueId()).getMeleeAttack() % 3 == 0) {
             targetPlayer.removePotionEffect(PotionEffectType.WEAKNESS);
-            targetPlayer.removePotionEffect(PotionEffectType.SLOWNESS);
+            targetPlayer.removePotionEffect(PotionEffectType.SLOW);
             targetPlayer.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, 20 * 10, 1), true);
-            targetPlayer.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 20 * 10, 0), true);
+            targetPlayer.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 20 * 10, 0), true);
         }
-        if (targetPlayer.getActivePotionEffects().contains(PotionEffectType.WEAKNESS) && targetPlayer.getActivePotionEffects().contains(PotionEffectType.SLOWNESS)) {
+        if (targetPlayer.getActivePotionEffects().contains(PotionEffectType.WEAKNESS) && targetPlayer.getActivePotionEffects().contains(PotionEffectType.SLOW)) {
             boostDamage.set(boostDamage.get() + 1.2);
             finalDamage.set(finalDamage.get() + 2);
         }
