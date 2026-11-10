@@ -6,21 +6,14 @@ import cn.charlotte.pit.event.PitDamageEvent;
 import cn.charlotte.pit.event.PitKillEvent;
 import cn.charlotte.pit.events.trigger.type.IEpicEvent;
 import cn.charlotte.pit.events.AbstractEvent;
-import com.boydti.fawe.FaweAPI;
-import com.sk89q.worldedit.BlockVector;
-import com.sk89q.worldedit.EditSession;
-import com.sk89q.worldedit.WorldEdit;
-import com.sk89q.worldedit.blocks.BaseBlock;
-import com.sk89q.worldedit.blocks.BlockID;
-import com.sk89q.worldedit.bukkit.BukkitWorld;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
-import net.minecraft.server.v1_8_R3.MathHelper;
+import cn.charlotte.pit.compat.math.MathHelper;
 import net.mizukilab.pit.config.NewConfiguration;
 import net.mizukilab.pit.item.type.mythic.MythicLeggingsItem;
 import net.mizukilab.pit.medal.impl.challenge.RagePitTopMedal;
-import net.mizukilab.pit.handlers.GlobalSweeper;
+import net.mizukilab.pit.runnable.ClearRunnable;
 import net.mizukilab.pit.util.PlayerUtil;
 import net.mizukilab.pit.util.Utils;
 import net.mizukilab.pit.util.chat.CC;
@@ -28,7 +21,6 @@ import net.mizukilab.pit.util.cooldown.Cooldown;
 import net.mizukilab.pit.util.inventory.InventoryUtil;
 import net.mizukilab.pit.util.random.RandomUtil;
 import net.mizukilab.pit.util.time.TimeUtil;
-import net.mizukilab.pit.util.worldedit.JustAirBlockPattern;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -51,8 +43,8 @@ import java.util.stream.Collectors;
 
 public class RagePitEvent extends AbstractEvent implements IEpicEvent, Listener {
     @Getter
-    private final Map<UUID, DamageData> damageMap = new java.util.concurrent.ConcurrentHashMap<>();
-    private EditSession session;
+    private final Map<UUID, DamageData> damageMap = new HashMap<>();
+    private static final java.util.Map<org.bukkit.Location, org.bukkit.block.data.BlockData> ORIGINAL_BLOCKS = new java.util.HashMap<>();
     @Getter
     private int killed = 0;
     private BukkitRunnable runnable;
@@ -67,34 +59,20 @@ public class RagePitEvent extends AbstractEvent implements IEpicEvent, Listener 
     }
     public int getDamageRank(Player player) {
         DamageData damage = damageMap.get(player.getUniqueId());
-        if (damage == null) return -1;
-        double value = damage.getDamage();
-        int rank = 0;
-        // Preserve the old rule: tied scores all receive the last position in the tie.
-        for (DamageData other : damageMap.values()) {
-            if (Double.compare(other.getDamage(), value) >= 0) rank++;
-        }
-        return rank;
-    }
+        HashSet<Map.Entry<UUID, DamageData>> entry = new HashSet<>(damageMap.entrySet());
 
-    public record DamageStanding(double damage, int rank) { }
+        Map<Double, Integer> rank = new HashMap<>();
+        int i = 1;
 
-    /** Immutable values shared by every scoreboard in one refresh, never cached by time. */
-    public Map<UUID, DamageStanding> getDamageStandings() {
-        List<Map.Entry<UUID, Double>> scores = new ArrayList<>(damageMap.size());
-        damageMap.forEach((uuid, data) -> scores.add(Map.entry(uuid, data.getDamage())));
-        scores.sort(Map.Entry.<UUID, Double>comparingByValue().reversed());
-        Map<UUID, DamageStanding> standings = new HashMap<>();
-        for (int start = 0; start < scores.size();) {
-            int end = start + 1;
-            double damage = scores.get(start).getValue();
-            while (end < scores.size() && Double.compare(scores.get(end).getValue(), damage) == 0) end++;
-            for (int i = start; i < end; i++) {
-                standings.put(scores.get(i).getKey(), new DamageStanding(damage, end));
-            }
-            start = end;
+        for (DamageData en : entry.stream()
+                .map(Map.Entry::getValue)
+                .sorted(Comparator.comparingDouble(DamageData::getDamage).reversed())
+                .toList()) {
+            rank.put(en.getDamage(), i);
+            i++;
         }
-        return Collections.unmodifiableMap(standings);
+
+        return rank.get(damage.getDamage());
     }
 
     @Override
@@ -109,30 +87,44 @@ public class RagePitEvent extends AbstractEvent implements IEpicEvent, Listener 
 
     @Override
     public int requireOnline() {
-        return NewConfiguration.INSTANCE.getEventOnlineRequired().getOrDefault(getEventInternalName(), 10);
+        return NewConfiguration.INSTANCE.getEventOnlineRequired().get(getEventInternalName());
     }
 
     @Override
     public void onActive() {
-        this.timer = new Cooldown(5, TimeUnit.MINUTES);
-        killed = 0;
-        damageMap.clear();
         try {
             Bukkit.getPluginManager()
                     .registerEvents(this, ThePit.getInstance());
             //build wall - start
             Location middle = ThePit.getInstance().getPitConfig().getRagePitMiddle();
-            BlockVector vector = new BlockVector(middle.getBlockX(), middle.getBlockY(), middle.getBlockZ());
-            BukkitWorld world = new BukkitWorld(middle.getWorld());
-            cn.charlotte.pit.events.EventWorldEdits.build(this, () -> {
-                session = FaweAPI.getEditSessionBuilder(world).build();
-                session.makeCylinder(vector, new JustAirBlockPattern(new BaseBlock(BlockID.GLASS)),
-                        ThePit.getInstance().getPitConfig().getRagePitRadius(), ThePit.getInstance().getPitConfig().getRagePitHeight(), false);
-                cn.charlotte.pit.events.EventWorldEdits.flush(session);
+            final int cx = middle.getBlockX();
+            final int cy = middle.getBlockY();
+            final int cz = middle.getBlockZ();
+            final int radius = ThePit.getInstance().getPitConfig().getRagePitRadius();
+            final int height = ThePit.getInstance().getPitConfig().getRagePitHeight();
+            final org.bukkit.World bukkitWorld = middle.getWorld() == null ? Bukkit.getWorlds().get(0) : middle.getWorld();
+
+            Bukkit.getScheduler().runTask(ThePit.getInstance(), () -> {
+                ORIGINAL_BLOCKS.clear();
+                int radiusSquared = radius * radius;
+                for (int x = cx - radius; x <= cx + radius; x++) {
+                    for (int z = cz - radius; z <= cz + radius; z++) {
+                        if ((x - cx) * (x - cx) + (z - cz) * (z - cz) > radiusSquared) {
+                            continue;
+                        }
+                        for (int y = cy; y < cy + height; y++) {
+                            org.bukkit.block.Block block = bukkitWorld.getBlockAt(x, y, z);
+                            if (block.getType() == Material.AIR) {
+                                ORIGINAL_BLOCKS.put(block.getLocation(), block.getBlockData());
+                                block.setType(Material.GLASS, false);
+                            }
+                        }
+                    }
+                }
             });
 
 
-            GlobalSweeper.get().getPlacedBlock().removeIf((loc, blockData) -> {
+            ClearRunnable.getClearRunnable().getPlacedBlock().removeIf((loc, blockData) -> {
                 loc.getBlock().setType(Material.AIR);
                 return true;
             });
@@ -140,14 +132,14 @@ public class RagePitEvent extends AbstractEvent implements IEpicEvent, Listener 
 
             //set Player's max health and teleport to spawn
             for (Player player : Bukkit.getOnlinePlayers()) {
-                player.setMaxHealth(PlayerProfile.getPlayerProfileByUuid(player.getUniqueId()).getExtraMaxHealthValue() + 40.0);
+                player.setMaxHealth(player.getMaxHealth() * 2);
                 player.setHealth(player.getMaxHealth());
 
                 Location location = ThePit.getInstance().getPitConfig()
                         .getSpawnLocations()
                         .get(RandomUtil.random.nextInt(ThePit.getInstance().getPitConfig().getSpawnLocations().size()));
                 player.teleport(location);
-                player.playSound(player.getLocation(), Sound.ENDERDRAGON_GROWL, 1, 0.5F);
+                player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1, 0.5F);
                 player.sendMessage(CC.translate("&5&l大型事件! &6&l疯狂天坑 &7事件开始!"));
             }
 
@@ -172,9 +164,8 @@ public class RagePitEvent extends AbstractEvent implements IEpicEvent, Listener 
                 }
             };
 
-            trackTask(runnable.runTaskTimer(ThePit.getInstance(), 0, 20));
-        } catch (Exception failure) {
-            throw new IllegalStateException("Could not start Rage Pit", failure);
+            runnable.runTaskTimer(ThePit.getInstance(), 0, 20);
+        } catch (Exception ignored) {
         }
     }
 
@@ -204,17 +195,19 @@ public class RagePitEvent extends AbstractEvent implements IEpicEvent, Listener 
             InventoryUtil.removeItemWithInternalName(player, "angry_potato");
         }
         //取消Runnable
-        if (runnable != null) runnable.cancel();
+        runnable.cancel();
         //还原建筑
-        cn.charlotte.pit.events.EventWorldEdits.undo(() -> {
-            if (session != null) { cn.charlotte.pit.events.EventWorldEdits.restore(session); cn.charlotte.pit.events.EventWorldEdits.flush(session); session = null; }
+        Bukkit.getScheduler().runTask(ThePit.getInstance(), () -> {
+            for (java.util.Map.Entry<org.bukkit.Location, org.bukkit.block.data.BlockData> entry : ORIGINAL_BLOCKS.entrySet()) {
+                entry.getKey().getBlock().setBlockData(entry.getValue(), false);
+            }
+            ORIGINAL_BLOCKS.clear();
         });
         //还原BossBar
         ThePit.getInstance()
                 .getBossBar()
                 .getBossBar()
                 .setTitle("");
-        if (isAborting()) { damageMap.clear(); killed = 0; return; }
         //获取伤害前3名玩家
         HashSet<Map.Entry<UUID, DamageData>> entry = new HashSet<>(damageMap.entrySet());
         List<DamageData> collect = entry
@@ -223,9 +216,8 @@ public class RagePitEvent extends AbstractEvent implements IEpicEvent, Listener 
                 .sorted(Comparator.comparingDouble(DamageData::getDamage).reversed())
                 .collect(Collectors.toList());
         //结算消息
-        int position = 0;
+        int rank = 1;
         for (DamageData data : collect) {
-            int rank = ++position;
             Player player = Bukkit.getPlayer(data.getUuid());
             if (player == null || !player.isOnline()) {
                 continue;
@@ -316,6 +308,7 @@ public class RagePitEvent extends AbstractEvent implements IEpicEvent, Listener 
             }
 
 
+            rank++;
         }
 
         damageMap.clear();
@@ -327,6 +320,6 @@ public class RagePitEvent extends AbstractEvent implements IEpicEvent, Listener 
     public static class DamageData {
 
         private UUID uuid;
-        private volatile double damage;
+        private double damage;
     }
 }

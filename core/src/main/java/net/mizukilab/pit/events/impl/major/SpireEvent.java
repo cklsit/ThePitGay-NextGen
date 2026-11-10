@@ -10,25 +10,28 @@ import cn.charlotte.pit.events.trigger.type.IEpicEvent;
 import cn.charlotte.pit.events.trigger.type.addon.IPreparative;
 import cn.charlotte.pit.events.trigger.type.addon.IScoreBoardInsert;
 import cn.charlotte.pit.events.trigger.type.addon.ISortable;
-import com.boydti.fawe.FaweAPI;
-import com.sk89q.worldedit.BlockVector;
-import com.sk89q.worldedit.CuboidClipboard;
 import com.sk89q.worldedit.EditSession;
-import com.sk89q.worldedit.blocks.BaseBlock;
-import com.sk89q.worldedit.blocks.BlockID;
-import com.sk89q.worldedit.bukkit.BukkitWorld;
+import com.sk89q.worldedit.WorldEdit;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
+import com.sk89q.worldedit.extent.clipboard.Clipboard;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardReader;
 import com.sk89q.worldedit.function.mask.BlockMask;
-import com.sk89q.worldedit.patterns.SingleBlockPattern;
+import com.sk89q.worldedit.function.operation.Operation;
+import com.sk89q.worldedit.function.operation.Operations;
+import com.sk89q.worldedit.function.pattern.BlockPattern;
+import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.CuboidRegion;
-import com.sk89q.worldedit.schematic.MCEditSchematicFormat;
-import com.sk89q.worldedit.schematic.SchematicFormat;
-import net.minecraft.server.v1_8_R3.MathHelper;
+import com.sk89q.worldedit.session.ClipboardHolder;
+import com.sk89q.worldedit.world.block.BlockTypes;
+import cn.charlotte.pit.compat.math.MathHelper;
 import net.mizukilab.pit.config.NewConfiguration;
 import net.mizukilab.pit.item.type.SpireArmor;
 import net.mizukilab.pit.item.type.SpireSword;
 import net.mizukilab.pit.item.type.mythic.MythicLeggingsItem;
 import net.mizukilab.pit.medal.impl.challenge.SpireFloorMedal;
-import net.mizukilab.pit.handlers.PlayerMoveHandler;
+import net.mizukilab.pit.movement.PlayerMoveHandler;
 import net.mizukilab.pit.util.PlayerUtil;
 import net.mizukilab.pit.util.Utils;
 import net.mizukilab.pit.util.chat.CC;
@@ -50,7 +53,6 @@ import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.io.InputStream;
@@ -70,6 +72,15 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
     private Cooldown timer;
     private BukkitRunnable runnable;
     private EditSession session;
+
+    /** 解析 legacy .schematic 读取器，优先按别名查找，找不到时退回内置 MCEdit 格式。 */
+    private static ClipboardFormat resolveSchematicFormat() {
+        ClipboardFormat format = ClipboardFormats.findByAlias("schematic");
+        if (format == null) {
+            format = com.sk89q.worldedit.extent.clipboard.io.BuiltInClipboardFormat.MCEDIT_SCHEMATIC;
+        }
+        return format;
+    }
     private EditSession teleport;
     private EditSession wall;
 
@@ -89,12 +100,11 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
 
     @Override
     public int requireOnline() {
-        return NewConfiguration.INSTANCE.getEventOnlineRequired().getOrDefault(getEventInternalName(), 10);
+        return NewConfiguration.INSTANCE.getEventOnlineRequired().get(getEventInternalName());
     }
 
     @Override
     public void onActive() {
-        dataMap.clear(); rankMap.clear(); cooldownList.clear();
         this.timer = new Cooldown(5, TimeUnit.MINUTES);
         this.runnable = new BukkitRunnable() {
             @Override
@@ -102,13 +112,12 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
                 if (timer.hasExpired()) {
                     cancel();
                     if (SpireEvent.this.equals(ThePit.getInstance().getEventFactory().getActiveEpicEvent())) {
-                        {
+                        Bukkit.getScheduler().runTask(ThePit.getInstance(), () -> {
                             ThePit.getInstance()
                                     .getEventFactory()
                                     .inactiveEvent(SpireEvent.this);
-                        }
+                        });
                     }
-                    return;
                 }
                 ThePit.getInstance()
                         .getBossBar()
@@ -122,7 +131,7 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
             }
         };
 
-        trackTask(this.runnable.runTaskTimer(ThePit.getInstance(), 20, 20));
+        this.runnable.runTaskTimerAsynchronously(ThePit.getInstance(), 20, 20);
 
         Bukkit.getPluginManager().registerEvents(this, ThePit.getInstance());
 
@@ -134,50 +143,79 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
                     .getSpawnLocations()
                     .get(RandomUtil.random.nextInt(ThePit.getInstance().getPitConfig().getSpawnLocations().size()));
             player.teleport(location);
-            player.playSound(player.getLocation(), Sound.ENDERDRAGON_GROWL, 1, 0.5F);
+            player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1, 0.5F);
         }
 
-        cn.charlotte.pit.events.EventWorldEdits.build(this, () -> {
-
+        Bukkit.getScheduler().runTaskAsynchronously(ThePit.getInstance(), () -> {
+            if (this.session != null) {
+                this.session.undo(this.session);
+                this.session.flushQueue();
+            }
 
             final Location location = ThePit.getInstance().getPitConfig().getSpireLoc();
 
-            final BukkitWorld world = new BukkitWorld(location.getWorld());
+            try {
+                final InputStream inputStream = ThePit.getInstance().getClass().getClassLoader().getResourceAsStream("spire.schematic");
+                if (inputStream == null) {
+                    throw new IllegalStateException("缺少 spire.schematic 资源");
+                }
 
-            BlockVector vector = new BlockVector(location.getX(), location.getY(), location.getZ());
+                final ClipboardFormat format = resolveSchematicFormat();
+                if (format == null) {
+                    throw new IllegalStateException("当前 WorldEdit 未注册 schematic 读取器");
+                }
 
-            session = FaweAPI.getEditSessionBuilder(world).build();
+                final Clipboard clipboard;
+                try (ClipboardReader reader = format.getReader(inputStream)) {
+                    clipboard = reader.read();
+                }
 
-            final MCEditSchematicFormat mcedit = (MCEditSchematicFormat) SchematicFormat.MCEDIT;
-
-
-            try (InputStream inputStream = ThePit.getInstance().getResource("spire.schematic")) {
-                if (inputStream == null) throw new IllegalStateException("Missing spire.schematic");
-                final CuboidClipboard clipboard = mcedit.load(inputStream);
-                clipboard.paste(session, vector, false);
-
-                cn.charlotte.pit.events.EventWorldEdits.flush(session);
-
+                session = WorldEdit.getInstance().newEditSession(BukkitAdapter.adapt(location.getWorld()));
+                try {
+                    final Operation operation = new ClipboardHolder(clipboard)
+                            .createPaste(session)
+                            .to(BlockVector3.at(location.getBlockX(), location.getBlockY(), location.getBlockZ()))
+                            .ignoreAirBlocks(false)
+                            .build();
+                    Operations.complete(operation);
+                } finally {
+                    session.flushSession();
+                }
             } catch (Exception e) {
-                throw new IllegalStateException("Could not build Spire", e);
+                e.printStackTrace();
             }
 
-            Location middle = ThePit.getInstance().getPitConfig().getRagePitMiddle();
-            BlockVector wallVec = new BlockVector(middle.getBlockX(), middle.getBlockY(), middle.getBlockZ());
-            wall = FaweAPI.getEditSessionBuilder(world).build();
-            wall.makeCylinder(wallVec, new SingleBlockPattern(new BaseBlock(BlockID.GLASS)), ThePit.getInstance().getPitConfig().getRagePitRadius(), ThePit.getInstance().getPitConfig().getRagePitHeight(), false);
-            cn.charlotte.pit.events.EventWorldEdits.flush(wall);
+            // 狂怒之坑玻璃墙
+            final Location middle = ThePit.getInstance().getPitConfig().getRagePitMiddle();
+            wall = WorldEdit.getInstance().newEditSession(BukkitAdapter.adapt(middle.getWorld()));
+            try {
+                wall.makeCylinder(
+                        BlockVector3.at(middle.getBlockX(), middle.getBlockY(), middle.getBlockZ()),
+                        new BlockPattern(BlockTypes.GLASS.getDefaultState()),
+                        ThePit.getInstance().getPitConfig().getRagePitRadius(),
+                        ThePit.getInstance().getPitConfig().getRagePitHeight(),
+                        false);
+                wall.flushQueue();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
 
             if (teleport == null) {
-                teleport = FaweAPI.getEditSessionBuilder(world).build();
+                final Location portalA = ThePit.getInstance().getPitConfig().getPortalPosA();
+                final Location portalB = ThePit.getInstance().getPitConfig().getPortalPosB();
 
-                Location portalA = ThePit.getInstance().getPitConfig().getPortalPosA();
-                Location portalB = ThePit.getInstance().getPitConfig().getPortalPosB();
-                BlockVector posA = new BlockVector(portalA.getBlockX(), portalA.getBlockY(), portalA.getBlockZ());
-                BlockVector posB = new BlockVector(portalB.getBlockX(), portalB.getBlockY(), portalB.getBlockZ());
-
-                teleport.replaceBlocks(new CuboidRegion(posA, posB), new BlockMask(teleport.getExtent(), new BaseBlock(BlockID.AIR)), new BaseBlock(BlockID.END_PORTAL));
-                cn.charlotte.pit.events.EventWorldEdits.flush(teleport);
+                teleport = WorldEdit.getInstance().newEditSession(BukkitAdapter.adapt(portalA.getWorld()));
+                try {
+                    final CuboidRegion region = new CuboidRegion(
+                            BlockVector3.at(portalA.getBlockX(), portalA.getBlockY(), portalA.getBlockZ()),
+                            BlockVector3.at(portalB.getBlockX(), portalB.getBlockY(), portalB.getBlockZ()));
+                    final BlockMask airMask = new BlockMask(
+                            teleport.getExtent(), BlockTypes.AIR.getDefaultState().toBaseBlock());
+                    teleport.replaceBlocks(region, airMask, new BlockPattern(BlockTypes.END_PORTAL.getDefaultState()));
+                    teleport.flushQueue();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         });
     }
@@ -188,8 +226,6 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
             event.setCancelled(true);
 
             final Player player = event.getPlayer();
-            final PlayerProfile joiningProfile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
-            if (!joiningProfile.isLoaded() || joiningProfile.isTempInvUsing()) return;
 
             if (!dataMap.containsKey(player.getUniqueId())) {
 
@@ -208,12 +244,9 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
 
             player.closeInventory();
             final PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
-            profile.setTempInvUsing(true);
             profile.setInventory(PlayerInv.fromPlayerInventory(player.getInventory()));
-            profile.getEnderChest().snapshot();
-            profile.getWarehouse().snapshot();
+            profile.setTempInvUsing(true);
 
-            if (!isActive() || !player.isOnline() || dataMap.get(player.getUniqueId()) != data) return;
             PlayerUtil.resetPlayer(player, true, true);
             this.giveInvSets(player);
             this.teleportPlayer(player, data);
@@ -229,11 +262,9 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
         final PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(event.getPlayer().getUniqueId());
 
 
-        if (data != null && profile.isLoaded() && profile.isTempInvUsing()) {
+        if (profile.isLoaded()) {
             profile.getInventory()
                     .applyItemToPlayer(event.getPlayer());
-            profile.getEnderChest().rollback();
-            profile.getWarehouse().rollback();
             profile.setTempInvUsing(false);
         }
     }
@@ -242,44 +273,36 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
         final PlayerSpireData data = this.dataMap.get(player.getUniqueId());
         final int floor = data.floor;
 
-        PlayerInventory inventory = player.getInventory();
         if (floor == 0) {
-            final SpireSword sword = new SpireSword(Material.WOOD_SWORD);
-            inventory.addItem(sword.toItemStack());
+            final SpireSword sword = new SpireSword(Material.WOODEN_SWORD);
+            player.getInventory().addItem(sword.toItemStack());
         } else if (floor == 1 || floor == 2) {
-            inventory.addItem(SpireArmor.toItemStack(Material.WOOD_SWORD));
-            inventory.setChestplate(SpireArmor.toItemStack(Material.LEATHER_CHESTPLATE));
+            player.getInventory().addItem(SpireArmor.toItemStack(Material.WOODEN_SWORD));
+            player.getInventory().setChestplate(SpireArmor.toItemStack(Material.LEATHER_CHESTPLATE));
 
-            inventory.setLeggings(SpireArmor.toItemStack(Material.CHAINMAIL_LEGGINGS));
+            player.getInventory().setLeggings(SpireArmor.toItemStack(Material.CHAINMAIL_LEGGINGS));
         } else if (floor == 3 || floor == 4 || floor == 5) {
-            inventory.addItem(SpireArmor.toItemStack(Material.IRON_SWORD));
+            player.getInventory().addItem(SpireArmor.toItemStack(Material.IRON_SWORD));
 
-            inventory.setChestplate(SpireArmor.toItemStack(Material.IRON_CHESTPLATE));
-            inventory.setLeggings(SpireArmor.toItemStack(Material.CHAINMAIL_LEGGINGS));
-            inventory.setBoots(SpireArmor.toItemStack(Material.IRON_BOOTS));
+            player.getInventory().setChestplate(SpireArmor.toItemStack(Material.IRON_CHESTPLATE));
+            player.getInventory().setLeggings(SpireArmor.toItemStack(Material.CHAINMAIL_LEGGINGS));
+            player.getInventory().setBoots(SpireArmor.toItemStack(Material.IRON_BOOTS));
         } else if (floor >= 6) {
             final SpireSword sword = new SpireSword(Material.DIAMOND_SWORD);
-            inventory.addItem(sword.toItemStack());
-            inventory.setChestplate(SpireArmor.toItemStack(Material.DIAMOND_CHESTPLATE));
-            inventory.setLeggings(SpireArmor.toItemStack(Material.IRON_LEGGINGS));
-            inventory.setBoots(SpireArmor.toItemStack(Material.DIAMOND_BOOTS));
+            player.getInventory().addItem(sword.toItemStack());
+            player.getInventory().setChestplate(SpireArmor.toItemStack(Material.DIAMOND_CHESTPLATE));
+            player.getInventory().setLeggings(SpireArmor.toItemStack(Material.IRON_LEGGINGS));
+            player.getInventory().setBoots(SpireArmor.toItemStack(Material.DIAMOND_BOOTS));
         }
 
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
+    @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         final Player player = event.getPlayer();
         final PlayerSpireData data = dataMap.get(player.getUniqueId());
         if (data == null) {
             return;
-        }
-        PlayerProfile playerProfileByUuid = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
-        playerProfileByUuid.getEnderChest().rollback();
-        playerProfileByUuid.getWarehouse().rollback();
-        if(playerProfileByUuid.isLoaded()){
-            playerProfileByUuid.getInventory().applyItemToPlayer(player);
-            playerProfileByUuid.setTempInvUsing(false);
         }
         dataMap.remove(player.getUniqueId());
     }
@@ -317,10 +340,9 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
             data.soul = data.soul + this.getKillRewardSouls(data);
             data.kills++;
             TitleUtil.sendTitle(killer, CC.translate("&a击杀!"), this.getFloorColor(data.floor) + "第" + (data.floor + 1) + "层", 5, 20, 10);
-            killer.playSound(killer.getLocation(), Sound.LEVEL_UP, 1, 1.5F);
+            killer.playSound(killer.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1, 1.5F);
 
-            runEventTaskLater(() -> {
-                if (!killer.isOnline() || dataMap.get(killer.getUniqueId()) != data) return;
+            Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), () -> {
                 int amount = InventoryUtil.getAmountOfItem(killer, "broken_soul");
 
                 this.handleUpdate(killer, data);
@@ -364,13 +386,17 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
             }
 
 
-            targetData.soul = Math.max(0, targetData.soul - this.getDeadPunishmentSouls(targetData));
-            targetData.floor = Math.max(0, targetData.floor - 1);
-            targetData.lastFloorChange = System.currentTimeMillis();
-            TitleUtil.sendTitle(target, CC.translate("&c被击杀"), this.getFloorColor(targetData.floor) + "第" + (targetData.floor + 1) + "层", 5, 10, 20);
-            runEventTaskLater(() -> this.handleUpdate(target, targetData), 2L);
+            targetData.floor--;
+            if (targetData.floor < 0) {
+                targetData.floor = 0;
+                targetData.lastFloorChange = System.currentTimeMillis();
+                targetData.soul = targetData.soul - Math.min(targetData.soul, this.getDeadPunishmentSouls(targetData));
 
-            refreshRank();
+                TitleUtil.sendTitle(target, CC.translate("&c被击杀"), this.getFloorColor(data.floor) + "第" + (data.floor + 1) + "层", 5, 10, 20);
+            }
+            Bukkit.getScheduler().scheduleSyncDelayedTask(ThePit.getInstance(), () -> this.handleUpdate(target, targetData), 2L);
+
+            Bukkit.getScheduler().runTaskAsynchronously(ThePit.getInstance(), this::refreshRank);
         } catch (Exception e) {
             CC.printErrorWithCode(event.getKiller(), e);
         }
@@ -396,7 +422,9 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
         this.dataMap.values()
                 .stream()
                 .sorted(Comparator.comparingInt(data -> data.soul))
-                .forEach(data -> map.put(data.uuid, rank.getAndDecrement()));
+                .forEach(data -> {
+                    map.put(data.uuid, rank.getAndDecrement());
+                });
 
         this.rankMap.clear();
         this.rankMap.putAll(map);
@@ -430,11 +458,9 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
     }
 
     private void handleUpdate(Player player, PlayerSpireData data) {
-        if (!isActive() || !player.isOnline() || dataMap.get(player.getUniqueId()) != data) return;
         PlayerUtil.resetPlayer(player, true, true);
         this.giveInvSets(player);
-        runEventTask(() -> {
-            if (!player.isOnline() || dataMap.get(player.getUniqueId()) != data) return;
+        Bukkit.getScheduler().runTask(ThePit.getInstance(), () -> {
             this.teleportPlayer(player, data);
 
             if (data.floor >= 4) {
@@ -458,24 +484,21 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
 
     private int getDeadPunishmentSouls(PlayerSpireData data) {
         return switch (data.floor) {
-            case 4, 5 -> 3;
-            case 6 -> 5;
-            case 7 -> 6;
-            case 8 -> 20;
+            case 4, 5 -> -3;
+            case 6 -> -5;
+            case 7 -> -6;
+            case 8 -> -20;
             default -> 0;
         };
     }
 
     @Override
     public void onInactive() {
-        {
+        Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), () -> {
             Bukkit.getOnlinePlayers().forEach(player -> {
                 final PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
-                if (dataMap.containsKey(player.getUniqueId()) && profile.isLoaded() && profile.isTempInvUsing()) {
+                if (profile.isTempInvUsing()) {
                     profile.getInventory().applyItemToPlayer(player);
-                    //?
-                    profile.getEnderChest().rollback();
-                    profile.getWarehouse().rollback();
                     profile.setTempInvUsing(false);
                 }
 
@@ -485,21 +508,31 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
 
                 player.teleport(location);
             });
-        }
+        }, 1L);
 
         HandlerList.unregisterAll(this);
 
-        if (this.runnable != null) this.runnable.cancel();
+        this.runnable.cancel();
 
-        cn.charlotte.pit.events.EventWorldEdits.undo(() -> {
-            if (teleport != null) { cn.charlotte.pit.events.EventWorldEdits.restore(teleport); cn.charlotte.pit.events.EventWorldEdits.flush(teleport); teleport = null; }
-            if (wall != null) { cn.charlotte.pit.events.EventWorldEdits.restore(wall); cn.charlotte.pit.events.EventWorldEdits.flush(wall); wall = null; }
-            if (session != null) { cn.charlotte.pit.events.EventWorldEdits.restore(session); cn.charlotte.pit.events.EventWorldEdits.flush(session); session = null; }
+        Bukkit.getScheduler().runTaskAsynchronously(ThePit.getInstance(), () -> {
+            try {
+                session.undo(session);
+
+                teleport.undo(teleport);
+
+                wall.undo(wall);
+
+                teleport.flushQueue();
+
+                session.flushQueue();
+
+                wall.flushQueue();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         });
 
-        for (UUID uuid : cooldownList) PlayerMoveHandler.getCantMoveList().remove(Bukkit.getPlayer(uuid));
-        cooldownList.clear();
-        refreshRank();
+        refreshCooldownPlayer();
 
         CC.boardCast(CC.CHAT_BAR);
         CC.boardCast("&6&l天坑事件结束: " + this.getEventName() + "&6&l!");
@@ -507,19 +540,15 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
         for (Player player : Bukkit.getOnlinePlayers()) {
             final PlayerSpireData data = dataMap.get(player.getUniqueId());
 
-            final int rank = rankMap.containsKey(player.getUniqueId()) ? rankMap.get(player.getUniqueId()) : -1;
+            final int rank = rankMap.containsKey(player.getUniqueId()) ? (rankMap.get(player.getUniqueId()) + 1) : -1;
             final PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
-            if (data != null && profile.isLoaded()) {
-                profile.getEnderChest().unsnapshot();
-                profile.getWarehouse().unsnapshot();
-            }
-            if (isAborting() || !profile.isLoaded()) continue;
+
             double rewardCoins = 0;
             int rewardRenown = 0;
-            if (rank > 0 && rank <= 3) {
+            if (rank <= 3) {
                 rewardCoins += 2000;
                 rewardRenown += 2;
-            } else if (rank > 0 && rank <= 20) {
+            } else if (rank <= 20) {
                 rewardCoins += 500;
                 rewardRenown += 1;
             } else {
@@ -535,7 +564,7 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
             if (PlayerUtil.isVenom(player) || PlayerUtil.isEquippingSomber(player)) {
                 enchantBoostLevel = 0;
             }
-            if (data != null && enchantBoostLevel > 0) {
+            if (enchantBoostLevel > 0) {
                 rewardCoins += 0.5 * enchantBoostLevel * rewardCoins;
                 rewardRenown += MathHelper.floor(0.5 * enchantBoostLevel * rewardRenown);
                 MythicLeggingsItem mythicLeggings = new MythicLeggingsItem();
@@ -549,7 +578,7 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
                     }
                 }
             }
-            if (rank > 0 && PlayerUtil.isPlayerUnlockedPerk(player, "self_confidence")) {
+            if (PlayerUtil.isPlayerUnlockedPerk(player, "self_confidence")) {
                 if (rank <= 5) {
                     rewardCoins += 5000;
                 } else if (rank <= 10) {

@@ -9,23 +9,25 @@ import cn.charlotte.pit.events.AbstractEvent;
 import cn.charlotte.pit.events.trigger.type.addon.IScoreBoardInsert;
 import cn.charlotte.pit.util.hologram.Hologram;
 import cn.charlotte.pit.util.hologram.HologramAPI;
-import com.boydti.fawe.FaweAPI;
-import com.sk89q.worldedit.BlockVector;
-import com.sk89q.worldedit.CuboidClipboard;
 import com.sk89q.worldedit.EditSession;
-import com.sk89q.worldedit.bukkit.BukkitWorld;
-import com.sk89q.worldedit.schematic.MCEditSchematicFormat;
-import com.sk89q.worldedit.schematic.SchematicFormat;
+import com.sk89q.worldedit.WorldEdit;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
+import com.sk89q.worldedit.extent.clipboard.Clipboard;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardReader;
+import com.sk89q.worldedit.function.operation.Operation;
+import com.sk89q.worldedit.function.operation.Operations;
+import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.session.ClipboardHolder;
 import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import net.minecraft.server.v1_8_R3.EntityVillager;
-import net.minecraft.server.v1_8_R3.NBTTagCompound;
 import net.mizukilab.pit.config.NewConfiguration;
 import net.mizukilab.pit.item.type.mythic.MythicLeggingsItem;
 import net.mizukilab.pit.medal.impl.challenge.PizzaEventMedal;
-import net.mizukilab.pit.handlers.GlobalSweeper;
+import net.mizukilab.pit.runnable.ClearRunnable;
 import net.mizukilab.pit.util.NameUtils;
 import net.mizukilab.pit.util.PlayerUtil;
 import net.mizukilab.pit.util.Utils;
@@ -40,7 +42,6 @@ import net.mizukilab.pit.util.time.TimeUtil;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Skull;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftVillager;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
@@ -86,12 +87,21 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
     private Cooldown timer = new Cooldown(5, TimeUnit.MINUTES);
     private EditSession session;
 
+    /** 解析 legacy .schematic 读取器，优先按别名查找，找不到时退回内置 MCEdit 格式。 */
+    private static ClipboardFormat resolveSchematicFormat() {
+        ClipboardFormat format = ClipboardFormats.findByAlias("schematic");
+        if (format == null) {
+            format = com.sk89q.worldedit.extent.clipboard.io.BuiltInClipboardFormat.MCEDIT_SCHEMATIC;
+        }
+        return format;
+    }
+
     @SneakyThrows
     public HamburgerEvent() {
         this.pizzaDataMap = new HashMap<>();
         this.villagerDataMap = new HashMap<>();
         this.spawnedLocations = new ArrayList<>();
-        this.pizza = new ItemBuilder(Material.SKULL_ITEM)
+        this.pizza = new ItemBuilder(Material.PLAYER_HEAD)
                 .durability(3)
                 .internalName("ham")
                 .removeOnJoin(true)
@@ -118,13 +128,13 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
 
     @Override
     public int requireOnline() {
-        return NewConfiguration.INSTANCE.getEventOnlineRequired().getOrDefault(getEventInternalName(), 10);
+        return NewConfiguration.INSTANCE.getEventOnlineRequired().get(getEventInternalName());
     }
 
     @EventHandler
     public void onRightClick(PlayerInteractEvent event) {
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-            if (event.getClickedBlock().getType() == Material.SKULL) {
+            if (event.getClickedBlock().getType() == Material.SKELETON_SKULL) {
                 final Skull skull = (Skull) event.getClickedBlock().getState();
                 if (skull.getSkullType() == SkullType.PLAYER) {
                     Location location1 = event.getClickedBlock().getLocation();
@@ -133,8 +143,6 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
                     }
                     if (location.distance(location1) <= 3) {
                         final Player player = event.getPlayer();
-                        final PizzaData playerData = pizzaDataMap.get(player.getUniqueId());
-                        if (playerData == null || !PlayerProfile.getPlayerProfileByUuid(player.getUniqueId()).isLoaded()) return;
                         InventoryUtil.removeItemWithInternalName(player, "ham");
 
                         for (int i = 0; i < 6; i++) {
@@ -143,6 +151,7 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
                                     .build());
                         }
 
+                        final PizzaData playerData = pizzaDataMap.get(player.getUniqueId());
                         playerData.hamburger = 6;
 
                         player.sendMessage(CC.translate("&6&l汉堡! &7你已领取汉堡,请将其送至周围的村民手上以获取现金."));
@@ -155,12 +164,6 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
 
     @Override
     public void onActive() {
-        final long activation = getGeneration();
-        this.timer = new Cooldown(5, TimeUnit.MINUTES);
-        end = false;
-        done = 0;
-        pizzaDataMap.clear();
-        spawnedLocations.clear();
 
         this.runnable = new BukkitRunnable() {
             @Override
@@ -172,7 +175,6 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
                                 .getEventFactory()
                                 .inactiveEvent(HamburgerEvent.this);
                     }
-                    return;
                 }
 
                 Bukkit.getOnlinePlayers().forEach(player -> {
@@ -181,7 +183,7 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
                 });
             }
         };
-        trackTask(this.runnable.runTaskTimer(ThePit.getInstance(), 20, 20));
+        this.runnable.runTaskTimer(ThePit.getInstance(), 20, 20);
 
         Bukkit.getPluginManager().registerEvents(this, ThePit.getInstance());
 
@@ -190,10 +192,9 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
         });
 
 
-        this.location = ThePit.getInstance().getPitConfig().getHamburgerOfferNpcLocA();
-        BukkitWorld world = new BukkitWorld(location.getWorld()); //villager location
+        this.location = ThePit.getInstance().getPitConfig().getHamburgerOfferNpcLocA(); //villager location
 
-        runEventTask(() -> {
+        Bukkit.getScheduler().runTask(ThePit.getInstance(), () -> {
             final Collection<Player> players = PlayerUtil.getNearbyPlayers(location, 5);
             final List<Location> locations = ThePit.getInstance().getPitConfig().getSpawnLocations();
 
@@ -202,8 +203,8 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
                 player.sendMessage(CC.translate("&c为了保证您的安全，我们已将您传送回出生点"));
             }
 
-            GlobalSweeper.get().getPlacedBlock().removeIf((i, blockData) -> {
-                if (blockData.getLocation().getWorld().equals(location.getWorld()) && blockData.getLocation().distanceSquared(location) <= 25) {
+            ClearRunnable.getClearRunnable().getPlacedBlock().removeIf((i, blockData) -> {
+                if (blockData.getLocation().distance(location) <= 5) {
                     blockData.getLocation().getBlock().setType(Material.AIR);
                     return true;
                 }
@@ -211,46 +212,60 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
             });
         });
 
-        cn.charlotte.pit.events.EventWorldEdits.build(this, () -> {
-            try (InputStream inputStream = ThePit.getInstance().getResource("hamburger.schematic")) {
-                if (inputStream == null) throw new IllegalStateException("Missing hamburger.schematic");
+        Bukkit.getScheduler().runTaskAsynchronously(ThePit.getInstance(), () -> {
+            try {
+                final InputStream inputStream = ThePit.getInstance().getClass().getClassLoader().getResourceAsStream("hamburger.schematic");
+                if (inputStream == null) {
+                    throw new IllegalStateException("缺少 hamburger.schematic 资源");
+                }
 
-                BlockVector vector = new BlockVector(location.getX(), location.getY(), location.getZ());
+                final ClipboardFormat format = resolveSchematicFormat();
+                if (format == null) {
+                    throw new IllegalStateException("当前 WorldEdit 未注册 schematic 读取器");
+                }
 
-                session = FaweAPI.getEditSessionBuilder(world).build();
+                final Clipboard clipboard;
+                try (ClipboardReader reader = format.getReader(inputStream)) {
+                    clipboard = reader.read();
+                }
 
-                final MCEditSchematicFormat mcedit = (MCEditSchematicFormat) SchematicFormat.MCEDIT;
+                final EditSession editSession = WorldEdit.getInstance()
+                        .newEditSession(BukkitAdapter.adapt(location.getWorld()));
+                session = editSession;
+                try {
+                    final Operation operation = new ClipboardHolder(clipboard)
+                            .createPaste(editSession)
+                            .to(BlockVector3.at(location.getBlockX(), location.getBlockY(), location.getBlockZ()))
+                            .ignoreAirBlocks(false)
+                            .build();
+                    Operations.complete(operation);
+                } finally {
+                    editSession.flushSession();
+                }
 
-                final CuboidClipboard clipboard = mcedit.load(inputStream);
-
-
-                clipboard.paste(session, vector, false);
-
-                cn.charlotte.pit.events.EventWorldEdits.flush(session);
-
-                runEventTask(() -> {
-                    if (getGeneration() != activation) return;
+                Bukkit.getScheduler().runTask(ThePit.getInstance(), () -> {
                     try {
-                        this.villager = (Villager) location.getWorld().spawnEntity(location, EntityType.VILLAGER);
-                        final EntityVillager entityVillager = ((CraftVillager) villager).getHandle();
-                        NBTTagCompound tag = entityVillager.getNBTTag();
-                        if (tag == null) {
-                            tag = new NBTTagCompound();
-                        }
-                        entityVillager.c(tag);
-                        tag.setInt("NoAI", 1);
-                        entityVillager.f(tag);
+                        this.villager = (Villager) Bukkit.getWorlds().get(0).spawnEntity(location, EntityType.VILLAGER);
+                        // 1.21：NoAI 直接走实体 API
+                        villager.setAI(false);
+                        villager.setSilent(true);
                         villager.setAdult();
 
                         hologram = HologramAPI.createHologram(location.clone().add(0, 2.4, 0), CC.translate("&d请给我钱"));
                         hologram.spawn();
                         hologram.setAttachedTo(villager);
                     } catch (Exception e) {
-                        ThePit.getInstance().getEventFactory().abort(this, e);
+                        Bukkit.getOnlinePlayers()
+                                .forEach(player -> {
+                                    CC.printError(player, e);
+                                });
                     }
                 });
             } catch (Exception e) {
-                throw new IllegalStateException("Could not build Hamburger arena", e);
+                Bukkit.getOnlinePlayers()
+                        .forEach(player -> {
+                            CC.printError(player, e);
+                        });
             }
         });
 
@@ -271,8 +286,7 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
             return;
         }
 
-        final int stolenMoney = targetData.money;
-        data.money += stolenMoney;
+        data.money += targetData.money;
         targetData.money = 0;
 
         data.hamburger += targetData.hamburger;
@@ -281,8 +295,8 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
                     .build());
         }
 
-        if (targetData.hamburger > 0 || stolenMoney > 0) {
-            CC.send(MessageType.EVENT, event.getKiller(), "&6&l天坑外卖! &7你通过击杀一名玩家夺取了 &6" + stolenMoney + "$ &7.");
+        if (targetData.hamburger > 0 || targetData.money > 0) {
+            CC.send(MessageType.EVENT, event.getKiller(), "&6&l天坑外卖! &7你通过击杀一名玩家夺取了 &6" + targetData.money + "$ &7.");
         }
 
         targetData.hamburger = 0;
@@ -290,11 +304,11 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
 
     @EventHandler(priority = EventPriority.LOW)
     public void onPlace(BlockPlaceEvent event) {
-        if (event.getBlockPlaced().getType() == Material.SKULL) {
+        if (event.getBlockPlaced().getType() == Material.SKELETON_SKULL) {
             event.setCancelled(true);
         }
-        if (event.getBlockPlaced().getWorld().equals(location.getWorld()) && event.getBlockPlaced().getLocation().distanceSquared(location) < 64) {
-            GlobalSweeper.get().placeBlock(event.getBlock().getLocation(), new Cooldown(8, TimeUnit.SECONDS));
+        if (event.getBlockPlaced().getLocation().distance(location) < 8) {
+            ClearRunnable.getClearRunnable().placeBlock(event.getBlock().getLocation(), new Cooldown(8, TimeUnit.SECONDS));
         }
     }
 
@@ -302,17 +316,19 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
     public void onInactive() {
         end = true;
         HandlerList.unregisterAll(this);
-        if (this.runnable != null) this.runnable.cancel();
+        this.runnable.cancel();
 
-        if (hologram != null) { hologram.deSpawn(); hologram = null; }
-        if (villager != null) { villager.remove(); villager = null; }
+        hologram.deSpawn();
+        villager.remove();
 
-        cn.charlotte.pit.events.EventWorldEdits.undo(() -> {
-            if (session != null) cn.charlotte.pit.events.EventWorldEdits.restore(session);
-            if (session != null) { cn.charlotte.pit.events.EventWorldEdits.flush(session); session = null; }
+        Bukkit.getScheduler().runTaskAsynchronously(ThePit.getInstance(), () -> {
+            if (session != null) {
+                session.undo(session);
+                session.flushQueue();
+            }
         });
 
-        for (Map.Entry<UUID, VillagerData> entry : new HashMap<>(this.villagerDataMap).entrySet()) {
+        for (Map.Entry<UUID, VillagerData> entry : this.villagerDataMap.entrySet()) {
             entry.getValue().remove(this);
         }
 
@@ -325,7 +341,7 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
                 .toList();
 
         Map<UUID, Integer> rankMap = new HashMap<>();
-        int rankNumber = 1;
+        int rankNumber = 0;
         for (PizzaData data : list) {
             rankMap.put(data.uuid, rankNumber);
             rankNumber++;
@@ -335,11 +351,9 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
         CC.boardCast("&6&l天坑事件结束: " + this.getEventName() + "&6&l!");
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            PlayerProfile.getPlayerProfileByUuid(player.getUniqueId()).setMoveSpeed(0.2F);
             InventoryUtil.removeItemWithInternalName(player, "ham");
 
-            if (isAborting() || !pizzaDataMap.containsKey(player.getUniqueId())) continue;
-            final int rank = rankMap.get(player.getUniqueId());
+            final int rank = rankMap.get(player.getUniqueId()) + 1;
             final PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
             final PizzaData data = pizzaDataMap.get(player.getUniqueId());
 
@@ -356,7 +370,7 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
             } else {
                 rewardCoins += 100;
             }
-            if (done >= 500) {
+            if (done >= 600) {
                 rewardCoins = 2 * rewardCoins;
             }
             if (ThePit.getInstance().getPitConfig().isGenesisEnable() && profile.getGenesisData().getTier() >= 5 && rewardRenown > 0) {
@@ -432,9 +446,6 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
         final List<Location> configLoc = ThePit.getInstance().getPitConfig().getHamburgerNpcLocA();
         final List<Location> locations = new ArrayList<>(configLoc);
         locations.removeAll(spawnedLocations);
-        locations.removeIf(pos -> pos.getBlock().getType() != Material.AIR
-                || pos.clone().add(0, 1, 0).getBlock().getType() != Material.AIR);
-        if (locations.isEmpty() || end) return;
         final Location location = locations.get(RandomUtil.random.nextInt(locations.size()));
         spawnedLocations.add(location);
         if (location.getBlock().getType() != Material.AIR) {
@@ -450,17 +461,10 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
 //        }
 
         try {
-            final World world = location.getWorld();
+            final World world = Bukkit.getWorlds().get(0);
             final Villager villager = (Villager) world.spawnEntity(location, EntityType.VILLAGER);
-            final EntityVillager entityVillager = ((CraftVillager) villager).getHandle();
-            NBTTagCompound tag = entityVillager.getNBTTag();
-            if (tag == null) {
-                tag = new NBTTagCompound();
-            }
-            entityVillager.c(tag);
-            tag.setInt("NoAI", 1);
-            tag.setInt("Silent", 1);
-            entityVillager.f(tag);
+            villager.setAI(false);
+            villager.setSilent(true);
             villager.setAdult();
 
 
@@ -477,7 +481,6 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PitProfileLoadedEvent event) {
         final Player player = Bukkit.getPlayer(event.getPlayerProfile().getPlayerUuid());
-        if (player == null || !player.isOnline()) return;
         if (this.pizzaDataMap.containsKey(player.getUniqueId())) {
             this.pizzaDataMap.get(player.getUniqueId()).hamburger = 0;
             return;
@@ -515,10 +518,10 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
                 }
 
                 if ("ham".equals(ItemUtil.getInternalName(player.getItemInHand()))) {
-                    final PizzaData playerData = pizzaDataMap.get(player.getUniqueId());
-                    if (playerData == null || playerData.hamburger <= 0) return;
                     PlayerUtil.takeOneItemInHand(player);
                     villager.changeState(this, player);
+
+                    final PizzaData playerData = pizzaDataMap.get(player.getUniqueId());
                     playerData.money += villager.coins;
                     playerData.hamburger--;
                     playerData.hamOrdered++;
@@ -529,13 +532,13 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
 
                     done++;
                 }
-            } else if (this.villager != null && clicked.getUniqueId().equals(this.villager.getUniqueId())) {
+            } else if (clicked.getUniqueId().equals(clicked.getUniqueId())) {
                 event.setCancelled(true);
 
                 final Player player = event.getPlayer();
                 final PizzaData data = pizzaDataMap.get(player.getUniqueId());
 
-                if (data == null || data.money == 0) {
+                if (data.money == 0) {
                     return;
                 }
 
@@ -554,7 +557,7 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
             if (villagerDataMap.containsKey(event.getEntity().getUniqueId())) {
                 event.setCancelled(true);
             }
-            if (villager != null && villager.getUniqueId().equals(event.getEntity().getUniqueId())) {
+            if (villager.getUniqueId().equals(event.getEntity().getUniqueId())) {
                 event.setCancelled(true);
             }
         }
@@ -610,7 +613,7 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
             this.hologram.removeLineAbove();
             final PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
             this.hologram.setText(CC.translate("&a&l谢谢你! " + profile.getFormattedName()));
-            event.runEventTaskLater(() -> {
+            Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), () -> {
                 remove(event);
                 if (event.end) {
                     return;
@@ -620,7 +623,7 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
         }
 
         public void remove(HamburgerEvent event) {
-            {
+            Bukkit.getScheduler().runTask(ThePit.getInstance(), () -> {
                 try {
                     if (this.villager != null && !this.villager.isDead()) {
                         this.villager.remove();
@@ -645,7 +648,7 @@ public class HamburgerEvent extends AbstractEvent implements IEpicEvent, Listene
                                 CC.printError(player, e);
                             });
                 }
-            }
+            });
         }
     }
 
