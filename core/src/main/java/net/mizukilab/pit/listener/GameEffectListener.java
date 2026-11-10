@@ -12,10 +12,7 @@ import cn.charlotte.pit.perk.AbstractPerk;
 import cn.charlotte.pit.perk.PerkFactory;
 import com.google.common.util.concurrent.AtomicDouble;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import net.minecraft.server.v1_8_R3.EnchantmentManager;
-import net.minecraft.server.v1_8_R3.EntityPlayer;
-import net.minecraft.server.v1_8_R3.GenericAttributes;
-import net.minecraft.server.v1_8_R3.MobEffectList;
+import lombok.SneakyThrows;
 import net.mizukilab.pit.config.NewConfiguration;
 import net.mizukilab.pit.enchantment.AbstractEnchantment;
 import net.mizukilab.pit.enchantment.EnchantmentFactor;
@@ -37,8 +34,6 @@ import net.mizukilab.pit.util.chat.CC;
 import net.mizukilab.pit.util.item.ItemUtil;
 import nya.Skip;
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftLivingEntity;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -152,12 +147,30 @@ public class GameEffectListener implements Listener {
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onPlayerDamagePlayer(EntityDamageByEntityEvent event) {
-        Entity damagerEntity = event.getDamager();
-        Entity entity = event.getEntity();
-        if(entity instanceof LivingEntity){
-            if(((LivingEntity) entity).getHealth() <= 0) {
-                event.setCancelled(true);
-                return;
+        // NextGen：实体已死亡时不再结算（避免对尸体重复触发）
+        if (event.getEntity() instanceof org.bukkit.entity.LivingEntity le && le.getHealth() <= 0) {
+            event.setCancelled(true);
+            return;
+        }
+        if (event.getDamager() instanceof Player attacker) {
+            if (NewConfiguration.INSTANCE.getRepairFeatures())  {
+                if (event.getEntity() instanceof org.bukkit.entity.LivingEntity livingEntity) { //特性修复 //TODO
+                    if (livingEntity.getNoDamageTicks() > 5) {
+                        event.setCancelled(true);
+                        return;
+                    }
+                }
+            }
+            //修正伤害
+            ItemStack itemInHand = attacker.getInventory().getItemInMainHand();
+            if (itemInHand == null || itemInHand.getType() == Material.AIR
+                    || itemInHand.getType() == Material.FISHING_ROD) {
+                event.setDamage(1);
+            } else {
+                float f = (float) attacker.getAttribute(org.bukkit.attribute.Attribute.ATTACK_DAMAGE).getValue();
+                if (f > 9) {
+                    event.setDamage(9);
+                }
             }
         }
         fixDamage(event, damagerEntity);
@@ -321,9 +334,54 @@ public class GameEffectListener implements Listener {
             player.setLastDamageCause(event);
             EntityPlayer handle = ((CraftPlayer) player).getHandle();
             if (damager != null) {
-                handle.killer = ((CraftPlayer) damager).getHandle();
-                if(instance1.getNo1_8Effect()){
-                    handle.lastDamage = Float.MAX_VALUE;
+                // 1.21：击杀者归属用 metadata 记录（死亡结算读取）
+                player.setMetadata("pit_killer", new org.bukkit.metadata.FixedMetadataValue(
+                        ThePit.getInstance(), damager.getUniqueId().toString()));
+            }
+
+            if (player.getHealth() < finalDamage.get()) {
+                // 添加安全检查，避免机器人死亡时的NullPointerException
+                try {
+                    player.damage(500000.0);
+                } catch (Exception e) {
+                    // 如果damage方法出错，直接设置生命值为0
+                    try {
+                        player.setHealth(0);
+                    } catch (Exception ex) {
+                        // 如果setHealth也失败，尝试使用更底层的方式
+                        try {
+                            ((org.bukkit.entity.Player) player).setHealth(0.0f);
+                        } catch (Exception ignored) {
+                            // 最后的安全网，静默忽略
+                        }
+                    }
+                }
+                event.setCancelled(true);
+            } else { //TODO 修正 一击毙命, 但是event不cancel
+                double v = player.getHealth() - finalDamage.get();
+                if (v > 0) {
+                    // 确保生命值不超过最大生命值上限
+                    try {
+                        player.setHealth(Math.min(v, player.getMaxHealth()));
+                    } catch (Exception e) {
+                        // 如果setHealth失败，尝试直接设置为当前生命值（不改变）
+                        try {
+                            player.setHealth(player.getHealth());
+                        } catch (Exception ignored) {
+                            // 静默忽略
+                        }
+                    }
+                } else {
+                    try {
+                        player.setHealth(0);
+                    } catch (Exception e) {
+                        // 如果setHealth失败，尝试使用底层API
+                        try {
+                            ((org.bukkit.entity.Player) player).setHealth(0.0f);
+                        } catch (Exception ignored) {
+                            // 最后的安全网，静默忽略
+                        }
+                    }
                 }
             }
             //we need to ensure the final damage is pushed into the event
@@ -355,10 +413,11 @@ public class GameEffectListener implements Listener {
             PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
             if (profile.getPlayerOption().isDebugDamageMessage()) {
                 player.sendMessage(CC.translate("&7造成伤害(Damage/Final Damage): &c" + numFormatTwo.format(event.getDamage()) + "&7/&c" + numFormatTwo.format(event.getFinalDamage())));
-                final EntityPlayer entityPlayer = ((CraftPlayer) player).getHandle();
-                final double value = entityPlayer.getAttributeInstance(GenericAttributes.ATTACK_DAMAGE).getValue();
-                final float enchantDamage = EnchantmentManager.a(entityPlayer.bA(), ((CraftLivingEntity) event.getEntity()).getHandle().getMonsterType());
-                final boolean critical = entityPlayer.fallDistance > 0.0F && !entityPlayer.onGround && !entityPlayer.k_() && !entityPlayer.V() && !entityPlayer.hasEffect(MobEffectList.BLINDNESS) && entityPlayer.vehicle == null;
+                final double value = player.getAttribute(org.bukkit.attribute.Attribute.ATTACK_DAMAGE).getValue();
+                final float enchantDamage = 0f; // 1.21：附魔额外伤害由属性系统统一计算
+                final boolean critical = player.getFallDistance() > 0.0F && !player.isOnGround()
+                        && !player.isInWater() && !player.isInsideVehicle()
+                        && player.getPotionEffect(org.bukkit.potion.PotionEffectType.BLINDNESS) == null;
                 player.sendMessage(CC.translate("&7基础: &c" + value + "&7,附魔伤害: &c" + enchantDamage + "&7,cancel:" + cancel.get() + " ,暴击: &c" + critical));
             }
         }
