@@ -337,4 +337,41 @@ public class Utils {
         }
         return false;
     }
+
+    /** 该物品是否可以镶嵌宝石（NextGen 移植，纯业务逻辑，无 NMS 依赖）。 */
+    public static boolean canUseGem(org.bukkit.inventory.ItemStack item) {
+        return canUseGem0(false, item);
+    }
+
+    public static boolean canUseGem0(boolean rare, org.bukkit.inventory.ItemStack item) {
+        final net.mizukilab.pit.item.IMythicItem mythicItem = getMythicItem(item);
+        if (mythicItem == null || !mythicItem.isEnchanted() || mythicItem.isBoostedByGem()
+                || mythicItem.isBoostedByGlobalGem()) {
+            return false;
+        }
+        if (mythicItem.getColor() == net.mizukilab.pit.enchantment.rarity.MythicColor.DARK) {
+            return false;
+        }
+        return canUseGemSeries(rare, mythicItem);
+    }
+
+    private static boolean canUseGemSeries(boolean rare, net.mizukilab.pit.item.IMythicItem mythicItem) {
+        it.unimi.dsi.fastutil.objects.Object2IntMap.FastEntrySet<net.mizukilab.pit.enchantment.AbstractEnchantment> entries =
+                mythicItem.getEnchantments().object2IntEntrySet();
+        for (it.unimi.dsi.fastutil.objects.Object2IntMap.Entry<net.mizukilab.pit.enchantment.AbstractEnchantment> entry : entries) {
+            int level = entry.getIntValue();
+            net.mizukilab.pit.enchantment.AbstractEnchantment key = entry.getKey();
+            boolean rareResult = rare == (key.getRarity().getParentType()
+                    == net.mizukilab.pit.enchantment.AbstractEnchantment.EnchantmentRarity.RarityType.RARE);
+            if (rareResult && key.getMaxEnchantLevel() > level) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean canUseGlobalAttGem(org.bukkit.inventory.ItemStack item) {
+        return item != null && canUseGem0(true, item);
+    }
+
 }
