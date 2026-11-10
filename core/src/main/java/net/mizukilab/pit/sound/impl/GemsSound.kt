@@ -1,7 +1,6 @@
 package net.mizukilab.pit.sound.impl
 
 import net.mizukilab.pit.util.sound.AbstractPitSound
-import nya.Skip
 import org.bukkit.Sound
 import org.bukkit.entity.Player
 
@@ -9,7 +8,7 @@ import org.bukkit.entity.Player
  * @author Araykal
  * @since 2025/5/13
  */
-@Skip
+
 object GemsSound : AbstractPitSound() {
     override fun getMusicInternalName(): String {
         return "gems_sound"
@@ -26,7 +25,7 @@ object GemsSound : AbstractPitSound() {
         }
 
         pitch?.let {
-            val sound = if (tick == 8) Sound.CHICKEN_EGG_POP else Sound.LAVA_POP
+            val sound = if (tick == 8) Sound.ENTITY_CHICKEN_EGG else Sound.BLOCK_LAVA_POP
             player.playSound(player.location, sound, 2.5f, it)
         }
 
