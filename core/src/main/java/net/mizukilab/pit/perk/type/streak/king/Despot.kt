@@ -88,7 +88,7 @@ class Despot : AbstractPerk(), MegaStreak, Listener, IPlayerDamaged, IAttackEnti
                 MessageType.COMBAT,
                 "&c&l超级连杀! ${event.playerProfile.formattedNameWithRoman} &7激活了 &c&l暴君 &7!"
             )
-            Bukkit.getOnlinePlayers().forEach { it.playSound(it.location, Sound.WITHER_SPAWN, 0.8f, 1.5f) }
+            Bukkit.getOnlinePlayers().forEach { it.playSound(it.location, Sound.ENTITY_WITHER_SPAWN, 0.8f, 1.5f) }
             player.maxHealth += 4
         }
     }

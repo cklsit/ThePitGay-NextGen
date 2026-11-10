@@ -126,14 +126,14 @@ class PitAdminSimpleCommand {
     @Execute(name = "ench")
     @Permission("pit.admin")
     fun ench(@Context player: Player) {
-        player.playSound(player.location, Sound.CHEST_OPEN, 1f, 1f)
+        player.playSound(player.location, Sound.BLOCK_CHEST_OPEN, 1f, 1f)
         ThePit.api.openMenu(player, "admin_enchant")
     }
 
     @Execute(name = "pi")
     @Permission("pit.admin")
     fun pitItem(@Context player: Player) {
-        player.playSound(player.location, Sound.CHEST_OPEN, 1f, 1f)
+        player.playSound(player.location, Sound.BLOCK_CHEST_OPEN, 1f, 1f)
         ThePit.api.openMenu(player, "admin_item")
     }
 

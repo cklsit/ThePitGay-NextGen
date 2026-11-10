@@ -1,0 +1,115 @@
+
+> Configure project :
+ThePitUltimate version: 4.4.11-20261028
+
+> Task :core:checkKotlinGradlePluginConfigurationErrors SKIPPED
+
+> Task :core:compileKotlin FAILED
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/cn/charlotte/pit/events/EventsHandler.kt:59:31 Overload resolution ambiguity between candidates:
+fun runTaskAsynchronously(p0: @NotNull() Plugin, p1: @NotNull() Runnable): @NotNull() BukkitTask
+fun runTaskAsynchronously(p0: @NotNull() Plugin, p1: @NotNull() Consumer<in BukkitTask!>): Unit
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/PitHook.kt:166:31 Overload resolution ambiguity between candidates:
+fun runTaskLater(p0: @NotNull() Plugin, p1: @NotNull() Runnable, p2: Long): @NotNull() BukkitTask
+fun runTaskLater(p0: @NotNull() Plugin, p1: @NotNull() Consumer<in BukkitTask!>, p2: Long): Unit
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/PitHook.kt:340:35 Overload resolution ambiguity between candidates:
+fun runTaskLater(p0: @NotNull() Plugin, p1: @NotNull() Runnable, p2: Long): @NotNull() BukkitTask
+fun runTaskLater(p0: @NotNull() Plugin, p1: @NotNull() Consumer<in BukkitTask!>, p2: Long): Unit
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/PitHook.kt:556:31 Overload resolution ambiguity between candidates:
+fun runTaskLater(p0: @NotNull() Plugin, p1: @NotNull() Runnable, p2: Long): @NotNull() BukkitTask
+fun runTaskLater(p0: @NotNull() Plugin, p1: @NotNull() Consumer<in BukkitTask!>, p2: Long): Unit
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/PitHook.kt:690:27 Overload resolution ambiguity between candidates:
+fun runTaskLater(p0: @NotNull() Plugin, p1: @NotNull() Runnable, p2: Long): @NotNull() BukkitTask
+fun runTaskLater(p0: @NotNull() Plugin, p1: @NotNull() Consumer<in BukkitTask!>, p2: Long): Unit
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/Util.kt:11:19 Unresolved reference 'craftbukkit'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/Util.kt:22:31 Unresolved reference 'CraftPlayer'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/Util.kt:23:17 Unresolved reference 'handle'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/command/PitAdminCommands.kt:646:36 Only safe (?.) or non-null asserted (!!.) calls are allowed on a nullable receiver of type '@Nullable() Player?'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/command/PitAdminCommands.kt:650:31 None of the following candidates is applicable:
+fun remove(p0: @NotNull() Material): Unit
+fun remove(p0: @NotNull() ItemStack): Unit
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/command/PitAdminCommands.kt:654:20 Only safe (?.) or non-null asserted (!!.) calls are allowed on a nullable receiver of type '@Nullable() Player?'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/command/PitAdminCommands.kt:775:30 'val' cannot be reassigned.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/command/PitAdminSimpleCommand.kt:498:16 'val' cannot be reassigned.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/command/PitCommands.kt:944:16 Unresolved reference 'getApi'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/command/PitItemCommands.kt:66:24 'val' cannot be reassigned.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/config/TabConfiguration.kt:83:52 Only safe (?.) or non-null asserted (!!.) calls are allowed on a nullable receiver of type '@Nullable() ConfigurationSection?'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/enchantment/menu/button/EnchantBookButton.kt:32:38 Unresolved reference 'STAINED_GLASS_PANE'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/enchantment/menu/button/EnchantBookButton.kt:33:14 Unresolved reference 'durability'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/enchantment/type/custom/Volley_A.kt:69:28 Unresolved reference 'getApi'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/enchantment/type/custom/Volley_B.kt:76:28 Unresolved reference 'getApi'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/enchantment/type/limit/love/Limit24520Ench.kt:37:1 Class 'Limit24520Ench' is not abstract and does not implement abstract members:
+fun handleUpdateLocation(var1: Player!, var2: Location!, var3: Location!, var4: PacketPlayInFlying!): Unit
+fun handleUpdateRotation(var1: Player!, var2: Location!, var3: Location!, var4: PacketPlayInFlying!): Unit
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/enchantment/type/limit/love/Limit24520Ench.kt:104:5 'handleUpdateLocation' overrides nothing. Potential signatures for overriding:
+fun handleUpdateLocation(var1: Player!, var2: Location!, var3: Location!, var4: PacketPlayInFlying!): Unit
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/enchantment/type/limit/love/Limit24520Ench.kt:116:5 'handleUpdateRotation' overrides nothing. Potential signatures for overriding:
+fun handleUpdateRotation(var1: Player!, var2: Location!, var3: Location!, var4: PacketPlayInFlying!): Unit
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/enchantment/type/limit/xzq/LimitXZQ1Ench.kt:31:1 Class 'LimitXZQ1Ench' is not abstract and does not implement abstract members:
+fun handleUpdateLocation(var1: Player!, var2: Location!, var3: Location!, var4: PacketPlayInFlying!): Unit
+fun handleUpdateRotation(var1: Player!, var2: Location!, var3: Location!, var4: PacketPlayInFlying!): Unit
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/enchantment/type/limit/xzq/LimitXZQ1Ench.kt:97:5 'handleUpdateLocation' overrides nothing. Potential signatures for overriding:
+fun handleUpdateLocation(var1: Player!, var2: Location!, var3: Location!, var4: PacketPlayInFlying!): Unit
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/enchantment/type/limit/xzq/LimitXZQ1Ench.kt:106:5 'handleUpdateRotation' overrides nothing. Potential signatures for overriding:
+fun handleUpdateRotation(var1: Player!, var2: Location!, var3: Location!, var4: PacketPlayInFlying!): Unit
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/events/impl/DragonEggsEvent.kt:77:40 Unresolved reference 'ENDERDRAGON_GROWL'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/events/impl/DragonEggsEvent.kt:109:49 Unresolved reference 'CLICK'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/events/impl/DragonEggsEvent.kt:128:40 Unresolved reference 'ENDERDRAGON_HIT'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/events/impl/DragonEggsEvent.kt:162:40 Unresolved reference 'ENDERDRAGON_DEATH'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/events/impl/HuntEvent.kt:55:25 Cannot access class 'EnumParticle'. Check your module classpath for missing or conflicting dependencies.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/events/impl/HuntEvent.kt:55:81 Argument type mismatch: actual type is 'Particle', but 'EnumParticle!' was expected.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/handlers/SewersRunnable.kt:12:8 Unresolved reference 'nya'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/handlers/SewersRunnable.kt:25:2 Unresolved reference 'Skip'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/handlers/SewersRunnable.kt:60:72 Unresolved reference 'HAPPY_VILLAGER'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/handlers/SewersRunnable.kt:85:75 Only safe (?.) or non-null asserted (!!.) calls are allowed on a nullable receiver of type '@Nullable() Block?'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/handlers/SewersRunnable.kt:86:35 Only safe (?.) or non-null asserted (!!.) calls are allowed on a nullable receiver of type '@Nullable() Block?'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/handlers/SewersRunnable.kt:87:55 Only safe (?.) or non-null asserted (!!.) calls are allowed on a nullable receiver of type '@Nullable() Block?'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/handlers/SewersRunnable.kt:118:49 Unresolved reference 'LEVEL_UP'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/impl/PitInternalImpl.kt:314:26 'val' cannot be reassigned.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/item/type/AngelChestplate.kt:39:28 Unresolved reference 'tag'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/item/type/AngelChestplate.kt:45:9 Unresolved reference 'loadNameData'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/item/type/ArmageddonBoots.kt:41:28 Unresolved reference 'tag'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/item/type/ArmageddonBoots.kt:48:9 Unresolved reference 'loadNameData'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/item/type/GoldenHelmet.kt:33:25 Unresolved reference 'GOLD_HELMET'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/item/type/GoldenHelmet.kt:44:28 Unresolved reference 'tag'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/item/type/GoldenHelmet.kt:49:9 Unresolved reference 'loadNameData'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/item/type/LuckyChestplate.kt:50:28 Unresolved reference 'tag'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/item/type/LuckyChestplate.kt:56:9 Unresolved reference 'loadNameData'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/item/type/LuckyGem.kt:93:21 Cannot access class 'EnumParticle'. Check your module classpath for missing or conflicting dependencies.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/item/type/LuckyGem.kt:95:25 Argument type mismatch: actual type is 'Particle', but 'EnumParticle!' was expected.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/item/type/perk/Sceptre.kt:53:76 Unresolved reference 'STEP_STONE'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/listener/MythicMobListener.kt:7:8 Unresolved reference 'nya'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/listener/MythicMobListener.kt:12:2 Unresolved reference 'Skip'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/menu/gem/TotallyLegitGemMenu.kt:19:23 Unresolved reference 'canUseGem'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/menu/gem/button/EnchantChoseButton.kt:44:27 Unresolved reference 'canUseGem'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/menu/gem/button/EnchantChoseButton.kt:60:20 Unresolved reference 'canUseGem'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/perk/type/prestige/KungFuKnowledgePerk.kt:34:25 Unresolved reference 'RAW_BEEF'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/perk/type/prestige/MonsterPerk.kt:29:25 Unresolved reference 'LEASH'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/perk/type/streak/addon/uber/UberSteakPlus.kt:173:78 Unresolved reference 'CONFUSION'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/perk/type/streak/king/Despot.kt:179:31 Overload resolution ambiguity between candidates:
+fun runTaskLater(p0: @NotNull() Plugin, p1: @NotNull() Runnable, p2: Long): @NotNull() BukkitTask
+fun runTaskLater(p0: @NotNull() Plugin, p1: @NotNull() Consumer<in BukkitTask!>, p2: Long): Unit
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/perk/type/streak/king/Despot.kt:190:35 Overload resolution ambiguity between candidates:
+fun runTaskLater(p0: @NotNull() Plugin, p1: @NotNull() Runnable, p2: Long): @NotNull() BukkitTask
+fun runTaskLater(p0: @NotNull() Plugin, p1: @NotNull() Consumer<in BukkitTask!>, p2: Long): Unit
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/tab/TabHandle.kt:13:8 Unresolved reference 'nya'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/tab/TabHandle.kt:23:2 Unresolved reference 'Skip'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/util/ImmutableHashMap.kt:3:8 Unresolved reference 'nya'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/util/ImmutableHashMap.kt:5:2 Unresolved reference 'Skip'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/util/PitProfileUpdate.kt:4:8 Unresolved reference 'nya'.
+e: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/util/PitProfileUpdate.kt:7:2 Unresolved reference 'Skip'.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':core:compileKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 6s
+1 actionable task: 1 executed

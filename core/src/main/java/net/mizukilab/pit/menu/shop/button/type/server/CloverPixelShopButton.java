@@ -27,7 +27,7 @@ public class CloverPixelShopButton extends Button {
     public void clicked(Player player, int slot, ClickType clickType, int hotbarButton, ItemStack currentItem) {
         player.closeInventory();
         player.sendMessage(CC.translate("§c§l正在跳转至杂物商店!"));
-        player.playSound(player.getLocation(), Sound.CHICKEN_EGG_POP, 1, 0.9F);
+        player.playSound(player.getLocation(), Sound.ENTITY_CHICKEN_EGG, 1, 0.9F);
         Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), () -> {
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "dm open 商店 " + player.getName());
         }, 1L);

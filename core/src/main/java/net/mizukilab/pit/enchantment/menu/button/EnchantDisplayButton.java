@@ -54,7 +54,7 @@ public class EnchantDisplayButton extends Button {
         profile.setEnchantingItem(InventoryUtil.serializeItemStack(new ItemStack(Material.AIR)));
         player.getInventory().addItem(item);
         if (item != null && item.getType() != Material.AIR) {
-            player.playSound(player.getLocation(), Sound.CHICKEN_EGG_POP, 1, 0.65F);
+            player.playSound(player.getLocation(), Sound.ENTITY_CHICKEN_EGG, 1, 0.65F);
         }
 
         menuInstance.openMenu(player);

@@ -131,7 +131,7 @@ public class HermitMegaStreak extends AbstractPerk implements Listener, IPlayerD
         if (event.getFrom() < trigger && event.getTo() >= trigger) {
             CC.boardCast(MessageType.COMBAT, "&c&l超级连杀! " + event.getPlayerProfile().getFormattedNameWithRoman() + " &7激活了 &9&l隐士 &7!");
             Bukkit.getOnlinePlayers().forEach(player -> {
-                player.playSound(player.getLocation(), Sound.WITHER_SPAWN, 0.8F, 1.5F);
+                player.playSound(player.getLocation(), Sound.ENTITY_WITHER_SPAWN, 0.8F, 1.5F);
             });
             myself.getInventory().addItem(new ItemBuilder(Material.BEDROCK).canDrop(false).removeOnJoin(true).canSaveToEnderChest(false).deathDrop(true).internalName("perk_hermit").amount(32).build());
         }

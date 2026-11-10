@@ -52,7 +52,7 @@ class EnchantBookButton(
         }
         player.inventory.setItem(emptySlot, item)
         profile.enchantingBook = null
-        player.playSound(player.location, Sound.CHICKEN_EGG_POP, 1f, 0.65f)
+        player.playSound(player.location, Sound.ENTITY_CHICKEN_EGG, 1f, 0.65f)
         menu!!.openMenu(player)
     }
 }

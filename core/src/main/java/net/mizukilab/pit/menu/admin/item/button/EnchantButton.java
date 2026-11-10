@@ -108,7 +108,7 @@ public class EnchantButton extends Button {
                 if (level != -1) {
                     swordItem.getEnchantments().put(enchantment, level);
                 }
-                player.playSound(player.getLocation(), Sound.ANVIL_USE, 1, 99);
+                player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1, 99);
                 player.sendMessage(CC.translate("&a成功"));
                 player.setItemInHand(swordItem.toItemStack());
                 return;
@@ -148,7 +148,7 @@ public class EnchantButton extends Button {
                 if (level != -1) {
                     bowItem.getEnchantments().put(enchantment, level);
                 }
-                player.playSound(player.getLocation(), Sound.ANVIL_USE, 1, 99);
+                player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1, 99);
                 player.sendMessage(CC.translate("&a成功"));
                 player.setItemInHand(bowItem.toItemStack());
                 return;
@@ -188,7 +188,7 @@ public class EnchantButton extends Button {
                 if (level != -1) {
                     leggingsItem.getEnchantments().put(enchantment, level);
                 }
-                player.playSound(player.getLocation(), Sound.ANVIL_USE, 1, 99);
+                player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1, 99);
                 player.sendMessage(CC.translate("&a成功"));
                 player.setItemInHand(leggingsItem.toItemStack());
                 return;
@@ -221,7 +221,7 @@ public class EnchantButton extends Button {
                 if (level != -1) {
                     fishingRod.getEnchantments().put(enchantment, level);
                 }
-                player.playSound(player.getLocation(), Sound.ANVIL_USE, 1, 99);
+                player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1, 99);
                 player.sendMessage(CC.translate("&a成功"));
                 player.setItemInHand(fishingRod.toItemStack());
                 return;

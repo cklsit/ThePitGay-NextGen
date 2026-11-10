@@ -96,7 +96,7 @@ public class BattlefieldMedicEnchant extends AbstractEnchantment implements IPla
                 myself.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, (enchantLevel + 2) * 20, enchantLevel - 1), true);
 
 
-                myself.playSound(myself.getLocation(), Sound.ANVIL_USE, 0.8f, 1.2f);
+                myself.playSound(myself.getLocation(), Sound.BLOCK_ANVIL_USE, 0.8f, 1.2f);
 
                 resistanceCooldown.put(myself.getUniqueId(), new Cooldown(8, TimeUnit.SECONDS));
             }
