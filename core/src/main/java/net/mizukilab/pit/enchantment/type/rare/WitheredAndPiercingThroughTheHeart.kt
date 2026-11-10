@@ -11,7 +11,6 @@ import net.mizukilab.pit.parm.listener.IPlayerShootEntity
 import net.mizukilab.pit.util.cooldown.Cooldown
 import org.bukkit.Material
 import org.bukkit.Sound
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
 import org.bukkit.metadata.FixedMetadataValue
@@ -67,7 +66,7 @@ class WitheredAndPiercingThroughTheHeart : AbstractEnchantment(), IPlayerShootEn
             if (System.currentTimeMillis() - lastTimeStamp >= 10 * 1000L) {
                 victim.addPotionEffect(
                     PotionEffect(
-                        PotionEffectType.SLOW,
+                        PotionEffectType.SLOWNESS,
                         ((0.5 * enchantLevel) * 20).toInt(),
                         10
                     ),
@@ -76,7 +75,7 @@ class WitheredAndPiercingThroughTheHeart : AbstractEnchantment(), IPlayerShootEn
 
                 victim.addPotionEffect(
                     PotionEffect(
-                        PotionEffectType.JUMP,
+                        PotionEffectType.JUMP_BOOST,
                         ((0.5 * enchantLevel) * 20).toInt(),
                         -3
                     ),
@@ -88,11 +87,10 @@ class WitheredAndPiercingThroughTheHeart : AbstractEnchantment(), IPlayerShootEn
                 )
             }
 
-            attacker.playSound(attacker.location, Sound.ANVIL_LAND, 1f, 1f)
-            victim.playSound(attacker.location, Sound.ANVIL_LAND, 1f, 1f)
+            attacker.playSound(attacker.location, Sound.BLOCK_ANVIL_LAND, 1f, 1f)
+            victim.playSound(attacker.location, Sound.BLOCK_ANVIL_LAND, 1f, 1f)
 
-            val ePlayer = (attacker as CraftPlayer).handle
-            ePlayer.absorptionHearts = min(((1f + enchantLevel) * 2) * 2, (1f + enchantLevel) * 2)
+            attacker.absorptionAmount = min(((1f + enchantLevel) * 2) * 2, (1f + enchantLevel) * 2).toDouble()
             attacker.addPotionEffect(
                 PotionEffect(
                     PotionEffectType.REGENERATION,

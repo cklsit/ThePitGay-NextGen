@@ -6,8 +6,7 @@ import cn.charlotte.pit.data.PlayerProfile;
 import cn.charlotte.pit.data.sub.PerkData;
 import cn.charlotte.pit.perk.AbstractPerk;
 import cn.charlotte.pit.perk.PerkType;
-import net.minecraft.server.v1_8_R3.EntityPlayer;
-import net.minecraft.server.v1_8_R3.MathHelper;
+import cn.charlotte.pit.compat.math.MathHelper;
 import net.mizukilab.pit.item.MythicColor;
 import net.mizukilab.pit.item.type.mythic.MythicLeggingsItem;
 import net.mizukilab.pit.parm.AutoRegister;
@@ -17,7 +16,6 @@ import net.mizukilab.pit.util.item.ItemUtil;
 import net.mizukilab.pit.util.random.RandomUtil;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Fish;
 import org.bukkit.entity.Item;
@@ -169,7 +167,7 @@ public class FishClubPerk extends AbstractPerk implements Listener {
                     final Item item = location.getWorld().dropItem(
                             caughtLocation,
                             (ItemStack) RandomUtil.helpMeToChooseOne(
-                                    new ItemBuilder(Material.RAW_FISH)
+                                    new ItemBuilder(Material.COD)
                                             .internalName("fishing_fish")
                                             .name("&c大鲑鱼")
 
@@ -180,7 +178,7 @@ public class FishClubPerk extends AbstractPerk implements Listener {
                                                     "&8即使你不是很饿"
                                             )
                                             .build(),
-                                    new ItemBuilder(Material.RAW_FISH)
+                                    new ItemBuilder(Material.COD)
                                             .name("&c鲑鱼")
                                             .internalName("fishing_fish")
                                             .lore(
@@ -190,7 +188,7 @@ public class FishClubPerk extends AbstractPerk implements Listener {
                                                     "&8即使你不是很饿"
                                             )
                                             .build(),
-                                    new ItemBuilder(Material.RAW_FISH)
+                                    new ItemBuilder(Material.COD)
                                             .name("&c小鲑鱼")
                                             .internalName("fishing_fish")
                                             .lore(
@@ -200,7 +198,7 @@ public class FishClubPerk extends AbstractPerk implements Listener {
                                                     "&8即使你不是很饿"
                                             )
                                             .build(),
-                                    new ItemBuilder(Material.RAW_FISH)
+                                    new ItemBuilder(Material.COD)
                                             .name("&c大Irony鱼")
                                             .internalName("fishing_fish_irony")
                                             .lore(
@@ -210,7 +208,7 @@ public class FishClubPerk extends AbstractPerk implements Listener {
                                                     "&8即使你不是很饿"
                                             )
                                             .build(),
-                                    new ItemBuilder(Material.RAW_FISH)
+                                    new ItemBuilder(Material.COD)
                                             .name("&cIrony鱼")
                                             .internalName("fishing_fish_irony")
                                             .lore(
@@ -220,7 +218,7 @@ public class FishClubPerk extends AbstractPerk implements Listener {
                                                     "&8即使你不是很饿"
                                             )
                                             .build(),
-                                    new ItemBuilder(Material.RAW_FISH)
+                                    new ItemBuilder(Material.COD)
                                             .name("&c小Irony鱼")
                                             .internalName("fishing_fish_irony")
                                             .lore(
@@ -373,8 +371,9 @@ public class FishClubPerk extends AbstractPerk implements Listener {
             }
 
             if (perkData.getLevel() >= 3) {
-                final Fish hook = event.getHook();
-                hook.setBiteChance(Math.min(hook.getBiteChance() * 1.2, 1.0));
+                // 1.21：FishHook 不再暴露咬钩概率，改为缩短等待（等价效果由钓鱼监听处理）
+                final org.bukkit.entity.FishHook hook = event.getHook();
+                hook.setWaitTime(Math.max(20, (int) (hook.getWaitTime() / 1.2)));
             }
         }
     }
@@ -408,8 +407,7 @@ public class FishClubPerk extends AbstractPerk implements Listener {
             final Player player = event.getPlayer();
             player.setFoodLevel(20);
 
-            final EntityPlayer handle = ((CraftPlayer) player).getHandle();
-            handle.setAbsorptionHearts(handle.getAbsorptionHearts() + 2);
+            player.setAbsorptionAmount(player.getAbsorptionAmount() + 2);
         }
     }
 

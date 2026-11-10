@@ -2,8 +2,6 @@ package net.mizukilab.pit.enchantment.type.rare;
 
 import com.google.common.util.concurrent.AtomicDouble;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
-import net.minecraft.server.v1_8_R3.Entity;
-import net.minecraft.server.v1_8_R3.EntityArrow;
 import net.mizukilab.pit.enchantment.AbstractEnchantment;
 import net.mizukilab.pit.enchantment.IActionDisplayEnchant;
 import net.mizukilab.pit.enchantment.param.item.BowOnly;
@@ -11,7 +9,6 @@ import net.mizukilab.pit.enchantment.rarity.EnchantmentRarity;
 import net.mizukilab.pit.parm.AutoRegister;
 import net.mizukilab.pit.parm.listener.IPlayerShootEntity;
 import net.mizukilab.pit.util.cooldown.Cooldown;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -80,10 +77,10 @@ public class SeriousSituationEnchant extends AbstractEnchantment implements List
                 if (level <= 0) {
                     return;
                 }
-                Entity handle = ((CraftEntity) e.getProjectile()).getHandle();
-                if (handle instanceof EntityArrow arrow) {
-                    arrow.setKnockbackStrength(getPunch(level)); //set punch III
-                    arrow.b(arrow.j() + getAddonDamage(level)); //2 H = 1 Heart
+                // 1.21：直接用箭矢属性设置击退与额外伤害
+                if (e.getProjectile() instanceof org.bukkit.entity.AbstractArrow arrow) {
+                    arrow.setKnockbackStrength(getPunch(level));
+                    arrow.setDamage(arrow.getDamage() + getAddonDamage(level));
                 }
                 shoot.removeLong(uniqueId);
             }
