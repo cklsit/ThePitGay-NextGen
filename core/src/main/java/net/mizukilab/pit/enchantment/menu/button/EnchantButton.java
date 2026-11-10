@@ -8,10 +8,10 @@ import cn.hutool.core.lang.func.Consumer3;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
-import net.minecraft.server.v1_8_R3.NBTTagCompound;
-import net.mizukilab.pit.data.operator.SuPromise;
+import net.mizukilab.pit.config.NewConfiguration;
+import net.mizukilab.pit.enchantment.AbstractEnchantment;
 import net.mizukilab.pit.data.operator.ProfileOperator;
-import net.mizukilab.pit.enchantment.info.EnchantRequest;
+import net.mizukilab.pit.data.operator.SuPromise;
 import net.mizukilab.pit.enchantment.menu.MythicWellMenu;
 import net.mizukilab.pit.handlers.AnimationHandler;
 import net.mizukilab.pit.event.PitPlayerEnchantEvent;
@@ -142,7 +142,7 @@ public class EnchantButton extends Button {
                     lines.add("&c天赋 &6邪术 &c等级 &eIII &c后解锁此功能!");
                 }
             }
-            return new ItemBuilder(Material.ENCHANTMENT_TABLE)
+            return new ItemBuilder(Material.ENCHANTING_TABLE)
                     .name("&d神话之井")
                     .lore(lines)
                     .build();
@@ -223,7 +223,7 @@ public class EnchantButton extends Button {
                 return;
             }
             if (!removeMythicLegWithColor(player, color)) {
-                player.playSound(player.getLocation(), Sound.ENDERMAN_TELEPORT, 1, 1);
+                player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1, 1);
                 player.sendMessage(CC.translate("&c请放入一条额外的 " + color.getChatColor() + color.getDisplayName() + "色神话之甲 &c才能附魔!"));
                 return;
             }
@@ -259,6 +259,185 @@ public class EnchantButton extends Button {
             if (profile.disallow() != profile) {
                 rollback.run();
                 return;
+            consumer.accept(item,mythicItem,player);
+            if(!startEnchantLogicEvent.isCancelled()) {
+                new PitPlayerEnchantEvent(player, mythicItem, mythicItem).callEvent();
+                end(player, mythicItem);
+            }
+            return;
+        }
+        if(!startEnchantLogicEvent.isAllowEnchant()){
+            return;
+        }
+        MythicColor color = mythicItem.getColor();
+        int level = mythicItem.getTier();
+        int maxLive = 0;
+        if (level > 0) {
+            maxLive = mythicItem.getMaxLive();
+        }
+        // 神话之锤：常驻高生命 100 / 120 / 135（按附魔后的物品阶 tier 决定），不随颜色随机
+        boolean hammerItem = mythicItem instanceof net.mizukilab.pit.item.IMythicHammer;
+        if (hammerItem) {
+            int newTier = Math.min(level + 1, 3);
+            int hammerLive = newTier <= 1 ? 100 : (newTier == 2 ? 120 : 135);
+            // 只改上限，live 由下方「按 maxLive 变化补差额」统一处理，
+            // 否则先补满再补差额会得到超过上限的数值（例如 135 + 15 = 150）
+            mythicItem.setMaxLive(hammerLive);
+            //根据附魔物品颜色的不同,maxLive也有所不同
+        } else if (color == MythicColor.DARK) {
+            switch (level) {
+                case 0:
+                    mythicItem.setMaxLive((Integer) RandomUtil.helpMeToChooseOne(20, 25, 30, 35));
+                    break;
+                case 1:
+                    mythicItem.setMaxLive((Integer) RandomUtil.helpMeToChooseOne(40, 45, 50, 55, 60));
+                    if (RandomUtil.hasSuccessfullyByChance(0.01)) {
+                        mythicItem.setMaxLive(135);
+                    }
+                    break;
+                default:
+                    mythicItem.setMaxLive(random.nextInt(36) + 5); //5-40
+                    break;
+            }
+        } else {
+            if (color == MythicColor.RAGE && level == 0) {
+                mythicItem.setMaxLive(((Integer) RandomUtil.helpMeToChooseOne(4, 5, 6, 7, 8, 9)));
+            } else {
+                switch (level) {
+                    case 0:
+                        mythicItem.setMaxLive(random.nextInt(7) + 3); //3-9
+                        break;
+                    case 1:
+                        mythicItem.setMaxLive(random.nextInt(6) + 10); //10-15
+                        break;
+                    case 2:
+                        if (RandomUtil.hasSuccessfullyByChance(0.01)) { //Artifact Prefix -> 100 Lives
+                            mythicItem.setMaxLive(100);
+                        } else {
+                            mythicItem.setMaxLive(random.nextInt(8) + 16); //16-23
+                        }
+                        break;
+                    default:
+                        mythicItem.setMaxLive(random.nextInt(36) + 5); //5-40
+                        break;
+                }
+            }
+        }
+        if (level > 0) {
+            mythicItem.setLive(mythicItem.getLive() + mythicItem.getMaxLive() - maxLive);
+            // 64 铸缝：重铸时额外保留 live 不被消耗
+            int seam = mythicItem.getEnchantmentLevel("hammer_064");
+            if (seam > 0) {
+                net.mizukilab.pit.enchantment.AbstractEnchantment seamEnchant =
+                        ThePit.getInstance().getEnchantmentFactor().getEnchantmentMap().get("hammer_064");
+                if (seamEnchant instanceof net.mizukilab.pit.enchantment.type.hammer.HammerEnchantBase seamBase) {
+                    int keep = (int) Math.round(seamBase.valueAt(seam));
+                    mythicItem.setLive(Math.min(mythicItem.getMaxLive(), mythicItem.getLive() + keep));
+                }
+            }
+        } else {
+
+            mythicItem.setLive(mythicItem.getMaxLive());
+        }
+        // 兜底：live 不得超过 maxLive
+        if (mythicItem.getLive() > mythicItem.getMaxLive()) {
+            mythicItem.setLive(mythicItem.getMaxLive());
+        }
+        level++;
+
+        mythicItem.setTier(level);
+
+        List<AbstractEnchantment> list = ThePit.getInstance()
+                .getEnchantmentFactor()
+                .getEnchantments()
+                .stream()
+                .filter(abstractEnchantment -> abstractEnchantment.canApply(item))
+                .toList();
+        List<AbstractEnchantment> enchantments = new ObjectArrayList<>();
+        if (level > 1) {
+            enchantments = new ObjectArrayList<>(mythicItem.getEnchantments().keySet());
+        }
+        boolean announcement = false;
+
+        List<AbstractEnchantment> results = list.stream()
+                .filter(abstractEnchantment -> abstractEnchantment.getRarity() == EnchantmentRarity.NORMAL).collect(Collectors.toList());
+        List<AbstractEnchantment> rareResults = list.stream()
+                .filter(abstractEnchantment -> abstractEnchantment.getRarity() == EnchantmentRarity.RARE).collect(Collectors.toList());
+
+        //different type of mythic item have different rarity enchantments
+        if (color == MythicColor.DARK) {
+            results = list.stream()
+                    .filter(abstractEnchantment -> abstractEnchantment.getRarity() == EnchantmentRarity.DARK_NORMAL).collect(Collectors.toList());
+            rareResults = list.stream()
+                    .filter(abstractEnchantment -> abstractEnchantment.getRarity() == EnchantmentRarity.DARK_RARE).collect(Collectors.toList());
+        } else if (color == MythicColor.RAGE && level == 1) {
+            results = list.stream()
+                    .filter(abstractEnchantment -> abstractEnchantment.getRarity() == EnchantmentRarity.RAGE).collect(Collectors.toList());
+            rareResults = list.stream().filter(abstractEnchantment -> abstractEnchantment.getRarity() == EnchantmentRarity.RAGE_RARE).collect(Collectors.toList());
+        } else if (color == MythicColor.DARK_GREEN) {
+            results = list.stream()
+                    .filter(abstractEnchantment -> abstractEnchantment.getRarity() == EnchantmentRarity.SEWER_NORMAL).collect(Collectors.toList());
+            rareResults = list.stream().filter(abstractEnchantment -> abstractEnchantment.getRarity() == EnchantmentRarity.SEWER_RARE).collect(Collectors.toList());
+        }
+
+        rareResults = rareResults.stream().filter(abstractEnchantment -> !isBlackList(player, abstractEnchantment)).collect(Collectors.toList());
+        results = results.stream().filter(abstractEnchantment -> !isBlackList(player, abstractEnchantment)).collect(Collectors.toList());
+
+        // 神话之锤：季节性附魔仅在当前季度开放时并入稀有池，未开放不进候选
+        if (mythicItem instanceof net.mizukilab.pit.item.IMythicHammer) {
+            rareResults.addAll(list.stream()
+                    .filter(e -> e.getRarity() == EnchantmentRarity.SEASONAL)
+                    .filter(net.mizukilab.pit.enchantment.seasonal.SeasonalOpenService::isOpen)
+                    .collect(Collectors.toList()));
+
+            // M1/M2 互斥：已持有其一则不再提供另一条
+            java.util.Set<String> owned = mythicItem.getEnchantments().keySet().stream()
+                    .map(AbstractEnchantment::getNbtName)
+                    .collect(Collectors.toSet());
+            java.util.function.Predicate<AbstractEnchantment> blocked = e -> {
+                String n = e.getNbtName();
+                return (owned.contains("hammer_005") && "hammer_006".equals(n))
+                        || (owned.contains("hammer_006") && "hammer_005".equals(n))
+                        || (owned.contains("hammer_022") && "hammer_036".equals(n))
+                        || (owned.contains("hammer_036") && "hammer_022".equals(n));
+            };
+            results.removeIf(blocked);
+            rareResults.removeIf(blocked);
+        }
+        //Enchant Start
+        switch (color) {
+            case DARK: {
+                RandomUtil.switchSeed();
+                if (level == 1) {
+                    //t1 dark pants have only somber1
+                    mythicItem.getEnchantments().put(ThePit.getInstance().getEnchantmentFactor().getEnchantmentMap().get("somber_enchant"), 1);
+                    break;
+                }
+                if (level == 2) {
+                    if (RandomUtil.hasSuccessfullyByChance(NewConfiguration.INSTANCE.getChance(player, color,level))) {
+                        AbstractEnchantment enchantment = (AbstractEnchantment) RandomUtil.helpMeToChooseOne(rareResults.toArray());
+                        mythicItem.getEnchantments().put(enchantment, 1);
+                        announcement = true;
+                    } else {
+                        results.removeIf(enchant -> enchant.getNbtName().equals("somber_enchant"));
+                        AbstractEnchantment enchantment = (AbstractEnchantment) RandomUtil.helpMeToChooseOne(results.toArray());
+                        mythicItem.getEnchantments().put(enchantment, 1);
+                    }
+                }
+                break;
+            }
+            case RAGE: {
+                if (level == 1) {
+                    if (RandomUtil.hasSuccessfullyByChance(NewConfiguration.INSTANCE.getChance(player, color,level))) {
+                        AbstractEnchantment enchantment = (AbstractEnchantment) RandomUtil.helpMeToChooseOne(rareResults.toArray());
+                        mythicItem.getEnchantments().put(enchantment, RandomUtil.random.nextInt(enchantment.getMaxEnchantLevel() - 1) + 1);
+                        announcement = true;
+                    } else {
+                        AbstractEnchantment enchantment = (AbstractEnchantment) RandomUtil.helpMeToChooseOne(results.toArray());
+                        mythicItem.getEnchantments().put(enchantment, RandomUtil.random.nextInt(enchantment.getMaxEnchantLevel() - 1) + 1);
+                    }
+                    break;
+                }
             }
             try {
                 consumer.accept(item, mythicItem, player);
@@ -302,11 +481,9 @@ public class EnchantButton extends Button {
         }
     }
     private static BaseComponent[] toEmptyHover(IMythicItem mythicItem) {
-        net.minecraft.server.v1_8_R3.ItemStack nms = Utils.toNMStackQuick(mythicItem.toItemStack());
-        NBTTagCompound nbtTagCompound = new NBTTagCompound();
-        nms.save(nbtTagCompound);
+        // 1.21：无法再序列化物品 NBT 作为悬停，退化为物品名文本
         return new BaseComponent[]{
-                new TextComponent(nbtTagCompound.toString())
+                new TextComponent(mythicItem.getInternalName() == null ? "神话物品" : mythicItem.getInternalName())
         };
     }
 
@@ -323,7 +500,7 @@ public class EnchantButton extends Button {
                             if (!PlusPlayer.getPlusPlayer().contains(player.getName())) {
                                 p.spigot().sendMessage(new ChatComponentBuilder(CC.translate("&d&l稀有附魔! &7" + profile.getFormattedNameWithRoman() + " &7在神话之井中获得了稀有物品: " + mythicItem.toItemStack().getItemMeta().getDisplayName() + " &e[查看]"))
                                         .setCurrentHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, hoverEventComponents)).create());
-                                p.playSound(p.getLocation(), Sound.ENDERDRAGON_GROWL, 1, 1);
+                                p.playSound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1, 1);
                             }
                         }
 
@@ -345,11 +522,408 @@ public class EnchantButton extends Button {
     }
 
 
+        if (color == MythicColor.DARK) {
+            rareResults = list.stream()
+                    .filter(abstractEnchantment -> abstractEnchantment.getRarity() == EnchantmentRarity.DARK_RARE).collect(Collectors.toList());
+        } else if (color == MythicColor.RAGE && level == 1) {
+            rareResults = list.stream().filter(abstractEnchantment -> abstractEnchantment.getRarity() == EnchantmentRarity.RAGE_RARE).collect(Collectors.toList());
+        } else if (color == MythicColor.DARK_GREEN) {
+            rareResults = list.stream().filter(abstractEnchantment -> abstractEnchantment.getRarity() == EnchantmentRarity.SEWER_RARE).collect(Collectors.toList());
+        }
+
+        return rareResults.stream().filter(abstractEnchantment -> !isBlackList(player, abstractEnchantment)).collect(Collectors.toList());
+    }
+
+    private boolean hasAvailableBookRareEnchantment(Player player, ItemStack item, IMythicItem mythicItem, MythicColor color, int level) {
+        // 卷轴可产出稀有! 与当期开放的季节性! 两类
+        List<AbstractEnchantment> pool = new ObjectArrayList<>(getBookRareResults(player, item, color, level));
+        pool.addAll(getBookSeasonalResults(player, item, player));
+        return hasAvailableBookRareEnchantment(pool, new ObjectArrayList<>(mythicItem.getEnchantments().keySet()));
+    }
+
+    /**
+     * 卷轴可用的季节性条目：只在当前季度开放集合内产出，跨季持有卷轴自动失效。
+     */
+    private List<AbstractEnchantment> getBookSeasonalResults(Player player, ItemStack item, Player ignored) {
+        return ThePit.getInstance()
+                .getEnchantmentFactor()
+                .getEnchantments()
+                .stream()
+                .filter(abstractEnchantment -> abstractEnchantment.canApply(item))
+                .filter(abstractEnchantment -> abstractEnchantment.getRarity() == EnchantmentRarity.SEASONAL)
+                .filter(net.mizukilab.pit.enchantment.seasonal.SeasonalOpenService::isOpen)
+                .filter(abstractEnchantment -> !isBlackList(player, abstractEnchantment))
+                .collect(Collectors.toList());
+    }
+
+    private boolean hasAvailableBookRareEnchantment(List<AbstractEnchantment> rareResults, List<AbstractEnchantment> enchantments) {
+        return rareResults.stream().anyMatch(rareEnchantment -> !hasEnchantment(enchantments, rareEnchantment));
+    }
+
+    private boolean hasEnchantment(List<AbstractEnchantment> enchantments, AbstractEnchantment target) {
+        return enchantments.stream().anyMatch(enchantment -> enchantment.getNbtName().equals(target.getNbtName()));
+    }
+
+    private void removeExistingEnchantments(List<AbstractEnchantment> results, List<AbstractEnchantment> enchantments) {
+        results.removeIf(result -> hasEnchantment(enchantments, result));
+    }
+
+    private AbstractEnchantment chooseBookRareEnchantment(List<AbstractEnchantment> rareResults, List<AbstractEnchantment> enchantments) {
+        List<AbstractEnchantment> availableRareResults = new ObjectArrayList<>(rareResults);
+        removeExistingEnchantments(availableRareResults, enchantments);
+        if (availableRareResults.isEmpty()) {
+            return null;
+        }
+        return (AbstractEnchantment) RandomUtil.helpMeToChooseOne(availableRareResults.toArray());
+    }
+
+    private void consumeMythicBook(Player player, IMythicItem mythicItem) {
+        PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
+        profile.setEnchantingBook(null);
+        mythicItem.boostedByBook = true;
+    }
+
+    private boolean levelTier3MythicEnchantLogic(ItemStack item, Player player, IMythicItem mythicItem,int level, List<AbstractEnchantment> rareResults, boolean announcement, List<AbstractEnchantment> results, List<AbstractEnchantment> enchantments, MythicColor color) {
+        // 候选池为空时直接返回，避免 RandomUtil.helpMeToChooseOne 触发 nextInt(0) 异常
+        if ((results == null || results.isEmpty()) && (rareResults == null || rareResults.isEmpty())) {
+            player.sendMessage(CC.translate("&c该物品没有可用的附魔候选"));
+            return announcement;
+        }
+        int amount = mythicItem.getEnchantments().size();
+        if (amount == 1) { // If this item have only 1 enchantment
+            AbstractEnchantment enchantment = null;
+            if (Utils.canUseMythicBook(player, item)) { //定义不明
+                AbstractEnchantment rareEnchant = chooseBookRareEnchantment(rareResults, enchantments);
+                if (rareEnchant == null) {
+                    return announcement;
+                }
+                mythicItem.getEnchantments().put(rareEnchant, 3);
+                enchantments.add(rareEnchant);
+                announcement = true;
+                //add logic TODO
+                removeExistingEnchantments(results, enchantments);
+                if (RandomUtil.hasSuccessfullyByChance(NewConfiguration.INSTANCE.getChance(player, color,level))) {
+                    removeExistingEnchantments(rareResults, enchantments);
+                    if (!rareResults.isEmpty()) {
+                        announcement = true;
+                        enchantment = (AbstractEnchantment) RandomUtil.helpMeToChooseOne(rareResults.toArray());
+                    } else {
+                        enchantment = (AbstractEnchantment) RandomUtil.helpMeToChooseOne(results.toArray());
+                    }
+                } else {
+                    enchantment = (AbstractEnchantment) RandomUtil.helpMeToChooseOne(results.toArray());
+                }
+                enchantments.add(enchantment);
+                mythicItem.getEnchantments().computeInt(enchantment, (a,b) -> max(b, 1));
+                consumeMythicBook(player, mythicItem);
+            } else {
+                for (int i = 0; i < 2; i++) {
+                    results.removeAll(enchantments);
+                    if (RandomUtil.hasSuccessfullyByChance(NewConfiguration.INSTANCE.getChance(player, color,level))) {
+                        announcement = true;
+                        rareResults.removeAll(enchantments);
+                        enchantment = (AbstractEnchantment) RandomUtil.helpMeToChooseOne(rareResults.toArray());
+                    } else {
+                        enchantment = (AbstractEnchantment) RandomUtil.helpMeToChooseOne(results.toArray());
+                    }
+                    enchantments.add(enchantment);
+                    mythicItem.getEnchantments().computeInt(enchantment, (a,b) -> max(b, 1));
+                }
+                for (AbstractEnchantment abstractEnchantment : enchantments) {
+                    mythicItem.getEnchantments().put(abstractEnchantment, max(mythicItem.getEnchantments().get(abstractEnchantment), getRandomLevel()));
+                }
+                //set level of a new enchant to 1/2 (3 excluded cuz the limit)
+                int totalLevel = 0;
+                for (AbstractEnchantment abstractEnchantment : mythicItem.getEnchantments().keySet()) {
+                    totalLevel += mythicItem.getEnchantments().getInt(abstractEnchantment);
+                }
+                if ((totalLevel == 8 && RandomUtil.hasSuccessfullyByChance(0.9)) || totalLevel == 9) {
+                    if (enchantment != null) {
+                        mythicItem.getEnchantments().computeInt(enchantment, (a,b) -> max(b, RandomUtil.hasSuccessfullyByChance(0.1) ? 2 : 1));
+                    }
+                }
+            }
+        } else if (amount == 2) { //21 -> 311
+            if (Utils.canUseMythicBook(player, item)) {
+                AbstractEnchantment rareEnchant = chooseBookRareEnchantment(rareResults, enchantments);
+                if (rareEnchant == null) {
+                    return announcement;
+                }
+                Object2IntOpenHashMap<AbstractEnchantment> enchantments1 = mythicItem.getEnchantments();
+                int levelCurrentlyEnchantment = 0;
+                for (Integer value : enchantments1.values()) {
+                    levelCurrentlyEnchantment += value;
+                }
+                final int lce = levelCurrentlyEnchantment;
+                enchantments1.computeInt(rareEnchant, (a,b) -> max(b, lce >= 6 ? 2 : 3));
+                enchantments.add(rareEnchant);
+                announcement = true;
+                consumeMythicBook(player, mythicItem);
+            } else {
+                results.removeAll(enchantments);
+                AbstractEnchantment enchantment;
+                if (RandomUtil.hasSuccessfullyByChance(NewConfiguration.INSTANCE.getChance(player, color,level))) {
+                    announcement = true;
+                    rareResults.removeAll(enchantments);
+                    enchantment = (AbstractEnchantment) RandomUtil.helpMeToChooseOne(rareResults.toArray());
+                } else {
+                    enchantment = (AbstractEnchantment) RandomUtil.helpMeToChooseOne(results.toArray());
+                }
+                enchantments.add(enchantment);
+                mythicItem.getEnchantments().put(enchantment, 1);
+                for (AbstractEnchantment abstractEnchantment : enchantments) {
+                    final int currentLevel = max(mythicItem.getEnchantments().getInt(abstractEnchantment), getRandomLevel());
+                    mythicItem.getEnchantments().put(abstractEnchantment, currentLevel);
+                    if (currentLevel == 3 && (abstractEnchantment.getRarity() == EnchantmentRarity.RARE || abstractEnchantment.getRarity() == EnchantmentRarity.RAGE_RARE)) {
+                        announcement = true;
+                    }
+                }
+                int totalLevel = 0;
+                for (AbstractEnchantment abstractEnchantment : mythicItem.getEnchantments().keySet()) {
+                    totalLevel += mythicItem.getEnchantments().getInt(abstractEnchantment);
+                }
+                if ((totalLevel == 8 && RandomUtil.hasSuccessfullyByChance(0.9)) || totalLevel == 9) {
+                    //set level of new enchant to 1/2 (3 excluded cuz the limit)
+                    if (enchantment != null) {
+                        mythicItem.getEnchantments().computeInt(enchantment, (a,b) -> max(b, RandomUtil.hasSuccessfullyByChance(0.1) ? 2 : 1));
+                    }
+                }
+            }
+
+
+        } else if (amount == 3) { // 111 -> 211/311
+            for (AbstractEnchantment abstractEnchantment : enchantments) {
+                final int currentLevel = max(mythicItem.getEnchantments().getInt(abstractEnchantment), getRandomLevel());
+                mythicItem.getEnchantments().put(abstractEnchantment, currentLevel);
+                if (currentLevel == 3 && (abstractEnchantment.getRarity() == EnchantmentRarity.RARE || abstractEnchantment.getRarity() == EnchantmentRarity.RAGE_RARE)) {
+                    announcement = true;
+                }
+            }
+            int totalLevel = 0;
+            for (AbstractEnchantment abstractEnchantment : mythicItem.getEnchantments().keySet()) {
+                totalLevel += mythicItem.getEnchantments().getInt(abstractEnchantment);
+            }
+            if ((totalLevel == 8 && RandomUtil.hasSuccessfullyByChance(0.9)) || totalLevel == 9) {
+                mythicItem.getEnchantments().put((AbstractEnchantment) RandomUtil.helpMeToChooseOne(mythicItem.getEnchantments().keySet().toArray()), 1);
+            }
+        }
+        boolean badLuck = true;
+        for (AbstractEnchantment abstractEnchantment : mythicItem.getEnchantments().keySet()) {
+            if (mythicItem.getEnchantments().getInt(abstractEnchantment) >= 3) {
+                badLuck = false;
+                break;
+            }
+        }
+        if (badLuck) {
+            AbstractEnchantment enchantment = (AbstractEnchantment) RandomUtil.helpMeToChooseOne(mythicItem.getEnchantments().keySet().toArray());
+            mythicItem.getEnchantments().put(enchantment, 3);
+            if ((enchantment.getRarity() == EnchantmentRarity.RARE || enchantment.getRarity() == EnchantmentRarity.RAGE_RARE)) {
+                announcement = true;
+            }
+        }
+        return announcement;
+    }
+
+    private boolean levelTier2MythicEnchantLogic(ItemStack item, Player player, IMythicItem mythicItem,int level, List<AbstractEnchantment> rareResults, boolean announcement, MythicColor color, List<AbstractEnchantment> enchantments, List<AbstractEnchantment> results) {
+        // 候选池为空时直接返回，避免 RandomUtil.helpMeToChooseOne 触发 nextInt(0) 异常
+        if ((results == null || results.isEmpty()) && (rareResults == null || rareResults.isEmpty())) {
+            player.sendMessage(CC.translate("&c该物品没有可用的附魔候选"));
+            return announcement;
+        }
+        int amount = mythicItem.getEnchantments().size();
+
+        if (amount <= 1) { // If this item has only 1 enchantment
+
+            boolean useBook = Utils.canUseMythicBook(player, item);
+
+            if (useBook) {
+                AbstractEnchantment rareEnchant = chooseBookRareEnchantment(rareResults, enchantments);
+                if (rareEnchant == null) {
+                    return announcement;
+                }
+                mythicItem.getEnchantments().put(rareEnchant, 3);
+                enchantments.add(rareEnchant);
+                announcement = true;
+                consumeMythicBook(player, mythicItem);
+            } else {
+                int singleLevel = 0;
+                AbstractEnchantment enchantment = null;
+                for (Integer i : mythicItem.getEnchantments().values()) {
+                    singleLevel = i;
+                }
+                for (AbstractEnchantment ae : mythicItem.getEnchantments().keySet()) {
+                    enchantment = ae;
+                }
+                if (singleLevel == 1) { //Condition: 1 (Only 1 Lv1 Enchantment)
+                    int choice = random.nextInt(3);
+                    switch (choice) {
+                        case 0: { // 1->3
+                            mythicItem.getEnchantments().computeInt(enchantment, (a,b) -> max(b,3));
+                            if (enchantment.getRarity() == EnchantmentRarity.RARE || enchantment.getRarity() == EnchantmentRarity.RAGE_RARE) {
+                                announcement = true;
+                            }
+                            break;
+                        }
+                        case 1: { // 1->21
+                            mythicItem.getEnchantments().computeInt(enchantment, (a,b) -> max(b,2));
+                            announcement = shouldAnnouncement(player, color, mythicItem,level, enchantments, announcement, results, rareResults);
+                            break;
+                        }
+                        case 2: { // 1->211
+                            mythicItem.getEnchantments().computeInt(enchantment, (a,b) -> max(b,2));
+                            for (int i = 0; i < 2; i++) {
+                                announcement = shouldAnnouncement(player, color, mythicItem,level, enchantments, announcement, results, rareResults);
+                            }
+                        }
+                        default:
+                            break;
+                    }
+                } else if (singleLevel == 2) {
+                    int choice = random.nextInt(2);
+                    switch (choice) {
+                        case 0: { // 2->3
+                            mythicItem.getEnchantments().computeInt(enchantment, (a,b) -> max(b,3));
+                            if (enchantment.getRarity() == EnchantmentRarity.RARE || enchantment.getRarity() == EnchantmentRarity.RAGE_RARE) {
+                                announcement = true;
+                            }
+                            break;
+                        }
+                        case 1: { // 2->21
+                            announcement = shouldAnnouncement(player, color, mythicItem,level, enchantments, announcement, results, rareResults);
+                            break;
+                        }
+                        default:
+                            break;
+                    }
+                } else {
+                    announcement = shouldAnnouncement(player, color, mythicItem,level, enchantments, announcement, results, rareResults);
+                }
+            }
+        } else if (amount == 2) { //11
+            int choice = random.nextInt(2);
+            boolean useBook = Utils.canUseMythicBook(player, item);
+            if (useBook) {
+                choice = 3;
+                AbstractEnchantment rareEnchant = chooseBookRareEnchantment(rareResults, enchantments);
+                if (rareEnchant == null) {
+                    return announcement;
+                }
+                mythicItem.getEnchantments().computeInt(rareEnchant, (a,b) -> max(b,3));
+                enchantments.add(rareEnchant);
+                announcement = true;
+                consumeMythicBook(player, mythicItem);
+            }
+
+            switch (choice) {
+                case 0: { // 11->21
+                    AbstractEnchantment enchantment = (AbstractEnchantment) RandomUtil.helpMeToChooseOne(enchantments.toArray());
+                    mythicItem.getEnchantments().computeInt(enchantment, (a,b) -> max(b,2));
+                    break;
+                }
+                case 1: { // 11->111
+                    results.removeAll(enchantments);
+                    AbstractEnchantment enchantment = (AbstractEnchantment) RandomUtil.helpMeToChooseOne(results.toArray());
+                    if (RandomUtil.hasSuccessfullyByChance(NewConfiguration.INSTANCE.getChance(player, color,level))) {
+                        announcement = true;
+                        rareResults.removeAll(enchantments);
+                        enchantment = (AbstractEnchantment) RandomUtil.helpMeToChooseOne(rareResults.toArray());
+                    }
+                    enchantments.add(enchantment);
+                    mythicItem.getEnchantments().computeInt(enchantment, (a,b) -> max(b,1));
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
+        return announcement;
+    }
     public int max(Integer num1,int num2){
         if(num1 != null){
             return Math.max(num1,num2);
         }
         return num2;
+    }
+
+    private boolean levelTier1MythicEnchantLogic(ItemStack item, Player player, IMythicItem mythicItem,int level, List<AbstractEnchantment> rareResults, boolean announcement, List<AbstractEnchantment> results, List<AbstractEnchantment> enchantments) {
+        // 候选池为空时直接返回，避免 RandomUtil.helpMeToChooseOne 触发 nextInt(0) 异常
+        if ((results == null || results.isEmpty()) && (rareResults == null || rareResults.isEmpty())) {
+            player.sendMessage(CC.translate("&c该物品没有可用的附魔候选"));
+            return announcement;
+        }
+        //Tier 1 Enchant Start
+        int choice = random.nextInt(4);
+
+        boolean useBook = Utils.canUseMythicBook(player, item);
+        if (useBook) {
+            choice = 5;
+            AbstractEnchantment enchantment = chooseBookRareEnchantment(rareResults, enchantments);
+            if (enchantment == null) {
+                return announcement;
+            }
+
+            mythicItem.getEnchantments().computeInt(enchantment, (a,b) -> max(b,3));
+            enchantments.add(enchantment);
+            announcement = true;
+            consumeMythicBook(player, mythicItem);
+        }
+
+        switch (choice) {
+            case 0: { //choice 0: 1 of Lv1 Enchantment
+
+                AbstractEnchantment enchantment = (AbstractEnchantment) RandomUtil.helpMeToChooseOne(results.toArray());
+                enchantments.add(enchantment);
+                mythicItem.getEnchantments().computeInt(enchantment, (a,b) -> max(b,1));
+                break;
+            }
+            case 3: { //choice 0: 2 of Lv1 Enchantment
+
+                for (int i = 0; i < 2; i++) {
+                    results.removeAll(enchantments);
+                    AbstractEnchantment enchantment = (AbstractEnchantment) RandomUtil.helpMeToChooseOne(results.toArray());
+                    enchantments.add(enchantment);
+                    mythicItem.getEnchantments().computeInt(enchantment, (a,b) -> max(b,1));
+                }
+                break;
+            }
+            case 1: { //choice 0: 1 of Lv2 Enchantment
+
+                AbstractEnchantment enchantment = (AbstractEnchantment) RandomUtil.helpMeToChooseOne(results.toArray());
+                enchantments.add(enchantment);
+                mythicItem.getEnchantments().put(enchantment, Math.min(enchantment.getMaxEnchantLevel(), 2));
+                break;
+            }
+            case 2: { //choice 0: 2 of Lv2 Enchantment
+
+                AbstractEnchantment enchantment = (AbstractEnchantment) RandomUtil.helpMeToChooseOne(results.toArray());
+                enchantments.add(enchantment);
+                mythicItem.getEnchantments().put(enchantment, Math.min(enchantment.getMaxEnchantLevel(), 2));
+                break;
+            }
+            default:
+                break;
+        }
+        return announcement;
+    }
+
+    private static boolean isBlackList(Player player, AbstractEnchantment abstractEnchantment) {
+        return abstractEnchantment instanceof ILimit;
+    }
+
+
+    private boolean shouldAnnouncement(Player player, MythicColor color, AbstractPitItem mythicItem,int level, List<AbstractEnchantment> enchantments, boolean announcement, List<AbstractEnchantment> results, List<AbstractEnchantment> rareResults) {
+        AbstractEnchantment enchantment;
+        results.removeAll(enchantments);
+        if (RandomUtil.hasSuccessfullyByChance(NewConfiguration.INSTANCE.getChance(player, color,level))) {
+            announcement = true;
+            rareResults.removeAll(enchantments);
+            enchantment = (AbstractEnchantment) RandomUtil.helpMeToChooseOne(rareResults.toArray());
+        } else {
+            enchantment = (AbstractEnchantment) RandomUtil.helpMeToChooseOne(results.toArray());
+        }
+        enchantments.add(enchantment);
+        mythicItem.getEnchantments().put(enchantment, 1);
+        return announcement;
     }
 
     @Override

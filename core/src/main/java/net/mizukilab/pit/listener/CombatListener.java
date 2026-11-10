@@ -12,9 +12,7 @@ import com.google.common.util.concurrent.AtomicDouble;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
-import net.minecraft.server.v1_8_R3.EntityPlayer;
-import net.minecraft.server.v1_8_R3.ItemArmor;
-import net.minecraft.server.v1_8_R3.MathHelper;
+import cn.charlotte.pit.compat.math.MathHelper;
 import net.mizukilab.pit.UtilKt;
 import net.mizukilab.pit.config.NewConfiguration;
 import net.mizukilab.pit.data.operator.PackedOperator;
@@ -45,7 +43,6 @@ import net.mizukilab.pit.util.item.ItemUtil;
 import net.mizukilab.pit.util.random.RandomUtil;
 import net.mizukilab.pit.util.rank.RankUtil;
 import org.bukkit.*;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -181,7 +178,7 @@ public class CombatListener implements Listener {
 
                 //CombatSpade Boost
                 if (itemInHand != null
-                        && itemInHand.getType() == Material.DIAMOND_SPADE && "shopItem".equalsIgnoreCase(ItemUtil.getInternalName(itemInHand))) {
+                        && itemInHand.getType() == Material.DIAMOND_SHOVEL && "shopItem".equalsIgnoreCase(ItemUtil.getInternalName(itemInHand))) {
                     for (ItemStack is : player.getInventory().getArmorContents()) {
                         if (is.getType().name().startsWith("DIAMOND")) {
                             event.setDamage(event.getDamage() + 0.5);
@@ -520,7 +517,7 @@ public class CombatListener implements Listener {
                 profile.setShootAttack(profile.getShootAttack() + 1);
                 if (!profile.isInArena()) {
                     event.setCancelled(true);
-                    player.playSound(player.getLocation(), Sound.VILLAGER_NO, 1.0f, 1.0f);
+                    player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
                 }
             }
         } else if (event.getEntity() instanceof FishHook hook) {
@@ -719,6 +716,8 @@ public class CombatListener implements Listener {
             inventory.setChestplate(new ItemStack(Material.AIR));
         }
         if (ItemUtil.isDeathDrop(inventory.getLeggings())) {
+            ThePit.getInstance().getLogger().info("[InvDebug] 死亡掉落护腿，玩家=" + player.getName()
+                    + " 类型=" + inventory.getLeggings().getType());
             inventory.setLeggings(new ItemStack(Material.AIR));
         }
         if (ItemUtil.isDeathDrop(inventory.getBoots())) {
@@ -756,15 +755,23 @@ public class CombatListener implements Listener {
         InventoryUtil.supplyItems(player);
         playerProfile.setInventory(PlayerInv.fromPlayerInventory(inventory));
         if (shouldRespawn) {
-            double delay = playerProfile.getRespawnTime() <= 1.5 ? 0.1 : playerProfile.getRespawnTime();
-            new BukkitRunnable() {
-                long remaining = Math.max(2, (long) (delay * 20));
-                @Override
-                public void run() {
-                    if (!player.isOnline() || deathsInProgress.get(player.getUniqueId()) != player) {
-                        finishDeath(player);
-                        cancel();
-                        return;
+            ((org.bukkit.entity.Player) player).setNoDamageTicks(40);
+
+            if (playerProfile.getRespawnTime() <= 1.5) {
+                playerProfile.setRespawnTime(0.1d);
+                respawnTime = 0.1d;
+            }
+
+            forceRespawn(player);
+            Bukkit.getScheduler().runTask(ThePit.getInstance(), () -> forceRespawn(player));
+            Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), () -> forceRespawn(player), 1L);
+
+            final double finalRespawnTime = respawnTime;
+
+            if (finalRespawnTime > 0.1) {
+                Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), () -> {
+                    if (player.isOnline()) {
+                        player.setGameMode(GameMode.SPECTATOR);
                     }
                     if (player.isDead()) player.spigot().respawn();
                     if (remaining <= 0) {
@@ -812,8 +819,7 @@ public class CombatListener implements Listener {
         player.setGameMode(GameMode.SURVIVAL);
         player.setHealth(player.getMaxHealth());
         player.setNoDamageTicks(40);
-        ((CraftPlayer) player).getHandle().invulnerableTicks = 40;
-        TitleUtil.sendTitle(player, " ", " ", 0, 1, 0);
+        ((org.bukkit.entity.Player) player).setNoDamageTicks(40);
 
         profile.applyExperienceToPlayer(player);
         new PitPlayerSpawnEvent(player).callEvent();
@@ -945,7 +951,7 @@ public class CombatListener implements Listener {
 
                 totalCoins = eventBoost * totalCoins;
                 totalXp = eventBoost * totalXp;
-                assistPlayer.playSound(assistPlayer.getLocation(), Sound.ORB_PICKUP, 1, 1.7F);
+                assistPlayer.playSound(assistPlayer.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1.7F);
                 CC.send(MessageType.COMBAT, assistPlayer, CC.translate("&a&l助攻! &7" + numFormat.format(percentage * 100) + "% 的伤害在 " + playerProfile.getFormattedName() + " &6+" + numFormat.format(totalCoins) + "硬币 " + (assistProfile.getLevel() < 120 ? "&b+" + numFormat.format(totalXp) + "经验值" : "") + (eventBoost > 1 ? boostString : "")));
             }
         }
@@ -1034,10 +1040,13 @@ public class CombatListener implements Listener {
                 if (b) {
                     Supplier<IMythicItem> item;
                     if (enchantPerkLevel >= 4) {
-                        item =  RandomUtil.helpMeToChooseOne(
-                                MythicBowItem::new, MythicSwordItem::new, MythicLeggingsItem::new);
+                        item = (AbstractPitItem) RandomUtil.helpMeToChooseOne(
+                                new MythicBowItem(), new MythicSwordItem(), new MythicLeggingsItem(),
+                                new net.mizukilab.pit.item.type.mythic.MythicHammerItem());
                     } else {
-                        item =  RandomUtil.helpMeToChooseOne(MythicBowItem::new, MythicSwordItem::new);
+                        item = (AbstractPitItem) RandomUtil.helpMeToChooseOne(
+                                new MythicBowItem(), new MythicSwordItem(),
+                                new net.mizukilab.pit.item.type.mythic.MythicHammerItem());
                     }
 
                     ItemStack itemStack = item.get().toItemStack();
@@ -1059,10 +1068,19 @@ public class CombatListener implements Listener {
                         CC.send(MessageType.MISC, killer, "&6&l炼金术士! &7成功将神话物品转化为 &62❤ 生命吸收");
                     }
                     //fixme: change to sound system
-                    LzScheduler.runTaskWithFixedExecutingCount(5,10,6,(z) -> {
-                        killer.playSound(beKilledPlayer.getLocation(), Sound.NOTE_PLING, 1, 0.1F + (0.5F * z));
-                        return true;
-                    });
+                    new BukkitRunnable() {
+                        int task = 0;
+
+                        @Override
+                        public void run() {
+                            killer.playSound(beKilledPlayer.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 0.1F + (0.5F * task));
+                            task++;
+
+                            if (task >= 6) {
+                                cancel();
+                            }
+                        }
+                    }.runTaskTimerAsynchronously(ThePit.getInstance(), 10, 5);
                 }
             });
         }
@@ -1078,7 +1096,7 @@ public class CombatListener implements Listener {
 
             //drop armor
             for (ItemStack itemStack : beKilledPlayer.getInventory().getArmorContents()) {
-                if (itemStack != null && itemStack.getType() != Material.AIR && Utils.toNMStackQuick(itemStack).getItem() instanceof ItemArmor) {
+                if (itemStack != null && itemStack.getType() != Material.AIR && cn.charlotte.pit.compat.item.ItemTypes.isArmor(itemStack)) {
                     if (itemStack.getType().name().endsWith("HELMET")) {
                         continue;
                     }
@@ -1150,7 +1168,7 @@ public class CombatListener implements Listener {
     private void handleBoardCastMessage(PlayerProfile killerProfile, PlayerProfile playerProfile, Player killer, LivingEntity beKilledPlayer, double totalCoins, double totalXp) {
 
         if (beKilledPlayer instanceof Player) {
-            Bukkit.getScheduler().runTask(ThePit.getInstance(), () -> ((Player) beKilledPlayer).playSound(beKilledPlayer.getLocation(), Sound.ZOMBIE_INFECT, 1, 1.5F));
+            (((Player) beKilledPlayer)).playSound(beKilledPlayer.getLocation(), Sound.ENTITY_ZOMBIE_INFECT, 1, 1.5F);
         }
 
         String genesisStatus = "";
@@ -1203,7 +1221,7 @@ public class CombatListener implements Listener {
 
                     ThePit.getInstance().getSoundFactory().playSound("streak", killer);
                 } else {
-                    killer.playSound(killer.getLocation(), Sound.ORB_PICKUP, 1, 1.9F);
+                    killer.playSound(killer.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1.9F);
                     prefix = "击杀";
                 }
             }
