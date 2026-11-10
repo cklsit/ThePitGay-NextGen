@@ -37,9 +37,9 @@ class PacketHologram(var displayText: String, var loc: Location) : Parent {
 
     override fun spawn(receivers: MutableCollection<out Player>?): Boolean {
         if (!Bukkit.isPrimaryThread()) {
-            Bukkit.getScheduler().runTask(ThePit.getInstance()) {
+            Bukkit.getScheduler().runTask(ThePit.getInstance(), Runnable {
                 spawn(receivers)
-            }
+            })
             return true;
         }
         allPlayers = false
@@ -52,9 +52,9 @@ class PacketHologram(var displayText: String, var loc: Location) : Parent {
 
     override fun spawn(): Boolean {
         if (!Bukkit.isPrimaryThread()) {
-            Bukkit.getScheduler().runTask(ThePit.getInstance()) {
+            Bukkit.getScheduler().runTask(ThePit.getInstance(), Runnable {
                 spawn()
-            }
+            })
             return true;
         }
         spawned = true
@@ -69,9 +69,9 @@ class PacketHologram(var displayText: String, var loc: Location) : Parent {
             HologramAPI.removeHologram(this)
             fullyDespawned = true;
         } else {
-            Bukkit.getScheduler().runTask(ThePit.getInstance()) {
+            Bukkit.getScheduler().runTask(ThePit.getInstance(), Runnable {
                 deSpawn()
-            }
+            })
         }
         return true
     }
@@ -115,9 +115,9 @@ class PacketHologram(var displayText: String, var loc: Location) : Parent {
         if (!Bukkit.isPrimaryThread()) {
             move(loc)
         } else {
-            Bukkit.getScheduler().runTask(ThePit.getInstance()) {
+            Bukkit.getScheduler().runTask(ThePit.getInstance(), Runnable {
                 move(loc)
-            }
+            })
         }
     }
 
