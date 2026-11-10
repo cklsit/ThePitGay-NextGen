@@ -143,7 +143,8 @@ dependencies {
     compileOnly("org.mongojack:mongojack:5.0.1")
     compileOnly("org.mongodb:mongodb-driver-sync:5.2.0")
 
-    compileOnly(fileTree("libs"))
+    // 1.8.8 的 Citizens 依赖与 paper-api 冲突，编译期排除
+    compileOnly(fileTree("libs") { exclude("citizens*.jar", "Citizens*.jar") })
 
     compileOnly(libs.fastutil)
     compileOnly("us.crazycrew.crazycrates:api:0.7")
