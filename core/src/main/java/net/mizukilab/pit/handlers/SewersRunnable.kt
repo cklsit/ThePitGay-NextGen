@@ -9,7 +9,6 @@ import net.mizukilab.pit.sendMultiMessage
 import net.mizukilab.pit.util.RandomList
 import net.mizukilab.pit.util.chat.CC
 import net.mizukilab.pit.util.item.ItemBuilder
-import nya.Skip
 import org.bukkit.Effect
 import org.bukkit.Location
 import org.bukkit.Material
@@ -22,7 +21,6 @@ import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.metadata.FixedMetadataValue
 import org.bukkit.scheduler.BukkitRunnable
 import kotlin.random.Random
-@Skip
 object SewersRunnable : BukkitRunnable(), Listener {
 
     private var existSewersChest: List<Location>? = null
