@@ -46,14 +46,11 @@ class LuckyChestplate : IMythicItem(), Listener {
     override fun loadFromItemStack(item: ItemStack?) {
         item ?: return
 
-        val nmsItem = Utils.toNMStackQuick(item)
-        val tag = nmsItem?.tag ?: return
-        val extra = tag.getCompound("extra") ?: return
 
         this.uuid = ItemUtil.getUUIDObj(item);
-        this.maxLive = extra.getInt("maxLive")
-        this.live = extra.getInt("live")
-        loadNameData(item, extra)
+        this.maxLive = cn.charlotte.pit.compat.item.ItemData.getInt(item, "maxLive") ?: 0
+        this.live = cn.charlotte.pit.compat.item.ItemData.getInt(item, "live") ?: 0
+        this.customName = cn.charlotte.pit.compat.item.ItemData.getString(item, "customName")
     }
 
     override fun toItemStack(): ItemStack {
