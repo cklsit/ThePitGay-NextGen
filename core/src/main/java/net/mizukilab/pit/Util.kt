@@ -8,7 +8,6 @@ import net.mizukilab.pit.enchantment.AbstractEnchantment
 import net.mizukilab.pit.util.chat.CC
 import org.bukkit.ChatColor
 import org.bukkit.Color
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer
 import org.bukkit.entity.Player
 
 val music: MutableList<AbstractEnchantment> = mutableListOf()
@@ -19,8 +18,8 @@ fun Player.getPitProfile(): PlayerProfile {
 }
 
 fun Player.releaseItem() {
-    val craftPlayer = this as CraftPlayer
-    craftPlayer.handle.bU()
+    // 1.21：等价于清空主手（1.8 的 handle.bU() 是释放物品）
+    this.inventory.setItemInMainHand(null)
 }
 
 fun Player.hasRealMan(): Boolean { //hasRealMan 不存在realMan附魔 //TODO

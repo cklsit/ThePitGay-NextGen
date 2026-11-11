@@ -311,7 +311,7 @@ object PitInternalImpl : PitInternalHook {
         val mythicItem = Utils.getMythicItem(item) ?: return 2
         mythicItem.enchantments[enchant] = enchantLevel
 
-        player.inventory.itemInHand = mythicItem.toItemStack()
+        player.inventory.setItemInMainHand(mythicItem.toItemStack())
         return 3
     }
 
