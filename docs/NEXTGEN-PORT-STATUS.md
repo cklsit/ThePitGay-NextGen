@@ -51,11 +51,28 @@
 - 冒烟脚本：`Documents/pit-testserver/run-smoke.ps1`（先杀残留进程→复制新 jar→改 plugin.yml→清 `.paper-remapped`
   →启动→等 `Done (`→空跑 N 秒→stop）。
 
-### 冒烟结论（最近一次）
+### 冒烟结论（最近一次：Bot 实机验证）
 
 `Enabling ThePitUltimate v4.4.11-20261028` → `Loaded configuration/mongodb/NPCFactory/CustomEntityNPCFactory/Events`
-→ `Done (29.6s)` → **空跑 90 秒 0 异常** → 正常 `Disabling v4.4.11-20261028`。
-仍未验证：玩家实际进服后的交互（NPC 外观/点击、道具、战斗结算、事件刷地形、机器人行为），需要真客户端。
+→ `Done (~30s)` → **空跑 90 秒 0 异常** → 正常 `Disabling v4.4.11-20261028`。
+
+Bot（`NPCLib#createFighterRobot`，用临时冒烟插件调用）：
+- 生成成功：世界实体 +1，`BotEntity` 的 Bukkit 实体是 `CraftPlayer`，出现在 `Bukkit.getOnlinePlayers()` 里
+- **存活**：生成后持续在线（`online=true / alive=true / removed=false`）
+- **可击杀**：`Player#damage(100)` → 血量 0 → `dead=true` → 实体移除
+- 未验证：击杀者连杀结算、按 respawnDelay 重生（需要真实玩家当攻击者）
+
+本轮为此修掉的问题：
+1. **PacketEvents 把机器人踢下线**（`failed to inject into a channel`）：`BotEntity.spawn` 把
+   `EmbeddedChannel` 登记到 `ProtocolManager`，`destroy` 时移除，PE 认得 fake channel 就不再踢。
+2. **`LevelUtil.bootCache` 整型溢出**：`highest-prestige` 默认 `Integer.MAX_VALUE` 时
+   `limit * maxLevel` 溢出成负数 → `NegativeArraySizeException` 打断玩家存档写入；
+   加了上限与溢出保护，配置默认值改为 35。
+3. **不要重定位 `net.kyori`**：Paper API 用服务端自带的 adventure 类型，
+   重定位后 `PlayerJoinEvent#joinMessage` 抛 `NoSuchMethodError`。
+4. **PlaceholderAPI 可选化**：未安装时跳过变量替换（`ChatListener` / `TabHandle`）。
+5. **`ProfileLoadRunnable` 未实例化**：退出收尾取到 null，已在 onEnable 末尾启动。
+
 
 
 
