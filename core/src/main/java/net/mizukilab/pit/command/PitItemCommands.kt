@@ -63,7 +63,7 @@ class PitItemCommands {
         }, {
             // Do not replace an item the player moved or changed while MongoDB was working.
             if (player.inventory.heldItemSlot == heldSlot && player.itemInHand == item) {
-                player.itemInHand = updatedItem
+                player.inventory.setItemInMainHand(updatedItem)
                 player.updateInventory()
             }
             val chat = ChatComponentBuilder(CC.translate("&a&l保存成功! &7已保存UUID为 &f$uuid &7的神话物品. &e[复制UUID]"))

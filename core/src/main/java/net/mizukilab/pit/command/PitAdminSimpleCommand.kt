@@ -495,7 +495,7 @@ class PitAdminSimpleCommand {
         val mythicItem = Utils.getMythicItem(item)
 
         mythicItem.enchantmentRecords.clear()
-        player.itemInHand = mythicItem.toItemStack()
+        player.inventory.setItemInMainHand(mythicItem.toItemStack())
 
         return "§a已清空该物品的附魔记录"
     }
