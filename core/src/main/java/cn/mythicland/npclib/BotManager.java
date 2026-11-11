@@ -59,7 +59,7 @@ final class BotManager implements Listener, AutoCloseable {
     private final JavaPlugin plugin;
     private final Map<Bot, Long> respawns = new LinkedHashMap<>();
     private List<Bot> snapshot = List.of();
-    private final BotVisibility visibility = new BotVisibility();
+    private final BotVisibility visibility;
     private final BotPathfinder pathfinder = new BotPathfinder();
     private final BotTargetSelector selector = new BotTargetSelector(new BotTargetSelector.Targets() {
         @Override
@@ -81,6 +81,7 @@ final class BotManager implements Listener, AutoCloseable {
     public BotManager(JavaPlugin plugin) {
         Objects.requireNonNull(plugin, "plugin");
         this.plugin = plugin;
+        this.visibility = new BotVisibility(plugin);
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
         this.task = plugin.getServer().getScheduler().runTaskTimer(plugin, this::tick, 1L, 1L);
     }
@@ -142,7 +143,7 @@ final class BotManager implements Listener, AutoCloseable {
         Objects.requireNonNull(location.getWorld(), "location world");
         Objects.requireNonNull(name, "name");
         BotEntity entity = BotEntity.create(location, new BotEntity.Options(
-                name, name, skin, !battle, (bot, damage) -> died(bot.getUniqueID()), (bot, sound) -> sound.run()
+                name, name, skin, !battle, (bot, damage) -> died(bot.getUUID()), (bot, sound) -> sound.run()
         ));
         try {
             Bot bot;
@@ -151,7 +152,7 @@ final class BotManager implements Listener, AutoCloseable {
             } else {
                 bot = new Patrol(entity, name, skin, location, points, targets, radius, speed, respawnDelay);
             }
-            this.bots.put(entity.getUniqueID(), bot);
+            this.bots.put(entity.getUUID(), bot);
             this.snapshot = List.copyOf(this.bots.values());
             return bot;
         } catch (RuntimeException failure) {
@@ -184,20 +185,20 @@ final class BotManager implements Listener, AutoCloseable {
         }
         for (Bot bot : this.snapshot) {
             BotEntity entity = bot.entity;
-            if (!this.bots.containsKey(entity.getUniqueID())) continue;
+            if (!this.bots.containsKey(entity.getUUID())) continue;
             Location location = entity.getBukkitEntity().getLocation();
             if (!location.getWorld().isChunkLoaded(location.getBlockX() >> 4, location.getBlockZ() >> 4)) {
                 this.visibility.destroy(entity);
                 continue;
             }
             entity.tickState();
-            if (!this.bots.containsKey(entity.getUniqueID())) continue;
+            if (!this.bots.containsKey(entity.getUUID())) continue;
             boolean awake = players.stream().anyMatch(player -> player.getWorld().equals(location.getWorld())
                     && player.getLocation().distanceSquared(location) <= 32 * 32);
             if (awake) {
                 bot.tick(location);
             }
-            if (!this.bots.containsKey(entity.getUniqueID())) continue;
+            if (!this.bots.containsKey(entity.getUUID())) continue;
             this.visibility.update(entity, players, this.tick, bot.target, Set.of(), VISIBILITY, bot.name, true);
         }
         this.visibility.flush(this.tick);
@@ -246,10 +247,10 @@ final class BotManager implements Listener, AutoCloseable {
             try {
                 entity = BotEntity.create(location, new BotEntity.Options(
                         bot.name, bot.name, bot.skin, !bot.settings.battle(),
-                        (next, damage) -> died(next.getUniqueID()), (next, sound) -> sound.run()
+                        (next, damage) -> died(next.getUUID()), (next, sound) -> sound.run()
                 ));
                 bot.reset(entity);
-                this.bots.put(entity.getUniqueID(), bot);
+                this.bots.put(entity.getUUID(), bot);
                 this.snapshot = List.copyOf(this.bots.values());
                 spawned++;
             } catch (RuntimeException failure) {
@@ -347,7 +348,7 @@ final class BotManager implements Listener, AutoCloseable {
         @Override
         public void close() {
             BotManager.this.respawns.remove(this);
-            BotManager.this.remove(this.entity.getUniqueID());
+            BotManager.this.remove(this.entity.getUUID());
         }
 
         private boolean valid(Player player) {

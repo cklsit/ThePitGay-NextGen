@@ -123,6 +123,16 @@ dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21.8-R0.1-SNAPSHOT")
     compileOnly(fileTree(mapOf("dir" to "../libs", "include" to listOf("*.jar"),
         "exclude" to listOf("citizens*.jar", "Citizens*.jar"))))
+    // 授权校验库随核心打包（shadowJar 会把它 relocate 到 net.mizukilab.pit.license）。
+    implementation(fileTree(rootProject.file("packLib")) { include("*.jar") })
+    // Paper 1.21.8 服务端（Mojang 映射）与运行库，供 NMS 层编译；本地解包产物不入库。
+    // 见 docs/BUILDING.md「NMS 编译类路径」。
+    val paperNmsRoot = rootProject.file(
+        providers.gradleProperty("paperNmsRoot").orElse(".gradle/paper-nms").get()
+    )
+    if (paperNmsRoot.isDirectory) {
+        compileOnly(fileTree(paperNmsRoot) { include("versions/**/*.jar", "libraries/**/*.jar") })
+    }
     implementation(libs.reflectionhelper)
 
     implementation(libs.hutool.crypto)
@@ -154,6 +164,17 @@ dependencies {
     compileOnly(libs.decentholograms)
     implementation(libs.adventure.bukkit)
     implementation(kotlin("reflect"))
+}
+sourceSets {
+    main {
+        java {
+            // MythicFramework 以源码形式内置；当前构建只需其中的数学/路径/任务工具与网格寻路。
+            srcDir(rootProject.file("vendor/mythic-framework/core/src/main/java/cn/mythicland/framework/math"))
+            srcDir(rootProject.file("vendor/mythic-framework/core/src/main/java/cn/mythicland/framework/path"))
+            srcDir(rootProject.file("vendor/mythic-framework/core/src/main/java/cn/mythicland/framework/task"))
+            srcDir(rootProject.file("vendor/mythic-framework/bukkit/src/main/java/cn/mythicland/framework/bukkit/world"))
+        }
+    }
 }
 sourceSets.test {
     compileClasspath += configurations.compileClasspath.get()

@@ -1,6 +1,5 @@
 package cn.mythicland.framework.bukkit.world;
 
-import org.bukkit.Material;
 import org.bukkit.World;
 
 public final class BlockMaterials {
@@ -8,6 +7,6 @@ public final class BlockMaterials {
     }
 
     public static boolean isSolid(World world, int x, int y, int z) {
-        return Material.getMaterial(world.getBlockTypeIdAt(x, y, z)).isSolid();
+        return world.getBlockAt(x, y, z).getType().isSolid();
     }
 }

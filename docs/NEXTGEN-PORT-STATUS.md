@@ -16,88 +16,148 @@
 
 | 项 | 值 |
 |---|---|
-| Kotlin 编译 | **0 错误**（起点 472） |
-| Java 编译 | **100 条**（其中 54 条在 Bot 模块） |
+| Kotlin 编译 | **0 错误** |
+| Bot 模块（`cn.mythicland.npclib.bot.*` + `BotManager`） | **0 错误**（独立 javac 验证：22 源文件 → 65 个 class） |
+| Java 全量编译 | javac 自报 **1911 条**（只显示前 100 条），全部在 Bot 模块之外 |
 | 可打包 | 否（Java 未过） |
 
-## 错误分布（实测）
+Bot 模块的独立验证命令见本文末「验证方式」，改 Bot 相关代码后必须跑一遍。
 
-```
-BotEntity.java        28    extends EntityPlayer（1.8 NMS）
-BotVisibility.java    16    发包控制实体可见性
-BotPatrol.java        10    巡逻 AI，依赖 BotEntity
-ItemBuilder.java       7    物品构建，NMS 写入
-SignGui.java           5    告示牌 GUI 发包
-PlayerMoveHandler.java 4    移动处理
-其余                  30    零散
-```
+## 本轮完成：Bot 模块重写（1.8 NMS → 1.21.8 真实登录）
 
-## 已完成的迁移（要点）
+### BotEntity（`bot/v1_8_R3/BotEntity.java`，379 → 约 250 行）
 
-1. **构建链**：`paper-api:1.21.8` + Java 21 toolchain；移除 spigot-1.8.8 / PandaSpigot / vendor 子模块
-2. **Hologram.java 重写**：1.8 发包 → 真实 ArmorStand 实体（marker + 不可见），
-   用 `player.showEntity/hideEntity` 做按玩家显隐
-3. **AbstractEnchantment.canApply**：NMS `ItemSword/ItemBow/...` 判定 → `Material` 判定
-4. **物品类 NBT → PDC**：AngelChestplate / ArmageddonBoots / GoldenHelmet / LuckyChestplate
-   用 `cn.charlotte.pit.compat.item.ItemData`
-5. **枚举批量迁移**：Sound（ANVIL_USE/ENDERDRAGON_*/CHEST_OPEN…）、
-   Material（GOLD_SWORD→GOLDEN_SWORD、RAW_BEEF→BEEF、LEASH→LEAD、STAINED_GLASS_PANE）、
-   EnumParticle→Particle、PotionEffectType.CONFUSION→NAUSEA
-6. **调度歧义**：`runTask(plugin) {}` → `runTask(plugin, Runnable {})`（有 delay 参数时不要补右括号）
-7. **兼容层补齐**：`cn.charlotte.pit.compat.item.ItemData`、`compat.math.MathHelper`、
-   `ThePit.getApi()` 返回 `PitInternalImpl.INSTANCE`
+按既定方案 **A1-a-1**：走 `placeNewPlayer` 真实登录路径。
 
-## Bot 重写：已勘察完毕的 1.21.8 签名
+- `extends ServerPlayer`，构造 `ServerPlayer(MinecraftServer.getServer(), ServerLevel, GameProfile, ClientInformation.createDefault())`
+- `spawn()`：建 `BotConnection`（`extends net.minecraft.network.Connection`），`new EmbeddedChannel(connection)` 挂通道 →
+  `configurePacketHandler(pipeline)` → `PlayerList.placeNewPlayer(connection, this, CommonListenerCookie.createInitial(profile, false))`
+- `BotConnection` 覆盖 `send(Packet)`、`send(Packet, ChannelFutureListener)` 为空实现：假连接不需要收包，
+  不覆盖会让出站包堆在 EmbeddedChannel 的出站队列里无界增长
+- `tick()` / `doTick()` 置空，由 Bot 模块每 tick 调 `tickState()`（内部 `super.tick()`）与 `step()` 驱动
+- `step()`：`setSpeed` + `xxa`/`zza`/`jumping` + `jumpFromGround()` + `travel(Vec3)`
+- `destroy()`：`PlayerList.remove(this)` → `discard()` → 关闭 channel；机器人是真实登录玩家，
+  只 `discard()` 会把它留在在线列表/统计里
+- 删除的 1.8 反射：`World.u`（worldAccesses）、`PlayerList.o`（统计缓存）、`PlayerManager.gamemode`、
+  `IWorldAccess` 匿名类、`Packet` 假发送器
 
-从服务端 jar（NAS `versions/1.21.8/paper-1.21.8.jar`）用 javap 实测：
+### BotVisibility（545 → 约 320 行）
+
+机器人现在是服务端正常追踪的真实玩家，**发包层整体删除**，可见性落到 Bukkit API：
+
+- 保留原有判定：世界/区块/眼高上限/距离/视线点积/挂机（`idleSeconds`）/战斗豁免，
+  以及 `visibilityCheckTicks` 节流、`spawnDelayTicks` 延迟、`maxRevealsPerTick` 揭示预算
+- 应用层：`player.showPlayer(plugin, bot)` / `hidePlayer(plugin, bot)`
+- 删除：`Movement`/`Update`/`Display.equipment`/`PacketPlayOut*`/`ScoreboardTeam`/名字板实体（改用原版名字板：
+  `BotEntity` 里已 `setDisplayName` + `setPlayerListName`）
+- 不再使用的 `muteCombatSounds` / `restoreIdle` / `onIdleHidden` / `hasNameplate` / `equipment` 一并移除（全仓库无调用）
+
+### 配套改动
+
+| 文件 | 改动 |
+|---|---|
+| `BotManager.java` | `new BotVisibility(plugin)`；`BotEntity#getUniqueID()` → `getUUID()` |
+| `BotMotion.java` | 直写 `entity.yaw/pitch` → `getYRot()/setYRot()/getXRot()/setXRot()` |
+| `vendor/.../framework/bukkit/world/GridPathfinder.java` | `World#getBlockTypeIdAt` → `getBlockAt(x,y,z).getType()`；`Material.CARPET` → `Tag.CARPETS` |
+| `vendor/.../framework/bukkit/world/BlockMaterials.java` | 同上 |
+| `core/build.gradle.kts` | 加入 NMS 编译类路径、MythicFramework 源码目录、`packLib` 依赖 |
+
+## 构建环境：NMS 编译类路径（新会话第一步）
+
+`paper-api` **不含** NMS 与 CraftBukkit，Bot（以及剩余 NMS 文件）需要真实服务端 jar 才能编译。
+
+1. 用 Paper 1.21.8 的 paperclip jar 解包（只需一次，产物在 `.gradle/` 下，已 gitignore）：
+
+   ```powershell
+   java "-Dpaperclip.patchonly=true" -jar paper-1.21.8-<build>.jar
+   # 产出 versions/1.21.8/paper-1.21.8.jar 与 libraries/
+   ```
+
+2. 把产物放到 `<仓库>/.gradle/paper-nms/`（结构保持 `versions/…`、`libraries/…`）。
+   可用 `-PpaperNmsRoot=<目录>` 覆盖。
+
+3. `core/build.gradle.kts` 会把该目录下 `versions/**/*.jar`、`libraries/**/*.jar` 全部挂到 `compileOnly`。
+   目录不存在时构建不报错，但 Bot 模块会以「package net.minecraft.server does not exist」失败。
+
+MythicFramework 未作为模块参与构建，`core` 通过 `sourceSets` 直接编译其中四个包：
+`framework/math`、`framework/path`、`framework/task`、`framework/bukkit/world`。
+
+## 1.21.8 实测签名（本轮用 javap 核对过）
 
 ```java
 ServerPlayer(MinecraftServer, ServerLevel, GameProfile, ClientInformation)
 ClientInformation.createDefault()
-void ServerPlayer#die(DamageSource)
 PlayerList.placeNewPlayer(Connection, ServerPlayer, CommonListenerCookie)
-Connection(PacketFlow)                                  // PacketFlow.SERVERBOUND
-CommonListenerCookie(GameProfile, int, ClientInformation, boolean, String, Set<String>, KeepAlive)
+CommonListenerCookie.createInitial(GameProfile, boolean)
+Connection(PacketFlow)                       // 字段 channel / address 都是 public
+new EmbeddedChannel(connection)              // 构造即触发 channelActive，自动填好 channel/address
+LivingEntity#setSpeed(float) / getSpeed()
+LivingEntity#travel(Vec3)                    // 输入向量 (xxa, yya, zza)
+LivingEntity#jumpFromGround() / setJumping(boolean) / hurtTime
+Entity#invulnerableTime / getId() / getUUID() / setPos(double,double,double)
+Entity#setYRot / setXRot / getYRot / getXRot / setYHeadRot / setYBodyRot
+Entity#teleportSetPosition(PositionMoveRotation, Set<Relative>)
+PositionMoveRotation(Vec3, Vec3, float, float)
+Attributes.MOVEMENT_SPEED                    // Holder<Attribute>，用 getAttribute(...) 取 AttributeInstance
+Player#attack(Entity) / resetAttackStrengthTicker() / getGameProfile() / getDisplayName()
 ```
 
-### 1.8 → 1.21 重构对照
+## 踩坑记录（必须保留）
 
-| 1.8 写法 | 1.21 写法 |
-|---|---|
-| `extends EntityPlayer` | `extends ServerPlayer` |
-| 构造传 `PlayerInteractManager` | 传 `ClientInformation.createDefault()` |
-| 反射 `World.u`（worldAccesses） | 删除，`ServerLevel` 自管 |
-| 反射 `PlayerList.o`（统计） | 删除，`ServerPlayer` 自带 |
-| 反射改 `gamemode` | `player.gameMode.changeGameModeForPlayer(...)` |
-| `IWorldAccess` 匿名类（十余个空实现） | 删除，1.21 无此接口 |
-| `Packet` 匿名发送器 | 由 `placeNewPlayer` 建真实 `Connection` |
+1. **`Connection` 被遮蔽**：`LivingEntity` 实现 `WaypointTransmitter`，它有一个嵌套接口 `Connection`。
+   在 `Entity` 子类体内写 `extends Connection` 会被解析成那个接口，javac 报
+   `no interface expected here`。必须写全限定名 `extends net.minecraft.network.Connection`。
+2. **`Nameable#getName()` 返回 adventure `Component`**，1.8 的 `public String getName()` 覆盖会直接编译失败；
+   要改名字请覆盖 `getDisplayName()` 或走 Bukkit `setDisplayName`。
+3. **`PlayerList.getPlayers()` 返回内部 list**（不是拷贝），可原地 `remove`。
+4. **`ServerPlayer.doTick()` 依赖 `connection` 字段**，假连接没有真 channel 时必须把 `tick()/doTick()` 置空。
+5. **`paper-api` 没有 NMS**；`compileOnly(fileTree("libs"))` 只扫 `core/libs`，仓库根 `libs/` 要单独声明。
+6. **`packLib/magic-license-1.1.3.jar` 提供 `nya.Skip`**，不挂到编译类路径会连带放大几百条错误
+   （包缺失时 javac 会跳过后续处理，错误数被放大，别被总量吓到）。
+7. 编译输出按 Gradle 控制台宽度折行，日志里路径会被从中间截断；统计错误要用「按 `C:\` 开头归并」的解析，别直接正则匹配整行。
+8. 改文件前先 `grep -c` 校验；批量替换必须带安全网（替换后重新编译，错误数上升就回滚）；
+   不要在同一个文件里并发发多个编辑；`s.find()` 可能返回 -1，切片前必须断言。
 
-预计 1.21 版 `BotEntity` 约 120 行（原 379 行）。
+## 剩余错误（首批可见，均在 Bot 模块之外）
 
-### 已确定的方案
+```
+PublicUtil 6 · FishingHandler 6 · ItemBuilder 5 · SignGui 5 · PlayerMarco 3 · ActionBarUtil 3
+PetFactory 3 · ProtectListener 2 · BatUtil 2 · CombatListener 2 · ExpireListener 2
+Scoreboard 1 · PlayerMoveHandler 1 · PlayerProfile 1 · EventFactory 1 · HemorrhageDeBuff 1 · HitTickGuard 1 · …（共 1911 条，级联放大）
+```
 
-用户选择 **A1-a-1**：走 `placeNewPlayer` 真实登录路径。
-已知副作用：会为每个 Bot 生成 `playerdata/<uuid>.dat`（60 个文件），
-并触发 `PlayerJoinEvent`（注意与 LuckPerms 等插件的交互）。
+主要根因：`net.minecraft.server.v1_8_R3` / `org.bukkit.craftbukkit.v1_8_R3` 残留、1.8 已移除的 Bukkit API
+（`Block#getData`、`World#spawnFallingBlock(Material,byte)`、`Sound.BURP`、`EntityDismountEvent` 等）、
+`net.mizukilab.pit.enchantment.runnable.AnimationRunnable` 缺文件。
+`npclib` 的 `nms/v1_8_R3/*` 包（NPC 发包层，非 Bot）同样仍是 1.8 实现，共 7 个文件。
 
 ## 下一步（按顺序）
 
-1. 重写 `BotEntity.java`（按上表，替换 379 行 1.8 实现）
-2. 重写 `BotVisibility.java`（改用 `player.showEntity/hideEntity`）
-3. 重写 `BotPatrol.java`
-4. 全量编译 → 应降至个位数错误
-5. 打包部署到测试服，验证 Bot 出现 / 可被击杀 / 加连杀 / 重生
+1. 逐个清掉 `npclib/nms/v1_8_R3/*`（NPC 发包层，7 个文件）——与 Bot 同源，可用同一套 javap 结论
+2. `ItemBuilder` / `SignGui` / `PetFactory` / `PlayerMoveHandler` / `FishingHandler` 等 NMS 与 1.8 API 文件
+3. 全量编译通过 → `shadowJar` 出包
+4. 部署测试服验证机器人：出现 / 可被击杀 / 加连杀 / 重生 / 进服不同步崩服
+   - 重点观察：keep-alive 超时（假连接不回包）、`PlayerJoinEvent`/`PlayerQuitEvent` 副作用、
+     `Bukkit.getOnlinePlayers()` 现在**包含**机器人（与原 1.8 行为不同，接手者须知）
 
-## 操作注意事项（血泪教训）
+## 验证方式
 
-- **改文件前先 `grep -c` 校验**：曾有脚本把文件写坏（方法体重复插入），
-  而 javac 因语法错误提前中止，导致错误数从 100 "降到" 32 的假象
-- **批量替换必须带安全网**：替换后重新编译，错误数上升就自动回滚
-- **不要在同一个文件里并发发多个编辑**：会互相覆盖
-- **`s.find()` 可能返回 -1**：切片前必须断言，否则产生垃圾内容
+Bot 模块独立编译（不依赖其它模块是否已修好，改完 Bot 必跑）：
+
+```powershell
+# 需要 .gradle/paper-nms 已就绪
+.\tools\verify-bot.ps1        # javac 单独编译 bot 包 + BotManager，输出 class 数（本次：22 源文件 → 65 class）
+```
+
+全量编译：
+
+```powershell
+$env:JAVA_TOOL_OPTIONS='-Duser.language=en -Duser.country=US'
+.\gradlew.bat :core:compileJava --console=plain --no-daemon
+```
 
 ## 相关文档
 
-- `docs/p2-2-replaced-files.txt`：批量替换为迁移版的 28 个文件清单
-- `docs/p2-3-replaced-files.txt`：另 14 个
-- `docs/java-nms-files.txt`：仍含 `v1_8_R3` 的 45 个 Java 文件
+- `docs/BUILDING.md`：构建说明（含 NMS 类路径）
+- `docs/p2-2-replaced-files.txt`、`docs/p2-3-replaced-files.txt`：批量替换为迁移版的 42 个文件
+- `docs/java-nms-files.txt`：仍含 `v1_8_R3` 的 Java 文件清单
