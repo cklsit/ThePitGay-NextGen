@@ -1,20 +1,14 @@
 package cn.charlotte.pit.util.hologram;
 
 import cn.charlotte.pit.ThePit;
-import cn.charlotte.pit.util.hologram.packet.PacketArmorStand;
 import cn.charlotte.pit.util.hologram.packet.PacketHologram;
-import cn.charlotte.pit.util.hologram.reflection.NMUClass;
-import cn.charlotte.pit.util.hologram.reflection.Reflection;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectLists;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
-import org.inventivetalent.reflection.minecraft.Minecraft;
-import org.inventivetalent.reflection.util.AccessUtil;
 
 import javax.annotation.Nonnull;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -22,15 +16,19 @@ import java.util.List;
 public abstract class HologramAPI {
 
     protected static final List<Hologram> holograms = ObjectLists.synchronize(new ObjectArrayList<>());
-    protected static boolean is1_8/*Or 1.9*/ = Minecraft.VERSION.newerThan(Minecraft.Version.v1_8_R1);
+    /**
+     * 服务端版本判断。
+     *
+     * <p>原来用 1.8 时代的反射工具（{@code Minecraft.VERSION.newerThan(...)}）在静态初始化里探测版本，
+     * 该工具在 Paper 1.21.8 上解析不到 {@code net.minecraft.server.UNKNOWN.Entity}，
+     * 直接让本类初始化失败（NoClassDefFoundError），所有全息都无法工作。
+     * 现在只支持 1.21 线，恒为 true。</p>
+     */
+    protected static boolean is1_8/*Or 1.9*/ = true;
     protected static boolean packetsEnabled = false;
     public static boolean isMAGA = true;
-    protected static boolean useProtocolSupport = false;
-    //Protocol Support
-    static Class<?> ProtocolSupportAPI;
-    static Class<?> ProtocolVersion;
-    static Method ProtocolSupportAPI_getProtocolVersion;
-    static Method ProtocolVersion_getId;
+
+    private static boolean warnedMissingHook;
 
     /**
      * Creates a new {@link Hologram}
@@ -40,7 +38,18 @@ public abstract class HologramAPI {
      * @return a new {@link Hologram}
      */
     public static Hologram createHologram(Location loc, String text) {
-        Hologram hologram = ThePit.api.createHologram(loc, text);
+        Hologram hologram;
+        if (ThePit.api != null) {
+            hologram = ThePit.api.createHologram(loc, text);
+        } else {
+            // 外部 hook（ThePitSupport 一类附加插件）未安装时，退回本插件自带实现，避免全息整体不可用。
+            if (!warnedMissingHook) {
+                warnedMissingHook = true;
+                ThePit.getInstance().getLogger().warning("PitInternalHook 未注册，全息改用内置 PacketHologram 实现");
+            }
+            hologram = new PacketHologram(text, loc);
+            hologram.spawn();
+        }
         holograms.add(hologram);
         return hologram;
     }
@@ -120,15 +129,8 @@ public abstract class HologramAPI {
     }
 
     protected static void sendPacket(Player p, Object packet) {
-        if (p == null || packet == null) {
-            throw new IllegalArgumentException("player and packet cannot be null");
-        }
-        try {
-            Object handle = Reflection.getHandle(p);
-            Object connection = Reflection.getFieldWithException(handle.getClass(), "playerConnection").get(handle);
-            Reflection.getMethod(connection.getClass(), "sendPacket", Reflection.getNMSClass("Packet")).invoke(connection, packet);
-        } catch (Exception e) {
-        }
+        // 1.8 的 playerConnection/sendPacket 路径在 1.21 已不存在；
+        // 全息现在走 PacketArmorStand + hideEntity/showEntity，不再需要手工发包。
     }
 
     protected static Collection<? extends Player> checkReceiverWorld(final Hologram hologram, final Collection<? extends Player> receivers) {
@@ -136,46 +138,9 @@ public abstract class HologramAPI {
         return receivers;
     }
 
+    /** 1.21 下所有客户端都是现代版本，直接返回当前协议号占位。 */
     protected static int getVersion(Player p) {
-        try {
-            if (useProtocolSupport) {
-                Object protocolVersion = ProtocolSupportAPI_getProtocolVersion.invoke(null, p);
-                int id = (int) ProtocolVersion_getId.invoke(protocolVersion);
-                return id;
-            } else {
-                final Object handle = Reflection.getHandle(p);
-                Object connection = AccessUtil.setAccessible(handle.getClass().getDeclaredField("playerConnection")).get(handle);
-                Object network = AccessUtil.setAccessible(connection.getClass().getDeclaredField("networkManager")).get(connection);
-                String name = null;
-                if (HologramAPI.is1_8) {
-                    if (Reflection.getVersion().contains("1_8_R1")) {
-                        name = "i";
-                    }
-                    if (Reflection.getVersion().contains("1_8_R2")) {
-                        name = "k";
-                    }
-                } else {
-                    name = "m";
-                }
-                if (name == null) {
-                    //				System.err.println("Invalid server version! Unable to find proper channel-field in getVersion.");
-                    return 99;
-                }
-                Object channel = AccessUtil.setAccessible(network.getClass().getDeclaredField(name)).get(network);
-
-                Object version = 0;
-                try {
-                    version = AccessUtil.setAccessible(network.getClass().getDeclaredMethod("getVersion", NMUClass.io_netty_channel_Channel)).invoke(network, channel);
-                } catch (Exception e) {
-                    // e.printStackTrace();
-                    return 182;
-                }
-                return (int) version;
-            }
-        } catch (Exception e) {
-            //			e.printStackTrace();
-        }
-        return 0;
+        return 771;
     }
 
     public static boolean is1_8() {
@@ -184,20 +149,6 @@ public abstract class HologramAPI {
 
     public static boolean packetsEnabled() {
         return packetsEnabled;
-    }
-
-    protected static void enableProtocolSupport() {
-        useProtocolSupport = true;
-
-        try {
-            ProtocolSupportAPI = Class.forName("protocolsupport.api.ProtocolSupportAPI");
-            ProtocolVersion = Class.forName("protocolsupport.api.ProtocolVersion");
-
-            ProtocolSupportAPI_getProtocolVersion = Reflection.getMethod(ProtocolSupportAPI, "getProtocolVersion", Player.class);
-            ProtocolVersion_getId = Reflection.getMethod(ProtocolVersion, "getId");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
 }

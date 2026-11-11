@@ -413,8 +413,30 @@ public class ThePit extends JavaPlugin implements PluginMessageListener {
     }
 
     private void loadHologram() {
+        cleanupStaleHolograms();
         this.hologramFactory = new HologramFactory();
         this.hologramFactory.init();
+    }
+
+    /**
+     * 清理上次运行遗留的全息盔甲架。
+     *
+     * <p>全息现在是真实盔甲架，会随区块存档保存；进程被强杀或停机时没走 despawn 就会残留，
+     * 每次重启都会再叠一层。启动时按 scoreboard tag 扫一遍已加载区块，把旧的清掉。</p>
+     */
+    private void cleanupStaleHolograms() {
+        int removed = 0;
+        for (org.bukkit.World world : org.bukkit.Bukkit.getWorlds()) {
+            for (org.bukkit.entity.Entity entity : world.getEntities()) {
+                if (entity.getScoreboardTags().contains(cn.charlotte.pit.util.hologram.packet.PacketArmorStand.HOLOGRAM_TAG)) {
+                    entity.remove();
+                    removed++;
+                }
+            }
+        }
+        if (removed > 0) {
+            log.info("Cleaned " + removed + " stale hologram entities");
+        }
     }
 
 
