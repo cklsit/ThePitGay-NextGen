@@ -35,14 +35,11 @@ open class AngelChestplate : IMythicItem() {
     override fun loadFromItemStack(item: ItemStack?) {
         item ?: return
 
-        val nmsItem = Utils.toNMStackQuick(item)
-        val tag = nmsItem?.tag ?: return
-        val extra = tag.getCompound("extra") ?: return
-
-        this.uuid = ItemUtil.getUUIDObj(item);
-        this.maxLive = extra.getInt("maxLive")
-        this.live = extra.getInt("live")
-        loadNameData(item, extra)
+        this.uuid = ItemUtil.getUUIDObj(item)
+        // 1.21：字段存 PDC，不再走 NBT 的 extra 复合标签
+        this.maxLive = cn.charlotte.pit.compat.item.ItemData.getInt(item, "maxLive") ?: this.maxLive
+        this.live = cn.charlotte.pit.compat.item.ItemData.getInt(item, "live") ?: this.live
+        this.customName = cn.charlotte.pit.compat.item.ItemData.getString(item, "customName")
 
     }
 
