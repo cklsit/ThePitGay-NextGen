@@ -114,7 +114,8 @@ tasks.named<ShadowJar>("shadowJar") {
     // 发包层统一走 PacketEvents，随核心 shade 进 jar 并重定位，避免与外部安装的 PacketEvents 冲突。
     relocate("com.github.retrooper.packetevents", "net.mizukilab.pit.libs.packetevents")
     relocate("io.github.retrooper.packetevents", "net.mizukilab.pit.libs.packetevents")
-    exclude("kotlin/**", "junit/**", "org/junit/**")
+    // Kotlin 运行库必须打包：服务端不提供 kotlin/*，插件自身是 Kotlin 重代码库。
+    exclude("junit/**", "org/junit/**")
     from("build/tmp/processed-resources")
     mergeServiceFiles()
 }
@@ -125,11 +126,15 @@ dependencies {
     // P1：构建目标从 Spigot 1.8.8 切到 Paper 1.21.8
     compileOnly(libs.paper.api)
     // 收包/发包统一走 PacketEvents（shade 进产物），不再依赖 NMS。
+    // PacketEvents 依赖 gson，而本项目把 com.google.gson 重定位成
+    // net.mizukilab.pit.libs.mythicframework.gson，所以 gson 必须以 implementation
+    // 打包进来，否则重定位后的引用会悬空（启动时 NoClassDefFoundError）。
     implementation(libs.packetevents)
+    implementation("com.google.code.gson:gson:2.11.0")
     compileOnly(fileTree(mapOf("dir" to "../libs", "include" to listOf("*.jar"),
         "exclude" to listOf("citizens*.jar", "Citizens*.jar"))))
-    // 授权校验库随核心打包（shadowJar 会把它 relocate 到 net.mizukilab.pit.license）。
-    implementation(fileTree(rootProject.file("packLib")) { include("*.jar") })
+    // 授权校验库不再打包：其类整体混淆，会让 Paper 的 PluginRemapper 因重复字段名崩溃；
+    // 代码只用到 nya.Skip 标记注解，已用 core/src/main/java/nya/Skip.java 内置等价定义。
     // Paper 1.21.8 服务端（Mojang 映射）与运行库，供 NMS 层编译；本地解包产物不入库。
     // 见 docs/BUILDING.md「NMS 编译类路径」。
     val paperNmsRoot = rootProject.file(
@@ -147,7 +152,9 @@ dependencies {
     implementation("zone.rong:imaginebreaker:2.1")
     compileOnly(libs.adventure.bukkit)
     compileOnly("com.caoccao.javet:javet:3.1.4")
-    compileOnly("commons-lang:commons-lang:2.6")
+    // 运行时必需库随 jar 打包（单 jar 部署；不再用 ImagineBreaker 在启动阶段联网下载，
+    // 重定位后其 Maven URL 会失效）。
+    implementation("commons-lang:commons-lang:2.6")
     compileOnly("org.projectlombok:lombok:1.18.32")
     annotationProcessor("org.projectlombok:lombok:1.18.32")
     compileOnly(libs.luckperms)
@@ -155,14 +162,14 @@ dependencies {
     compileOnly(libs.papi)
     compileOnly(libs.narshorn)
     compileOnly(libs.protocollib)
-    compileOnly(libs.jedis)
-    compileOnly("org.mongojack:mongojack:5.0.1")
-    compileOnly("org.mongodb:mongodb-driver-sync:5.2.0")
+    implementation(libs.jedis)
+    implementation("org.mongojack:mongojack:5.0.1")
+    implementation("org.mongodb:mongodb-driver-sync:5.2.0")
 
     // 1.8.8 的 Citizens 依赖与 paper-api 冲突，编译期排除
     compileOnly(fileTree("libs") { exclude("citizens*.jar", "Citizens*.jar") })
 
-    compileOnly(libs.fastutil)
+    implementation(libs.fastutil)
     compileOnly("us.crazycrew.crazycrates:api:0.7")
     compileOnly(libs.luckperms)
     compileOnly(libs.playerpoints)

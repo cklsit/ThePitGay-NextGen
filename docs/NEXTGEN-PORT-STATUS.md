@@ -18,10 +18,32 @@
 |---|---|
 | Kotlin 编译 | **0 错误** |
 | Java 全量编译（`:core:compileJava`） | **0 错误** ✅ |
-| `:core:shadowJar` | **成功**，产出 `core/build/libs/ThePitGay-V.jar`（约 18MB） |
-| 可上线 | **待测试服验证**（编译与打包已通，运行时未实测） |
+| `:core:shadowJar` | **成功**，产出 `core/build/libs/ThePitGay-V.jar`（约 44MB，单 jar 自包含） |
+| 本机 Paper 1.21.8 冒烟 | **已跑到数据库连接**：插件加载、PacketEvents 初始化、配置/世界配置、LuckPerms/ProtocolLib 集成均通过；本机无 MongoDB，卡在建库 |
+| 可上线 | **待有 MongoDB 的测试服验证** |
 
 验证命令：`tools/compile-check.ps1`（javac 直编，0 错误）+ `.\gradlew.bat :core:shadowJar`。
+
+### 本机冒烟发现并修掉的 6 个真实部署阻塞
+
+1. **`api-version: 1.8`** → Paper 1.21.8 拒绝加载，改 `'1.21'`。
+2. **`packLib/magic-license-1.1.3.jar` 会让 Paper 的 PluginRemapper 崩溃**
+   （`Duplicate key a` —— 混淆类同名字段）。改用内置 `nya.Skip` 注解，不再打包授权库。
+3. **`ThePit.onLoad` 的 ImagineBreaker 依赖下载**在重定位后 URL 失效（`releasesnet/...`），
+   启动时逐个库超时；改为单 jar 自带依赖（对齐 main 的做法）。
+4. **gson 未打包但被重定位**：PacketEvents 初始化 `NoClassDefFoundError`；`com.google.gson` 改 `implementation`。
+5. **kotlin 运行库被 shadowJar 排除**：服务端不提供 `kotlin/*`；停止排除，`kotlin` 3035 个类进包。
+6. **fastutil / mongodb-driver-sync / mongojack / jedis / commons-lang 只在编译期**：
+   运行到 `loadDatabase` 才 `NoClassDefFoundError`；全部改为 `implementation` 打包。
+
+### 冒烟环境与前置
+
+- 本机测试服目录（仓库外）：`Documents/pit-testserver/`，Paper 1.21.8 + LuckPerms 5.5.91 + ProtocolLib 5.3.0 + FAWE 2.16.2。
+- 插件首次启动会生成 `plugins/ThePitUltimate/worlds/world.yml` 并主动关服（设计如此），**第二次启动**才会继续。
+- 启动链路需要 **MongoDB**（`service.mongodb.*`，默认 127.0.0.1:27017）；
+  无 MongoDB 时会停在 `Connecting to database...`。生产/测试服需先起库。
+- 冒烟脚本：`Documents/pit-testserver/run-smoke.ps1`（自动清理残留进程与世界锁、等 `Done (`、写日志）。
+
 
 ## 本轮完成：全量 Java 编译清零（1911 → 0）
 
