@@ -60,8 +60,9 @@ Bot（`NPCLib#createFighterRobot`，用临时冒烟插件调用）——四项�
 - **出现**：世界实体 +1，Bukkit 实体是 `CraftPlayer`，进入 `Bukkit.getOnlinePlayers()`
 - **可击杀**：`Player#damage(...)` → 血量 0 → `dead` → 实体移除（插件的限伤逻辑会削峰，
   冒烟脚本先把血降到 1 再补刀）
-- **加连杀**：另一只 Bot 作为攻击者击杀后，击杀者档案 `kills` / `highestStreaks` 从 0 涨到 2
-  （注意：一次击杀计数 +2，疑似死亡结算走了两次，需实机复核真人击杀的计数）
+- **加连杀**：另一只 Bot 作为攻击者击杀后，击杀者档案 `kills` / `highestStreaks` 各 +1
+  （原先一次击杀 +2：NPC 分支在结算后立刻清死亡守卫，同 tick 内的二次死亡触发重复结算；
+  改为下一 tick 再清守卫后已修正，冒烟复测 kills=1 / streaks=1）
 - **重生**：带 `respawnDelay(40)` 的 Bot 死亡后 2 秒以新 UUID 重新上线，在线数恢复
 
 仍未验证：真人客户端看到的 NPC 外观/点击、道具与附魔台、事件刷地形、机器人战斗 AI 表现。

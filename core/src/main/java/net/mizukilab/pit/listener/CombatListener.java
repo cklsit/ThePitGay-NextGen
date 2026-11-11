@@ -549,7 +549,10 @@ public class CombatListener implements Listener {
             if(NewConfiguration.INSTANCE.getAlwaysCheckNPC()){
                 player.setGameMode(GameMode.SPECTATOR);
             }
-            player.removeMetadata(DEATH_HANDLED_METADATA, ThePit.getInstance());
+            // NPC/机器人的死亡在本 tick 内可能被重复触发（死亡事件 + 伤害兜底），
+            // 立刻清守卫会让同一次死亡结算两遍、击杀者连击数翻倍；推迟一 tick 再清。
+            Bukkit.getScheduler().runTaskLater(ThePit.getInstance(),
+                    () -> player.removeMetadata(DEATH_HANDLED_METADATA, ThePit.getInstance()), 1L);
             return;
         }
         final Player finalKiller = killer;
