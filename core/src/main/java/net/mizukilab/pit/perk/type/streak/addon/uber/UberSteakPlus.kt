@@ -170,7 +170,7 @@ class UberSteakPlus : AbstractPerk(), MegaStreak, Listener, IPlayerKilledEntity,
         }
 
         if (profile.streakKills >= 4000) {
-            PlayerUtil.addPotionEffect(myself, PotionEffect(PotionEffectType.CONFUSION, 100000, 0, false))
+            PlayerUtil.addPotionEffect(myself, PotionEffect(PotionEffectType.NAUSEA, 100000, 0, false))
         }
     }
 

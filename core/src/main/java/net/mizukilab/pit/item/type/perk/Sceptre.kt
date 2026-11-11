@@ -50,7 +50,7 @@ class Sceptre : AbstractPitItem(), Listener {
             if (event.action == Action.RIGHT_CLICK_BLOCK) {
                 val block: Block? = event.clickedBlock
                 if (block != null && block.getType() === Material.OBSIDIAN) {
-                    event.getPlayer().playSound(block.getLocation(), Sound.STEP_STONE, 1.0f, 1.0f);
+                    event.getPlayer().playSound(block.getLocation(), Sound.BLOCK_STONE_STEP, 1.0f, 1.0f);
                     block.breakNaturally()
                 }
             }

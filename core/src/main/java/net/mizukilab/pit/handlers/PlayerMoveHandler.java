@@ -6,7 +6,6 @@ import cn.charlotte.pit.data.operator.IOperator;
 import cn.hutool.core.collection.ConcurrentHashSet;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import net.minecraft.server.v1_8_R3.EnumParticle;
 import net.minecraft.server.v1_8_R3.PacketPlayOutWorldParticles;
 import net.mizukilab.pit.config.PitWorldConfig;
 import net.mizukilab.pit.util.aabb.AABB;
@@ -230,7 +229,7 @@ public class PlayerMoveHandler implements MovementHandler, Listener {
                     try {
                         if (ticks % 3 == 0) {
                             Location loc = armorStand.getLocation();
-                            EnumParticle particleType = isDescending ? Particle.DRIP_WATER : Particle.CLOUD;
+                            org.bukkit.Particle particleType = isDescending ? Particle.DRIP_WATER : Particle.CLOUD;
 
                             PacketPlayOutWorldParticles trailPacket = new PacketPlayOutWorldParticles(
                                     particleType, true,
