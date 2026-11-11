@@ -19,10 +19,33 @@
 | Kotlin 编译 | **0 错误** |
 | Java 全量编译（`:core:compileJava`） | **0 错误** ✅ |
 | `:core:shadowJar` | **成功**，产出 `core/build/libs/ThePitGay-V.jar`（约 44MB，单 jar 自包含） |
-| 本机 Paper 1.21.8 冒烟 | **已跑到数据库连接**：插件加载、PacketEvents 初始化、配置/世界配置、LuckPerms/ProtocolLib 集成均通过；本机无 MongoDB，卡在建库 |
-| 可上线 | **待有 MongoDB 的测试服验证** |
+| 本机 Paper 1.21.8 冒烟 | **通过**：插件 enable、90 秒空跑无异常，Bot 四项验收与物品/全息/事件/菜单均实测通过 |
+| 可上线 | **待真人客户端验证观感与手感** |
 
 验证命令：`tools/compile-check.ps1`（javac 直编，0 错误）+ `.\gradlew.bat :core:shadowJar`。
+
+## 部署与自测（给测试服）
+
+1. 依赖：Paper 1.21.8、**ProtocolLib 5.5.0-SNAPSHOT**（5.3.0 加载失败）、LuckPerms、MongoDB；
+   PlayerPoints / PlaceholderAPI / FAWE 为可选。
+2. 把 `core/build/libs/ThePitGay-V.jar` 放进 `plugins/`，启动。
+3. **首次启动**插件会生成 `plugins/ThePitUltimate/worlds/world.yml` 后主动关服，**再启动一次**才会继续。
+4. `service.mongodb.*` 指向的库必须可达（默认 127.0.0.1:27017、账号在 `thePit` 库）。
+5. 冒烟时优先看控制台里的 `Exception` / `Caused by`，把整段贴回去即可定位。
+
+### 本机已实测通过（冒烟插件调用真实 API）
+
+- 插件 enable：`Loaded configuration/mongodb/NPCFactory/CustomEntityNPCFactory/Events` → `Done (~30s)` → 空跑 90 秒 0 异常
+- Bot：生成进在线列表 → 可击杀 → 击杀者 `kills/highestStreaks` 各 +1 → `respawnDelay` 到期以新 UUID 重生
+- 物品：`MythicSwordItem#toItemStack` → `getMythicItem`/`getInternalName` 还原 → `serializeAsBytes` 往返 → `clone` 均保留 PDC
+- 全息：`createHologram` 生成实体、`removeHologram` 回收；启动时清理上次残留
+- WorldEdit 7：`CakeEvent.onActive/onInactive` 刷与撤均无异常
+- 命令与菜单：`/spawn` `/settings` 可执行；`PlayerOptionMenu`/`PackageMenu`/`MedalMainMenu`/`PrestigeMainMenu`/`HeresyMenu`/`HubMenu`/`AdminItemMenu` 正常打开
+- 聊天 `Player#chat` 与背包增删正常
+
+### 仍需真人客户端确认
+
+NPC 外观/皮肤/朝向、机器人移动与战斗表现、计分板与名牌观感、菜单点按手感、事件实际地形效果。
 
 ### 本机冒烟发现并修掉的 9 个真实部署阻塞
 
