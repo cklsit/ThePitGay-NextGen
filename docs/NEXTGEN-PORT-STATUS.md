@@ -24,25 +24,39 @@
 
 验证命令：`tools/compile-check.ps1`（javac 直编，0 错误）+ `.\gradlew.bat :core:shadowJar`。
 
-### 本机冒烟发现并修掉的 6 个真实部署阻塞
+### 本机冒烟发现并修掉的 9 个真实部署阻塞
 
 1. **`api-version: 1.8`** → Paper 1.21.8 拒绝加载，改 `'1.21'`。
 2. **`packLib/magic-license-1.1.3.jar` 会让 Paper 的 PluginRemapper 崩溃**
    （`Duplicate key a` —— 混淆类同名字段）。改用内置 `nya.Skip` 注解，不再打包授权库。
 3. **`ThePit.onLoad` 的 ImagineBreaker 依赖下载**在重定位后 URL 失效（`releasesnet/...`），
    启动时逐个库超时；改为单 jar 自带依赖（对齐 main 的做法）。
-4. **gson 未打包但被重定位**：PacketEvents 初始化 `NoClassDefFoundError`；`com.google.gson` 改 `implementation`。
+4. **gson 未打包但被重定位**：PacketEvents 初始化 `NoClassDefFoundError`；`com.google.code.gson` 改 `implementation`。
 5. **kotlin 运行库被 shadowJar 排除**：服务端不提供 `kotlin/*`；停止排除，`kotlin` 3035 个类进包。
 6. **fastutil / mongodb-driver-sync / mongojack / jedis / commons-lang 只在编译期**：
    运行到 `loadDatabase` 才 `NoClassDefFoundError`；全部改为 `implementation` 打包。
+7. **`NametagThread` 继承 `BukkitRunnable` 却传给 `Bukkit#getScheduler().runTaskTimer(...)`**：
+   Paper 1.21 抛 `UnsupportedOperationException`，插件 enable 直接失败；改用 `this.runTaskTimer(...)`。
+8. **`ClearRunnable` 从未实例化**：`ItemSpawnEvent`/保护逻辑取 `getClearRunnable()` 得到 null 刷屏 NPE；
+   在 `loadGame()` 里启动（对齐 main）。
+9. **`PitHook.gitVersion` 硬编码旧版本并反射覆盖 plugin description**：日志显示 v4.4.9 与真实 jar 版本不符；
+   改为读取当前插件版本。
 
 ### 冒烟环境与前置
 
-- 本机测试服目录（仓库外）：`Documents/pit-testserver/`，Paper 1.21.8 + LuckPerms 5.5.91 + ProtocolLib 5.3.0 + FAWE 2.16.2。
+- 本机测试服目录（仓库外）：`Documents/pit-testserver/`，Paper 1.21.8 + LuckPerms 5.5.91 +
+  **ProtocolLib 5.5.0-SNAPSHOT（5.3.0 在 1.21.8 上加载失败，必须用 CI nightly）** + FAWE 2.16.2 + 本地 MongoDB 8.0。
 - 插件首次启动会生成 `plugins/ThePitUltimate/worlds/world.yml` 并主动关服（设计如此），**第二次启动**才会继续。
-- 启动链路需要 **MongoDB**（`service.mongodb.*`，默认 127.0.0.1:27017）；
-  无 MongoDB 时会停在 `Connecting to database...`。生产/测试服需先起库。
-- 冒烟脚本：`Documents/pit-testserver/run-smoke.ps1`（自动清理残留进程与世界锁、等 `Done (`、写日志）。
+- 启动链路需要 **MongoDB**（`service.mongodb.*`，默认 127.0.0.1:27017、账号需在 `thePit` 库里）。
+- 冒烟脚本：`Documents/pit-testserver/run-smoke.ps1`（先杀残留进程→复制新 jar→改 plugin.yml→清 `.paper-remapped`
+  →启动→等 `Done (`→空跑 N 秒→stop）。
+
+### 冒烟结论（最近一次）
+
+`Enabling ThePitUltimate v4.4.11-20261028` → `Loaded configuration/mongodb/NPCFactory/CustomEntityNPCFactory/Events`
+→ `Done (29.6s)` → **空跑 90 秒 0 异常** → 正常 `Disabling v4.4.11-20261028`。
+仍未验证：玩家实际进服后的交互（NPC 外观/点击、道具、战斗结算、事件刷地形、机器人行为），需要真客户端。
+
 
 
 ## 本轮完成：全量 Java 编译清零（1911 → 0）
