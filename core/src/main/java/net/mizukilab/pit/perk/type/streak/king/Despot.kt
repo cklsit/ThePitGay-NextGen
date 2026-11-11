@@ -176,7 +176,7 @@ class Despot : AbstractPerk(), MegaStreak, Listener, IPlayerDamaged, IAttackEnti
             }
             items.add(item)
         }
-        Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), {
+        Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), Runnable {
             items.forEach { it.remove() }
         }, 40L)
     }
@@ -187,7 +187,7 @@ class Despot : AbstractPerk(), MegaStreak, Listener, IPlayerDamaged, IAttackEnti
     ) {
         val profile = PlayerProfile.getPlayerProfileByUuid(myself.uniqueId) ?: return
         if (profile.streakKills >= 200) {
-            Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), {
+            Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), Runnable {
                 if (InventoryUtil.isInvFull(myself)) {
                     myself.sendMessage(CC.translate("&c&l暴君! &7你的背包已满,死亡奖励并没有给予!"))
                 } else {
