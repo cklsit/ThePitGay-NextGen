@@ -2,6 +2,8 @@ package cn.charlotte.pit;
 
 import cn.charlotte.pit.api.PitInternalHook;
 import cn.charlotte.pit.api.PointsAPI;
+import com.github.retrooper.packetevents.PacketEvents;
+import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
 import cn.charlotte.pit.buff.BuffFactory;
 import cn.charlotte.pit.data.FixedRewardData;
 import cn.charlotte.pit.data.PlayerProfile;
@@ -206,6 +208,7 @@ public class ThePit extends JavaPlugin implements PluginMessageListener {
     @Override
     public void onEnable() {
         BASE_VERSION = this.getDescription().getVersion();
+        PacketEvents.getAPI().init();
         audiences = BukkitAudiences.create(this);
         BannerUtil.printFileContent("banner.txt");
         serverId = DateCodeUtils.dateToCode(LocalDate.now());
@@ -330,6 +333,10 @@ public class ThePit extends JavaPlugin implements PluginMessageListener {
 
     @Override
     public void onDisable() {
+        try {
+            PacketEvents.getAPI().terminate();
+        } catch (Throwable ignored) {
+        }
         if (mythicBotCombat != null) mythicBotCombat.close();
         if (eventFactory != null) eventFactory.shutdown();
         cn.charlotte.pit.events.EventWorldEdits.shutdown();
@@ -528,6 +535,11 @@ public class ThePit extends JavaPlugin implements PluginMessageListener {
         ImagineBreaker.wipeMethodFilters();
         ImagineBreaker.wipeFieldFilters();
         instance = this;
+        // 发包层统一走 PacketEvents：加载阶段完成 API 绑定与 load，
+        // onEnable 期间的 SignGui / 可见性伪装等组件依赖它。
+        PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this));
+        PacketEvents.getAPI().getSettings().checkForUpdates(false).bStats(false);
+        PacketEvents.getAPI().load();
         DependencyManager dependencyManager = new DependencyManager(this, new ReflectionClassLoader(this));
         dependencyManager.loadDependencies(
                 new Dependency("fastutil", "it.unimi.dsi", "fastutil", "8.5.15", LoaderType.REFLECTION),

@@ -98,7 +98,8 @@ public abstract class NPCBase implements PacketNpc, NPCPacketHandler {
         if (hologram == null) return; // Created with the latest text when first shown.
         if (before.size() != after.size()) {
             if (isShown(player)) hologram.hide(player);
-            playerHologram.remove(player.getUniqueId());
+            // 1.21 起 Hologram 是真实盔甲架实体，丢弃引用前必须先清理实体。
+            if (playerHologram.remove(player.getUniqueId()) != null) hologram.destroy();
             if (isShown(player)) getHologram(player).show(player);
         } else {
             List<Object> packets = hologram.getUpdatePackets(after);
@@ -164,7 +165,7 @@ public abstract class NPCBase implements PacketNpc, NPCPacketHandler {
         autoHidden.clear();
         hasTeamRegistered.clear();
         playerText.clear();
-        playerHologram.clear();
+        destroyHolograms();
         items.clear();
     }
 
@@ -215,7 +216,7 @@ public abstract class NPCBase implements PacketNpc, NPCPacketHandler {
                 Player player = Bukkit.getPlayer(id);
                 if (player != null && isShown(player)) sendHidePackets(player, true);
             }
-            playerHologram.clear();
+            destroyHolograms();
             autoHidden.addAll(shown);
         }
         this.location = location.clone();
@@ -245,11 +246,19 @@ public abstract class NPCBase implements PacketNpc, NPCPacketHandler {
 
     public void onLogout(Player player) {
         getAutoHidden().remove(player.getUniqueId());
-        getShown().remove(player.getUniqueId()); // Don't need to use NPC#hide since the entity is not registered in the
-        // NMS server.
+        getShown().remove(player.getUniqueId()); // Don't need to use NPC#hide since the NPC is client side only.
         hasTeamRegistered.remove(player.getUniqueId());
         playerText.remove(player.getUniqueId());
-        playerHologram.remove(player.getUniqueId());
+        Hologram hologram = playerHologram.remove(player.getUniqueId());
+        if (hologram != null) hologram.destroy();
+    }
+
+    /** 1.21 起 Hologram 由真实盔甲架实体实现，丢弃引用前需要清理实体。 */
+    private void destroyHolograms() {
+        for (Hologram hologram : playerHologram.values()) {
+            if (hologram != null) hologram.destroy();
+        }
+        playerHologram.clear();
     }
 
     public boolean inRangeOf(Player player) {

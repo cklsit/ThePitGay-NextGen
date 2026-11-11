@@ -49,7 +49,7 @@ public class HighlanderMegaStreak extends AbstractPerk implements Listener, IAtt
 
     @Override
     public Material getIcon() {
-        return Material.GOLD_BOOTS;
+        return Material.GOLDEN_BOOTS;
     }
 
     @Override

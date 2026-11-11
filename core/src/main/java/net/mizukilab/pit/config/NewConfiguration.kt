@@ -15,6 +15,8 @@ import java.util.*
 object NewConfiguration {
     private var serverId = "null"
     var alwaysCheckNPC = false;
+    var dynamicInvisible = false;
+    var prestige = 35;
     var rapidEnchanting = false;
     var repairFeatures = false
     var epicTitleUpdateInterval = 10
@@ -185,6 +187,7 @@ object NewConfiguration {
         customChatFormat = config.getString("custom-chat-format.format", "%pit_level_tag_roman% %s&f: %s") ?: ""
 
         PrestigeStatusButton.limit = config.getInt("highest-prestige")
+        prestige = PrestigeStatusButton.limit
         patchCaches()
         eventOnlineRequired.clear()
         config.getConfigurationSection("event-online-required")?.let {

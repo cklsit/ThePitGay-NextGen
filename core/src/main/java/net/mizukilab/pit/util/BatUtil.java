@@ -2,17 +2,11 @@ package net.mizukilab.pit.util;
 
 import cn.charlotte.pit.ThePit;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.minecraft.server.v1_8_R3.EntityBat;
 import org.bukkit.Location;
-import org.bukkit.World;
-import org.bukkit.craftbukkit.v1_8_R3.CraftWorld;
 import org.bukkit.entity.*;
-import org.bukkit.event.entity.CreatureSpawnEvent;
-import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class BatUtil {
@@ -83,15 +77,14 @@ public class BatUtil {
                             y * distance + 0.5 + randomOffset(),
                             z * distance + randomOffset()
                     );
-                    CraftWorld world = (CraftWorld) player.getWorld();
-                    EntityBat entityBat = new EntityBat(world.getHandle());
-                    entityBat.setPosition(batLoc.getX(), batLoc.getY(), batLoc.getZ());
-                    entityBat.noDamageTicks =  100000;
-                    entityBat.setHealth(20000);
-
-                    world.addEntity(entityBat, CreatureSpawnEvent.SpawnReason.DEFAULT);
-
-                    bats.add((LivingEntity) entityBat.getBukkitEntity());
+                    // 1.21：直接生成真实蝙蝠实体，取代手工 addEntity 的 NMS 进程
+                    Bat entityBat = batLoc.getWorld().spawn(batLoc, Bat.class, bat -> {
+                        bat.setPersistent(false);
+                        bat.setSilent(true);
+                        bat.setInvulnerable(true);
+                        bat.setAI(true);
+                    });
+                    bats.add(entityBat);
                 }
             }
         }

@@ -5,7 +5,7 @@ import cn.charlotte.pit.data.PlayerProfile;
 import cn.charlotte.pit.data.sub.DroppedEntityData;
 import cn.charlotte.pit.data.sub.PerkData;
 import cn.charlotte.pit.data.sub.PlacedBlockData;
-import net.jitse.npclib.internal.NPC_Entity;
+import cn.mythicland.npclib.internal.NPCBase;
 import net.mizukilab.pit.medal.impl.challenge.ObsidianBreakMedal;
 import net.mizukilab.pit.npc.AbstractPitNPC;
 import net.mizukilab.pit.parm.AutoRegister;
@@ -190,8 +190,10 @@ public class ProtectListener implements Listener {
     @Deprecated
     public boolean hasNPC(Entity e) { //inline support TODO removed in future
         for (AbstractPitNPC abstractPitNPC : ThePit.getInstance().getNpcFactory().getPitNpc()) {
-            NPC_Entity npc = (NPC_Entity) abstractPitNPC.getNpc();
-            if (npc.getEntityId() ==e.getEntityId()) {
+            if (!(abstractPitNPC.getNpc() instanceof NPCBase npc)) {
+                continue;
+            }
+            if (npc.getEntityId() == e.getEntityId()) {
                 return true;
             }
         }

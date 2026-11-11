@@ -19,6 +19,7 @@ import net.mizukilab.pit.item.type.mythic.MythicSwordItem;
 import net.mizukilab.pit.util.Utils;
 import net.mizukilab.pit.util.chat.RomanUtil;
 import net.mizukilab.pit.util.item.ItemBuilder;
+import net.mizukilab.pit.util.item.ItemUtil;
 import net.mizukilab.pit.util.random.RandomUtil;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -193,8 +194,9 @@ public abstract class IMythicItem extends AbstractPitItem {
             }
             boolean genesisFound = false;
 
-            for (Map.Entry<AbstractEnchantment, Integer> entry : enchantments.entrySet()) {
-                getEnchantLore(lore, entry, enchantments.entrySet());
+            for (it.unimi.dsi.fastutil.objects.Object2IntMap.Entry<AbstractEnchantment> entry
+                    : enchantments.object2IntEntrySet()) {
+                getEnchantLore(lore, entry, enchantments.object2IntEntrySet());
                 if (entry.getKey().getRarity() == EnchantmentRarity.GENESIS) {
                     genesisFound = true;
                 }
@@ -242,35 +244,13 @@ public abstract class IMythicItem extends AbstractPitItem {
             lore.add("&8" + (equals ? "Refresh on table" : uuid.toString()));
         }
 
-        // 神话之锤：汇总攻速（C2）、击退抗性（12/63）与命中范围（35）到物品属性
+        // 说明：神话之锤（hammer_*）专属属性汇总依赖 main 分支的 112 个 hammer 附魔类，
+        // NextGen 基线不含该特性，这里保持中性取值，等该特性迁回时再恢复。
         double atsScalar = 0.0D;
         double kbResistance = 0.0D;
         double reachBonus = 0.0D;
-        for (Map.Entry<AbstractEnchantment, Integer> e : enchantments.entrySet()) {
-            if (!(e.getKey() instanceof net.mizukilab.pit.enchantment.type.hammer.HammerEnchantBase hb)) {
-                continue;
-            }
-            int lv = e.getValue();
-            double v = hb.valueAt(lv);
-            String nbt = hb.getNbtName();
-            switch (nbt) {
-                case "hammer_023", "hammer_065" -> {
-                    double t0 = 1.0D / 0.6D;
-                    atsScalar += t0 / (t0 + v) - 1.0D;
-                }
-                case "hammer_051" -> atsScalar += v / 100.0D;
-                case "hammer_012", "hammer_063" -> kbResistance += v / 100.0D;
-                case "hammer_035" -> reachBonus += v;
-                default -> {
-                }
-            }
-        }
-        atsScalar = Math.max(-0.30D, Math.min(0.30D, atsScalar));
-        kbResistance = Math.max(0.0D, Math.min(1.0D, kbResistance));
-        reachBonus = Math.max(0.0D, Math.min(0.7D, reachBonus));
 
-        double mythicItemDamage = this instanceof IMythicSword sword ? sword.getItemDamage()
-                : (this instanceof net.mizukilab.pit.item.IMythicHammer hammer ? hammer.getItemDamage() : -1.0D);
+        double mythicItemDamage = this instanceof IMythicSword sword ? sword.getItemDamage() : -1.0D;
         if (mythicItemDamage >= 0) {
             builder
                     .lore(lore)
@@ -472,6 +452,40 @@ public abstract class IMythicItem extends AbstractPitItem {
 
     public int getEnchantmentLevel(AbstractEnchantment abstractEnchantment) {
         return this.enchantments.getInt(abstractEnchantment);
+    }
+
+    public boolean isDark() {
+        return this.color == MythicColor.DARK;
+    }
+
+    public boolean isRage() {
+        return this.color == MythicColor.RAGE;
+    }
+
+    /**
+     * 是否还能用附魔书：已被书加成、愤怒类与黑暗类物品都不行。
+     */
+    public boolean canUseBook() {
+        return !(this.boostedByBook || this.isRage() || this.isDark());
+    }
+
+    /**
+     * 判断给定物品堆是否仍由本实例（同一 UUID + 同一内部名）生成。
+     *
+     * <p>1.21 迁移：原实现逐条比对 NBT {@code ench} 列表；改用 PDC 后附魔数据由
+     * {@code ItemBuilder} 写入，UUID 已经是物品实例的唯一标识，这里用
+     * UUID + 内部名判定，避免依赖 PDC 内部键名。</p>
+     */
+    public boolean matchesEnchantmentSource(ItemStack stack) {
+        if (stack == null || this.uuid == null) {
+            return false;
+        }
+        String storedUuid = ItemUtil.getUUID(stack);
+        if (storedUuid == null || !this.uuid.toString().equals(storedUuid)) {
+            return false;
+        }
+        String internalName = ItemUtil.getInternalName(stack);
+        return internalName != null && internalName.equals(this.getInternalName());
     }
 
     public String toString() {

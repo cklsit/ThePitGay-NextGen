@@ -117,7 +117,12 @@ class Regularity : AbstractEnchantment(), Listener {
                             }
                         }
                         victim.noDamageTicks = 0;
-                        victim.damage(event.damage * boost, attacker)
+                        markFollowUp(attacker, victim)
+                        try {
+                            victim.damage(event.damage * boost, attacker)
+                        } finally {
+                            clearFollowUp()
+                        }
 
                         victim.setMetadata(
                             "regularity",
@@ -126,6 +131,27 @@ class Regularity : AbstractEnchantment(), Listener {
                     }
                 }.runTaskLater(ThePit.getInstance(), 5L)
             }
+        }
+    }
+
+    companion object {
+        /** 「狂暴连击」的第二次攻击在同一线程内标记，避免 GameEffectListener 把它当成新的一击重复结算。 */
+        private val followUp = ThreadLocal<Pair<Player, org.bukkit.entity.Entity>>()
+
+        @JvmStatic
+        fun isFollowUp(attacker: Player, victim: org.bukkit.entity.Entity): Boolean {
+            val hit = followUp.get() ?: return false
+            return hit.first === attacker && hit.second === victim
+        }
+
+        @JvmStatic
+        fun markFollowUp(attacker: Player, victim: org.bukkit.entity.Entity) {
+            followUp.set(attacker to victim)
+        }
+
+        @JvmStatic
+        fun clearFollowUp() {
+            followUp.remove()
         }
     }
 }

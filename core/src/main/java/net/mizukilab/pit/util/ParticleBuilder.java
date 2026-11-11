@@ -1,22 +1,25 @@
 package net.mizukilab.pit.util;
 
-import net.minecraft.server.v1_8_R3.Packet;
-import net.minecraft.server.v1_8_R3.PacketPlayOutWorldParticles;
-import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
+import org.bukkit.Particle;
 
+/**
+ * 粒子播放工具。
+ * <p>
+ * 1.21 适配：移除 {@code EnumParticle} 与手写粒子包，改用 Bukkit {@link Particle} API，
+ * 由服务端自行处理可见范围与协议版本差异。
+ */
 public class ParticleBuilder {
     Location location;
-    org.bukkit.Particle particle;
+    Particle particle;
     float offsetX;
     float offsetY;
     float offsetZ;
     float velocity;
     int count;
 
-    public ParticleBuilder(Location location, org.bukkit.Particle particle) {
+    public ParticleBuilder(Location location, Particle particle) {
         this.location = location;
         this.particle = particle;
         this.offsetX = 0.0f;
@@ -27,8 +30,10 @@ public class ParticleBuilder {
     }
 
     public void play() {
-        PacketPlayOutWorldParticles pwp = new PacketPlayOutWorldParticles(this.particle, true, (float)this.location.getX(), (float)this.location.getY(), (float)this.location.getZ(), this.offsetX, this.offsetY, this.offsetZ, this.velocity, this.count, new int[0]);
-        Bukkit.getOnlinePlayers().forEach(p -> ((CraftPlayer)p).getHandle().playerConnection.sendPacket(pwp));
+        if (location.getWorld() == null) {
+            return;
+        }
+        location.getWorld().spawnParticle(particle, location, count, offsetX, offsetY, offsetZ, velocity);
     }
 
     public ParticleBuilder setOffsetX(float offsetX) {
@@ -56,17 +61,30 @@ public class ParticleBuilder {
         return this;
     }
 
-    public static void playColored(Location loc, Color color, org.bukkit.Particle ep) {
-        PacketPlayOutWorldParticles p1 = new PacketPlayOutWorldParticles(ep, true, (float)loc.getX(), (float)loc.getY(), (float)loc.getZ(), (float)color.getRed() / 255.0f, (float)color.getGreen() / 255.0f, (float)color.getBlue() / 255.0f, 1.0f, 0, new int[0]);
-        Bukkit.getOnlinePlayers().forEach(p -> ((CraftPlayer)p).getHandle().playerConnection.sendPacket((Packet)p1));
+    /**
+     * 旧实现用 REDSTONE / SPELL_MOB 的 offset 分量携带 RGB，1.21 改为 DustOptions / EntityEffect 的 data。
+     */
+    public static void playColored(Location loc, Color color, Particle particle) {
+        if (loc.getWorld() == null) {
+            return;
+        }
+        if (particle == Particle.DUST) {
+            loc.getWorld().spawnParticle(Particle.DUST, loc, 0, 0, 0, 0, 1,
+                    new Particle.DustOptions(color, 1.0f));
+            return;
+        }
+        if (particle == Particle.ENTITY_EFFECT) {
+            loc.getWorld().spawnParticle(Particle.ENTITY_EFFECT, loc, 0, 0, 0, 0, 1, color);
+            return;
+        }
+        loc.getWorld().spawnParticle(particle, loc, 1, 0, 0, 0, 0);
     }
 
     public static void playColoredDust(Location loc, Color color) {
-        ParticleBuilder.playColored(loc, color, Particle.REDSTONE);
+        ParticleBuilder.playColored(loc, color, Particle.DUST);
     }
 
     public static void playColoredSpell(Location loc, Color color) {
-        ParticleBuilder.playColored(loc, color, Particle.SPELL_MOB);
+        ParticleBuilder.playColored(loc, color, Particle.ENTITY_EFFECT);
     }
 }
-

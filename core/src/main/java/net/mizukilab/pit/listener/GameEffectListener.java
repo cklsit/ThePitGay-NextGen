@@ -147,6 +147,8 @@ public class GameEffectListener implements Listener {
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onPlayerDamagePlayer(EntityDamageByEntityEvent event) {
+        Entity damagerEntity = event.getDamager();
+        Entity entity = event.getEntity();
         // NextGen：实体已死亡时不再结算（避免对尸体重复触发）
         if (event.getEntity() instanceof org.bukkit.entity.LivingEntity le && le.getHealth() <= 0) {
             event.setCancelled(true);
@@ -332,7 +334,6 @@ public class GameEffectListener implements Listener {
             }
             //mirror enchant code end
             player.setLastDamageCause(event);
-            EntityPlayer handle = ((CraftPlayer) player).getHandle();
             if (damager != null) {
                 // 1.21：击杀者归属用 metadata 记录（死亡结算读取）
                 player.setMetadata("pit_killer", new org.bukkit.metadata.FixedMetadataValue(

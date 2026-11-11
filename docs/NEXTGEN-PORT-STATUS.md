@@ -17,11 +17,42 @@
 | 项 | 值 |
 |---|---|
 | Kotlin 编译 | **0 错误** |
-| Bot 模块（`cn.mythicland.npclib.bot.*` + `BotManager`） | **0 错误**（独立 javac 验证：22 源文件 → 65 个 class） |
-| Java 全量编译 | javac 自报 **1911 条**（只显示前 100 条），全部在 Bot 模块之外 |
-| 可打包 | 否（Java 未过） |
+| Java 全量编译（`:core:compileJava`） | **0 错误** ✅ |
+| `:core:shadowJar` | **成功**，产出 `core/build/libs/ThePitGay-V.jar`（约 18MB） |
+| 可上线 | **待测试服验证**（编译与打包已通，运行时未实测） |
 
-Bot 模块的独立验证命令见本文末「验证方式」，改 Bot 相关代码后必须跑一遍。
+验证命令：`tools/compile-check.ps1`（javac 直编，0 错误）+ `.\gradlew.bat :core:shadowJar`。
+
+## 本轮完成：全量 Java 编译清零（1911 → 0）
+
+1. **发包层统一 PacketEvents 2.14**：`cn/mythicland/npclib/nms/packetevents/NPC_PacketEvents` 取代
+   `NPC_v1_8_R3` 与 6 个 `PacketPlayOut*Wrapper`；`SignGui` / `VisibleApi` / `PlayerMarco` / `PetFactory`
+   全部改 PacketEvents；`ThePit` 补 `onLoad` 的 `setAPI/load` 与 `onEnable` 的 `init`、`onDisable` 的 `terminate`。
+2. **物品与数据层**：`ItemBuilder`/`ItemUtil`/`InventoryUtil` 的 NBT 全改 PDC（`ItemData`），
+   背包序列化改 `ItemStack#serializeAsBytes`；`PublicUtil.toNMStackQuick` 改返回 Bukkit `ItemStack`。
+3. **1.8 常量批量迁移**：Sound / Material / PotionEffectType / Enchantment 全部换成 1.21 名
+   （批量替换脚本处理了 100+ 文件；`STAINED_GLASS*`、`STAINED_CLAY` 按数据值映射到对应染色材质）。
+4. **事件与 UI**：`CakeEvent` 蛋糕切片改方块状态 `Cake#getBites`；`EventWorldEdits`/`SpireEvent`/`HamburgerEvent`
+   改 WorldEdit 7 API（`libs/` 换成 `FastAsyncWorldEdit-Paper-2.16.2.jar`，删掉 WE6 两个旧 jar）；
+   `Hologram`/`PacketArmorStand`/`CustomEntityNPCFactory` 改真实实体 + `hideEntity/showEntity`。
+5. **补齐缺失类**：`AnimationRunnable`/`ClearRunnable`/`ProfileLoadRunnable`（1.8.8 基线导入时丢失）、
+   `ItemTypes`、`IMythicHammer` + `MythicHammerItem`（hammer 特性占位）、`PitItemButton` 增加 `Supplier` 构造。
+6. **构建**：新增 `tools/compile-check.ps1`（javac 直编 + Lombok 强制生效 + 按文件汇总）、
+   `tools/print-classpath.gradle`、`tools/verify-bot.ps1`、`gradle/libs.versions.toml` 补 paper/packetevents。
+
+### 关键陷阱（本轮踩到的，务必保留）
+
+- **Lombok 门禁**：只要任一编译单元有 enter 阶段错误（import 的包/类不存在），javac 会整体跳过注解处理，
+  于是所有 `@Getter/@Data/@RequiredArgsConstructor` 生成物都变成 `cannot find symbol`，错误数虚高十倍以上。
+  `tools/compile-check.ps1` 用 `-XDshould-stop.ifError=GENERATE`（必须写在命令行，不能放 @argfile）绕过。
+- **批量替换要按「长串优先」**：`PotionEffectType.SLOW` 先于 `SLOW_DIGGING` 替换会得到
+  `SLOWNESS_DIGGING`；`Material.BED` 会把 `BEDROCK` 变成 `RED_BEDROCK`；`Material.WOOD` 会污染
+  `WOODEN_SWORD`。本轮已出现并修复 4 处此类反噬。
+- **不要用 PowerShell `Get-Content`/`Set-Content` 批改中文源码**：默认按 ANSI 解码会把中文写成乱码，
+  甚至破坏字符串字面量；用编辑工具或 `.NET + UTF8Encoding(false)` 显式读写。
+- **`-XDshould-stop.ifError` 下 javac 一次只报 1-2 条错误**，需要「修一批 → 重跑」迭代；
+  批量常量迁移要用脚本一次清完。
+
 
 ## 本轮完成：Bot 模块重写（1.8 NMS → 1.21.8 真实登录）
 
@@ -118,27 +149,34 @@ Player#attack(Entity) / resetAttackStrengthTicker() / getGameProfile() / getDisp
 8. 改文件前先 `grep -c` 校验；批量替换必须带安全网（替换后重新编译，错误数上升就回滚）；
    不要在同一个文件里并发发多个编辑；`s.find()` 可能返回 -1，切片前必须断言。
 
-## 剩余错误（首批可见，均在 Bot 模块之外）
-
-```
-PublicUtil 6 · FishingHandler 6 · ItemBuilder 5 · SignGui 5 · PlayerMarco 3 · ActionBarUtil 3
-PetFactory 3 · ProtectListener 2 · BatUtil 2 · CombatListener 2 · ExpireListener 2
-Scoreboard 1 · PlayerMoveHandler 1 · PlayerProfile 1 · EventFactory 1 · HemorrhageDeBuff 1 · HitTickGuard 1 · …（共 1911 条，级联放大）
-```
-
-主要根因：`net.minecraft.server.v1_8_R3` / `org.bukkit.craftbukkit.v1_8_R3` 残留、1.8 已移除的 Bukkit API
-（`Block#getData`、`World#spawnFallingBlock(Material,byte)`、`Sound.BURP`、`EntityDismountEvent` 等）、
-`net.mizukilab.pit.enchantment.runnable.AnimationRunnable` 缺文件。
-`npclib` 的 `nms/v1_8_R3/*` 包（NPC 发包层，非 Bot）同样仍是 1.8 实现，共 7 个文件。
-
 ## 下一步（按顺序）
 
-1. 逐个清掉 `npclib/nms/v1_8_R3/*`（NPC 发包层，7 个文件）——与 Bot 同源，可用同一套 javap 结论
-2. `ItemBuilder` / `SignGui` / `PetFactory` / `PlayerMoveHandler` / `FishingHandler` 等 NMS 与 1.8 API 文件
-3. 全量编译通过 → `shadowJar` 出包
-4. 部署测试服验证机器人：出现 / 可被击杀 / 加连杀 / 重生 / 进服不同步崩服
-   - 重点观察：keep-alive 超时（假连接不回包）、`PlayerJoinEvent`/`PlayerQuitEvent` 副作用、
-     `Bukkit.getOnlinePlayers()` 现在**包含**机器人（与原 1.8 行为不同，接手者须知）
+1. **测试服冒烟**（见下方清单），按反馈修运行时问题
+2. 数据格式变化要在测试服确认：自定义数据 `NBT tag.extra` → PDC、背包序列化 `ItemStack#serializeAsBytes`
+   （旧存档不能直读，main 也是新格式）
+3. 视觉回查：染色玻璃/染色陶瓦按数据值映射，个别动态颜色（`ItemBuilder.durability(color)` 动态传值）
+   先统一落到灰色系，需要按实际效果再调
+
+## 测试服冒烟清单
+
+**部署**：把 `core/build/libs/ThePitGay-V.jar` 放到 Paper 1.21.8 的 plugins/，启动看控制台。
+
+启动阶段（重点看异常，不是看报错多少）：
+- [ ] `onLoad` 不报 `PacketEvents` 相关异常；`PacketEvents.getAPI().init()` 成功
+- [ ] `EventFactory` 反射注册事件无 `NoClassDefFoundError`（WorldEdit 7 / FAWE 2.16.2）
+- [ ] 无 `NoSuchMethodError` / `NoClassDefFoundError`（说明 shade 的库版本对得上）
+- [ ] `Done (xx.xxxs)` 正常
+
+功能：
+- [ ] NPC 正常显示：玩家皮肤 NPC / 村民 NPC、朝 player 转身、装备/动画、重复重启不堆叠
+- [ ] 全息文字跟随 NPC 传送、NPC 销毁后全息实体不残留
+- [ ] 物品：`/pi` 拿神话物品、附魔台附魔动画、仓库（寄存箱）存取、告示牌 GUI 打开可输入
+- [ ] 战斗：平砍伤害数值合理、连杀/赏金/复仇结算、宠物死亡结算
+- [ ] 计分板、tab、名牌、聊天 hover/click（`ChatComponentBuilder`）
+- [ ] 事件：尖塔/蛋糕/汉堡等 WorldEdit 事件能正常刷地形并撤回
+- [ ] **机器人**：能被创建、出现在世界里、可被攻击/击杀、触发连杀、按 respawnDelay 重生；
+      注意机器人现在会出现在在线玩家列表里（`Bukkit.getOnlinePlayers()` 包含机器人），
+      加入/退出事件也会触发（已屏蔽加入广播）
 
 ## 验证方式
 

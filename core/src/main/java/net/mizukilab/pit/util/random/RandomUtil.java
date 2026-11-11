@@ -35,6 +35,14 @@ public class RandomUtil {
         return ThreadLocalRandom.current();
     }
 
+    /**
+     * 附魔抽奖流程会先「换种子」再抽。底层是 {@link SecureRandom}，本身就带熵源，
+     * 这里补一次新种子（setSeed 只追加种子、不重置序列），保留原有调用语义。
+     */
+    public static void switchSeed() {
+        random.setSeed(System.nanoTime() ^ System.identityHashCode(Thread.currentThread()));
+    }
+
     public static String randomStr() {
         String s = "ABCDEFGHIJKLMNPQRSTUVXYZ1234567890";
         char[] c = s.toCharArray();

@@ -9,7 +9,6 @@ import net.mizukilab.pit.enchantment.param.item.BowOnly;
 import net.mizukilab.pit.parm.listener.IPlayerShootEntity;
 import net.mizukilab.pit.util.PlayerUtil;
 import org.bukkit.Bukkit;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftArrow;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -45,6 +44,7 @@ public final class BowComboEnchant extends AddonEnchantReplacements.Replacement
         final Player shooter;
         final int level;
         boolean collided;
+        boolean blockHit;
         EntityDamageByEntityEvent damage;
         BukkitTask task;
         Hit(Arrow arrow, Player shooter, int level) {
@@ -99,7 +99,11 @@ public final class BowComboEnchant extends AddonEnchantReplacements.Replacement
     public void onBowHit(ProjectileHitEvent event) {
         if (event.getEntity() instanceof Arrow arrow) {
             Hit hit = track(arrow);
-            if (hit != null) hit.collided = true;
+            if (hit != null) {
+                hit.collided = true;
+                // 1.21 的 ProjectileHitEvent 已在碰撞后触发并带命中信息：命中方块即未命中实体
+                hit.blockHit = event.getHitBlock() != null;
+            }
         }
     }
 
@@ -127,8 +131,8 @@ public final class BowComboEnchant extends AddonEnchantReplacements.Replacement
         } else {
             // 1.8 fires ProjectileHitEvent BEFORE updating inGround / attempting damage.
             // An entity collision leaves inGround false even when no damage event is emitted.
-            // Check inGround even for a dead arrow: removing a wall-hit arrow is still a miss.
-            landed = hit.collided && hit.arrow instanceof CraftArrow craft && !craft.getHandle().isInGround();
+            // 1.21 用命中方块判定同一语义：撞墙的箭即使已经死亡，也算未命中。
+            landed = hit.collided && !hit.blockHit;
         }
         UUID id = player.getUniqueId();
         if (!landed) { combo.remove(id); return; }

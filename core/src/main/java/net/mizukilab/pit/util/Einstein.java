@@ -4,9 +4,7 @@ import cn.charlotte.pit.ThePit;
 import it.unimi.dsi.fastutil.ints.IntIterator;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import lombok.experimental.UtilityClass;
-import net.minecraft.server.v1_8_R3.EntityPlayer;
 import org.bukkit.Bukkit;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
@@ -47,14 +45,7 @@ public class Einstein {
         player.setVelocity(vector_0);
     }
     public void noVelocity(Player player){
-        if(player instanceof CraftPlayer h) {
-            EntityPlayer handle = h.getHandle();
-            handle.velocityChanged = false;
-            handle.motX = 0;
-            handle.motY = 0;
-            handle.motZ = 0;
-            return;
-        }
+        // 1.21：直接清零服务端速度即可；旧的 velocityChanged/motX 字段已随 NMS Entity 一起移除
         player.setVelocity(vector);
     }
     public void flushPos(Player player) {

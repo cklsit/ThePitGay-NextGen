@@ -2,6 +2,7 @@ package net.mizukilab.pit.npc;
 
 import cn.charlotte.pit.ThePit;
 import cn.mythicland.npclib.internal.NPCManager;
+import org.bukkit.craftbukkit.entity.CraftEntity;
 import org.bukkit.entity.Entity;
 
 /** Constant-time recognition without loading an optional NPC plugin's classes. */
@@ -14,7 +15,10 @@ public final class NpcIdentity {
         @Override protected Boolean computeValue(Class<?> type) {
             for (Class<?> current = type; current != null; current = current.getSuperclass()) {
                 String name = current.getName();
-                if (name.equals("cn.mythicland.npclib.bot.v1_8_R3.BotEntity")
+                // 1.21 的 Bot 仍是真实 ServerPlayer 子类，包名保留 v1_8_R3 命名空间，
+                // 因此按后缀匹配以兼容被 shade 重定位过的副本。
+                if (name.endsWith(".bot.v1_8_R3.BotEntity")
+                        || name.equals("cn.mythicland.npclib.bot.v1_8_R3.BotEntity")
                         || name.equals("net.mizukilab.pit.libs.npclib.bot.v1_8_R3.BotEntity")
                         || name.equals("cn.mx.thepitaddon.npc.lib.bot.v1_8_R3.BotEntity")) return true;
             }
@@ -23,8 +27,8 @@ public final class NpcIdentity {
     };
 
     public static boolean isMythicBot(Entity entity) {
-        return entity instanceof org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer player
-                && player.getHandle() != null && isMythicBotType(player.getHandle().getClass());
+        return entity instanceof CraftEntity craft && craft.getHandle() != null
+                && isMythicBotType(craft.getHandle().getClass());
     }
 
     static boolean isMythicBotType(Class<?> type) { return MYTHIC_BOTS.get(type); }
@@ -32,10 +36,6 @@ public final class NpcIdentity {
     public static boolean isNpc(Entity entity) {
         if (entity == null) return false;
         if (isMythicBot(entity)) return true;
-        // Keep recognition of legacy EntityPlayer subclasses used by older bots.
-        if (entity instanceof org.bukkit.craftbukkit.v1_8_R3.entity.CraftEntity craft
-                && craft.getHandle() != null
-                && craft.getHandle().getClass().getSuperclass() == net.minecraft.server.v1_8_R3.EntityPlayer.class) return true;
         if (NPCManager.getByEntityId(entity.getEntityId()) != null
                 || entity.hasMetadata("NPC") || entity.hasMetadata("Bot")) return true;
         ThePit core = ThePit.getInstance();

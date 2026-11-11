@@ -8,7 +8,6 @@ import cn.charlotte.pit.event.PitRegainHealthEvent;
 import cn.charlotte.pit.events.trigger.type.IEpicEvent;
 import cn.charlotte.pit.perk.AbstractPerk;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.minecraft.server.v1_8_R3.*;
 import net.mizukilab.pit.UtilKt;
 import net.mizukilab.pit.event.CanImmuneEvent;
 import net.mizukilab.pit.event.TrueDamageByEntityEvent;
@@ -19,16 +18,16 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.v1_8_R3.CraftWorld;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftEntity;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
+import org.bukkit.Particle;
 import org.bukkit.entity.Chicken;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.metadata.MetadataValue;
 import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.Collection;
 import java.util.List;
@@ -56,20 +55,15 @@ public class PlayerUtil {
     }
 
     public static void addAbsorptionHearts(Player player, float extraHearts) {
-        if (player instanceof CraftPlayer) {
-            CraftPlayer craftPlayer = (CraftPlayer) player;
-            float currentHearts = craftPlayer.getHandle().getAbsorptionHearts();
-            if (currentHearts < 40) {
-                craftPlayer.getHandle().setAbsorptionHearts(currentHearts + extraHearts);
-            }
+        // 1.21锛氬惛鏀朵激瀹崇敱 Bukkit 鎶借薄锛屼笉鍐嶉渶瑕?CraftPlayer#getHandle
+        double currentHearts = player.getAbsorptionAmount();
+        if (currentHearts < 40) {
+            player.setAbsorptionAmount(currentHearts + extraHearts);
         }
     }
 
     public static void clearAbsorptionHearts(Player player) {
-        if (player instanceof CraftPlayer) {
-            CraftPlayer craftPlayer = (CraftPlayer) player;
-            craftPlayer.getHandle().setAbsorptionHearts(0);
-        }
+        player.setAbsorptionAmount(0);
     }
 
     public static boolean isEquippingSomber(Player player) {
@@ -78,8 +72,12 @@ public class PlayerUtil {
     }
 
     public static boolean critical(Player player) {
-        final EntityPlayer entityPlayer = ((CraftPlayer) player).getHandle();
-        return entityPlayer.fallDistance > 0.0F && !entityPlayer.onGround && !entityPlayer.k_() && !entityPlayer.V() && !entityPlayer.hasEffect(MobEffectList.BLINDNESS) && entityPlayer.vehicle == null;
+        // 瀵瑰簲鏃у疄鐜扮殑 fallDistance/onGround/eyesInWater/vehicle/澶辨槑 鍒ゅ畾
+        return player.getFallDistance() > 0.0F
+                && !player.isOnGround()
+                && !player.isInWater()
+                && !player.isInsideVehicle()
+                && player.getPotionEffect(PotionEffectType.BLINDNESS) == null;
     }
 
     /** Legacy API name used by already compiled addons. */
@@ -87,17 +85,17 @@ public class PlayerUtil {
         return critical(player);
     }
 
-    //如果自身穿着黑裤/被毒则无法使用附魔 (适用于无目标附魔)
+    //濡傛灉鑷韩绌跨潃榛戣￥/琚瘨鍒欐棤娉曚娇鐢ㄩ檮榄?(閫傜敤浜庢棤鐩爣闄勯瓟)
     public static boolean shouldIgnoreEnchant(Player self) {
         boolean sinkingMoonlight = PlayerUtil.isSinkingMoonlight(self);
         if (sinkingMoonlight) return true;
         return isEquippingSomber(self) || isVenom(self); //|| sinkingMoonlight; always false plz
     }
 
-    public static boolean shouldIgnoreEnchant(Player self, org.bukkit.entity.Entity target) { //大合集
-        boolean sinkingMoonlight = PlayerUtil.isSinkingMoonlight(self); //缓存结果
+    public static boolean shouldIgnoreEnchant(Player self, org.bukkit.entity.Entity target) { //澶у悎闆?
+        boolean sinkingMoonlight = PlayerUtil.isSinkingMoonlight(self); //缂撳瓨缁撴灉
         if (sinkingMoonlight) return true;
-        if (target instanceof Player player) { //对其他人使用
+        if (target instanceof Player player) { //瀵瑰叾浠栦汉浣跨敤
             boolean equipSomberTarget;
             boolean isVenom;
             if (isNPC(player)) {
@@ -108,15 +106,15 @@ public class PlayerUtil {
                 isVenom = isVenom(player);
             }
             return isEquippingSomber(self) || isVenom(self) || (equipSomberTarget && !isEquippingArmageddon(self)) || isVenom;
-        } else { //如果他不是人或者null
+        } else { //濡傛灉浠栦笉鏄汉鎴栬€卬ull
             return isEquippingSomber(self) || isVenom(self);
         }
     }
 
-    /*  public static boolean shouldIgnoreEnchant(PlayerProfile selfPro,PlayerProfile targetProf,Player self, org.bukkit.entity.Entity target){ //大合集
-          boolean sinkingMoonlight = PlayerUtil.isSinkingMoonlight(self); //缓存结果
+    /*  public static boolean shouldIgnoreEnchant(PlayerProfile selfPro,PlayerProfile targetProf,Player self, org.bukkit.entity.Entity target){ //澶у悎闆?
+          boolean sinkingMoonlight = PlayerUtil.isSinkingMoonlight(self); //缂撳瓨缁撴灉
           if (sinkingMoonlight) return true;
-          if(target instanceof Player player){ //对其他人使用
+          if(target instanceof Player player){ //瀵瑰叾浠栦汉浣跨敤
               boolean equipSomberTarget;
               boolean isVenom;
               if(isNPC(player)){
@@ -131,20 +129,20 @@ public class PlayerUtil {
                   isVenom = isVenom(player);
               }
               return isEquippingSomberFast(selfPro) || isVenom(self) || (equipSomberTarget && !isEquippingArmageddon(self)) || isVenom;
-          } else { //如果他不是人或者null
+          } else { //濡傛灉浠栦笉鏄汉鎴栬€卬ull
               return isEquippingSomberFast(selfPro) || isVenom(self);
           }
-      }*/ //无影响
-    //自身对其他人使用附魔时附魔是否应该失效 (适用于有目标附魔)
+      }*/ //鏃犲奖鍝?
+    //鑷韩瀵瑰叾浠栦汉浣跨敤闄勯瓟鏃堕檮榄旀槸鍚﹀簲璇ュけ鏁?(閫傜敤浜庢湁鐩爣闄勯瓟)
     public static boolean shouldIgnoreEnchant(Player self, Player target) {
         boolean sinkingMoonlight = PlayerUtil.isSinkingMoonlight(self);
         if (sinkingMoonlight) return true;
 
-        //自身穿黑裤时必定失效 && 自身被沉默时必定生效 && 其他人穿黑裤且自身没有鞋子时失效 && 对方被沉默时失效
+        //鑷韩绌块粦瑁ゆ椂蹇呭畾澶辨晥 && 鑷韩琚矇榛樻椂蹇呭畾鐢熸晥 && 鍏朵粬浜虹┛榛戣￥涓旇嚜韬病鏈夐瀷瀛愭椂澶辨晥 && 瀵规柟琚矇榛樻椂澶辨晥
         return isEquippingSomber(self) || isVenom(self) || (isEquippingSomber(target) && !isEquippingArmageddon(self)) || isVenom(target);
     }
 
-    //进行合并方法
+    //杩涜鍚堝苟鏂规硶
     public static boolean isNPC(org.bukkit.entity.Entity entity) {
         return net.mizukilab.pit.npc.NpcIdentity.isNpc(entity);
     }
@@ -186,13 +184,13 @@ public class PlayerUtil {
     }
 
     /**
-     * 对玩家造成伤害,仅判断伤害能否被造成与造成伤害,不进行其他操作
+     * 瀵圭帺瀹堕€犳垚浼ゅ,浠呭垽鏂激瀹宠兘鍚﹁閫犳垚涓庨€犳垚浼ゅ,涓嶈繘琛屽叾浠栨搷浣?
      *
-     * @param victim     受到伤害的目标
-     * @param damageType 伤害类型
-     * @param damage     伤害量
-     * @param canImmune  此伤害能否被免疫 / 降低
-     * @return 此伤害是否被免疫
+     * @param victim     鍙楀埌浼ゅ鐨勭洰鏍?
+     * @param damageType 浼ゅ绫诲瀷
+     * @param damage     浼ゅ閲?
+     * @param canImmune  姝や激瀹宠兘鍚﹁鍏嶇柅 / 闄嶄綆
+     * @return 姝や激瀹虫槸鍚﹁鍏嶇柅
      */
     public static boolean damage(Player victim, DamageType damageType, double damage, boolean canImmune) {
         boolean immune = false;
@@ -236,19 +234,19 @@ public class PlayerUtil {
     }
 
     /**
-     * 对玩家造成来源类型为玩家的伤害
+     * 瀵圭帺瀹堕€犳垚鏉ユ簮绫诲瀷涓虹帺瀹剁殑浼ゅ
      *
-     * @param attacker   伤害来源(类型玩家)
-     * @param victim     受到伤害的目标
-     * @param damageType 伤害类型
-     * @param damage     伤害量
-     * @param canImmune  此伤害能否被免疫 / 降低
-     * @return 此伤害是否被免疫
+     * @param attacker   浼ゅ鏉ユ簮(绫诲瀷鐜╁)
+     * @param victim     鍙楀埌浼ゅ鐨勭洰鏍?
+     * @param damageType 浼ゅ绫诲瀷
+     * @param damage     浼ゅ閲?
+     * @param canImmune  姝や激瀹宠兘鍚﹁鍏嶇柅 / 闄嶄綆
+     * @return 姝や激瀹虫槸鍚﹁鍏嶇柅
      */
     public static void damage(Player attacker, Player victim, DamageType damageType, double damage, boolean canImmune) {
         boolean immune = damage(victim, damageType, damage, canImmune);
         if (immune) {
-            //Mirror附魔反弹伤害
+            //Mirror闄勯瓟鍙嶅脊浼ゅ
             if (damageType == DamageType.TRUE) {
                 TrueDamageByEntityEvent trueDamageByEntityEvent = new TrueDamageByEntityEvent(attacker, victim, canImmune,damage);
                 trueDamageByEntityEvent.callEvent();
@@ -385,19 +383,19 @@ public class PlayerUtil {
         ItemStack[] is = player.getInventory().getArmorContents();
         for (ItemStack i : is) {
             Material type = i.getType();
-            if (type == Material.LEATHER_HELMET || type == Material.LEATHER_BOOTS || type == Material.GOLD_BOOTS || type == Material.CHAINMAIL_BOOTS) {
+            if (type == Material.LEATHER_HELMET || type == Material.LEATHER_BOOTS || type == Material.GOLDEN_BOOTS || type == Material.CHAINMAIL_BOOTS) {
                 defense += 1;
             }
-            if (type == Material.LEATHER_LEGGINGS || type == Material.GOLD_HELMET || type == Material.CHAINMAIL_HELMET || type == Material.IRON_HELMET) {
+            if (type == Material.LEATHER_LEGGINGS || type == Material.GOLDEN_HELMET || type == Material.CHAINMAIL_HELMET || type == Material.IRON_HELMET) {
                 defense += 2;
             }
-            if (type == Material.LEATHER_CHESTPLATE || type == Material.GOLD_LEGGINGS || type == Material.DIAMOND_HELMET || type == Material.DIAMOND_BOOTS) {
+            if (type == Material.LEATHER_CHESTPLATE || type == Material.GOLDEN_LEGGINGS || type == Material.DIAMOND_HELMET || type == Material.DIAMOND_BOOTS) {
                 defense += 3;
             }
             if (type == Material.CHAINMAIL_LEGGINGS) {
                 defense += 4;
             }
-            if (type == Material.GOLD_CHESTPLATE || type == Material.CHAINMAIL_CHESTPLATE || type == Material.IRON_LEGGINGS) {
+            if (type == Material.GOLDEN_CHESTPLATE || type == Material.CHAINMAIL_CHESTPLATE || type == Material.IRON_LEGGINGS) {
                 defense += 5;
             }
             if (type == Material.IRON_CHESTPLATE || type == Material.DIAMOND_LEGGINGS) {
@@ -456,10 +454,8 @@ public class PlayerUtil {
         }
         player.setGameMode(GameMode.SURVIVAL);
 
-        EntityPlayer entityPlayer = ((CraftPlayer) player).getHandle();
-        entityPlayer.getDataWatcher().watch(9, (byte) 0);
-        entityPlayer.removeAllEffects();
-        entityPlayer.setAbsorptionHearts(0.0F);
+        player.setAbsorptionAmount(0.0F);
+        player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
         //temp disable
         player.setWalkSpeed(0.2F);
 
@@ -548,14 +544,11 @@ public class PlayerUtil {
     }
 
     public static void playThunderEffect(Location thunderLocation) {
-        EntityLightning lightning = new EntityLightning(
-                ((CraftWorld) thunderLocation.getWorld()).getHandle(), thunderLocation.getX(), thunderLocation.getY(), thunderLocation.getZ(), true, true
-        );
-
-        PacketPlayOutSpawnEntityWeather packet = new PacketPlayOutSpawnEntityWeather(lightning);
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            ((CraftPlayer) player).getHandle().playerConnection.sendPacket(packet);
+        if (thunderLocation.getWorld() == null) {
+            return;
         }
+        // strikeLightningEffect 只播放视觉与音效，不造成伤害/点燃
+        thunderLocation.getWorld().strikeLightningEffect(thunderLocation);
     }
 
     public static void addPotionEffect(Player player, PotionEffect effect) {
@@ -571,7 +564,7 @@ public class PlayerUtil {
         event.getPlayer().addPotionEffect(event.getPotionEffect(), force);
     }
 
-    public static void sendParticle(Location location, EnumParticle particle, int count) {
+    public static void sendParticle(Location location, Particle particle, int count) {
         new ParticleBuilder(location, particle).setCount(count).play();
     }
 

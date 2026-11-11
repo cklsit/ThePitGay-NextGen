@@ -20,7 +20,7 @@ import java.util.Arrays;
 public class CloverPixelShopButton extends Button {
     @Override
     public ItemStack getButtonItem(Player player) {
-        return new ItemBuilder(Material.STORAGE_MINECART).name("&a杂物").lore(Arrays.asList("&8", "&7&o购买你想购买的任何东西", "&7", "&e点击跳转!")).shiny().build();
+        return new ItemBuilder(Material.CHEST_MINECART).name("&a杂物").lore(Arrays.asList("&8", "&7&o购买你想购买的任何东西", "&7", "&e点击跳转!")).shiny().build();
     }
 
     @Override

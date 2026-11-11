@@ -1,9 +1,8 @@
 package net.mizukilab.pit.listener;
 
-import net.minecraft.server.v1_8_R3.NBTTagCompound;
-import net.mizukilab.pit.util.Utils;
+import cn.charlotte.pit.ThePit;
 import org.bukkit.ChatColor;
-import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -13,14 +12,23 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
+
 /*
  * author: APNF
  * date: 2025/9/12
  */
 
+/**
+ * 过期物品清理。
+ *
+ * <p>1.21 适配：原先从 NMS 的 {@code extra.expireTime} 复合标签读 long，改为读取物品
+ * 持久化数据容器（PDC）里的 {@code expire_time} 长整型。写入方若仍使用旧 NBT 结构，
+ * 需要同步改成 PDC 写入。</p>
+ */
 public class ExpireListener implements Listener {
-    private static final String NBT_KEY = "expireTime";
-    private static final String EXTRA_TAG = "extra";
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
@@ -43,28 +51,21 @@ public class ExpireListener implements Listener {
         checkInventory(event.getEntity().getInventory());
     }
 
+    private NamespacedKey expireKey() {
+        return new NamespacedKey(ThePit.getInstance(), "expire_time");
+    }
 
-    // 修复核心：从extra子标签中读取expireTime
     private long getExpireTime(ItemStack item) {
-        if (item == null) {
-            return 0;
+        if (item == null || !item.hasItemMeta()) {
+            return 0L;
         }
-
-        // 转换为NMS物品
-        // 草泥马的是不是脑残?
-        net.minecraft.server.v1_8_R3.ItemStack nmsItem = Utils.toNMStackQuick(item);
-        if (nmsItem == null || !nmsItem.hasTag()) {
-            return 0;
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) {
+            return 0L;
         }
-
-
-        NBTTagCompound rootTag = nmsItem.getTag();
-        NBTTagCompound extraTag = rootTag.getCompound(EXTRA_TAG);
-        if (extraTag == null) {
-            return 0;
-        }
-
-        return extraTag.hasKey(NBT_KEY) ? extraTag.getLong(NBT_KEY) : 0;
+        PersistentDataContainer container = meta.getPersistentDataContainer();
+        Long value = container.get(expireKey(), PersistentDataType.LONG);
+        return value == null ? 0L : value;
     }
 
     private void checkInventory(Inventory inv) {

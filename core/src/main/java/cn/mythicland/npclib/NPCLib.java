@@ -7,7 +7,7 @@ import cn.mythicland.npclib.api.PacketNpcOptions;
 import cn.mythicland.npclib.api.utilities.Logger;
 import cn.mythicland.npclib.internal.NPCBase;
 import cn.mythicland.npclib.listeners.*;
-import cn.mythicland.npclib.nms.v1_8_R3.NPC_v1_8_R3;
+import cn.mythicland.npclib.nms.packetevents.NPC_PacketEvents;
 import cn.mythicland.npclib.bot.*;
 import cn.mythicland.npclib.bot.v1_8_R3.BotEntity;
 import org.bukkit.Location;
@@ -70,7 +70,7 @@ public final class NPCLib implements Listener {
 
     // Binary-compatible entry points used by existing Addon / RepairExTend builds.
     public NPC createNPC() { return createNPC(null); }
-    public NPC createNPC(List<String> text) { return new NPC_v1_8_R3(this, text); }
+    public NPC createNPC(List<String> text) { return new NPC_PacketEvents(this, text); }
 
     public PacketNpc createPacketNpc(Location location) { return createPacketNpc(location, options -> { }); }
 
@@ -79,8 +79,8 @@ public final class NPCLib implements Listener {
         Objects.requireNonNull(location.getWorld(), "location world");
         PacketNpcOptions options = new PacketNpcOptions();
         Objects.requireNonNull(configure, "configure").accept(options);
-        NPCBase npc = options.profession() == null ? new NPC_v1_8_R3(this, options.text())
-                : NPC_v1_8_R3.villager(this, options.text(), options.profession());
+        NPCBase npc = options.profession() == null ? new NPC_PacketEvents(this, options.text())
+                : NPC_PacketEvents.villager(this, options.text(), options.profession());
         try {
             npc.setLocation(location);
             npc.setSkin(options.skin());

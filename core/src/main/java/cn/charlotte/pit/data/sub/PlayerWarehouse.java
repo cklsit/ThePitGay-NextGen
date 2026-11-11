@@ -38,7 +38,8 @@ public class PlayerWarehouse {
     public void snapshot(){
         snapshot = new HashMap<>();
         warehouses.forEach((key, value) -> {
-            Inventory inventory = Bukkit.createInventory(null, value.getSize(), value.getTitle());
+            // 1.21 的 Inventory 不再暴露标题，这里用与构造时一致的标题重建快照容器。
+            Inventory inventory = Bukkit.createInventory(null, value.getSize(), "寄存箱 #" + key);
             inventory.setContents(value.getContents());
             snapshot.put(key, inventory);
         });
@@ -122,7 +123,8 @@ public class PlayerWarehouse {
     }
 
     private ItemStack createBarrierPlaceholder() {
-        ItemStack glass = new ItemStack(Material.STAINED_GLASS_PANE, 1, (short) 15);
+        // 1.21：STAINED_GLASS_PANE + durability 15（黑色玻璃板）改成对应的染色玻璃板材质。
+        ItemStack glass = new ItemStack(Material.BLACK_STAINED_GLASS_PANE, 1);
         ItemMeta meta = glass.getItemMeta();
         meta.setDisplayName("§7储存格");
         glass.setItemMeta(meta);
@@ -138,7 +140,7 @@ public class PlayerWarehouse {
         }
     }
     private boolean isBarrierPlaceholder(ItemStack item) {
-        if (item == null || item.getType() != Material.STAINED_GLASS_PANE || item.getDurability() != 15) {
+        if (item == null || item.getType() != Material.BLACK_STAINED_GLASS_PANE) {
             return false;
         }
         ItemMeta meta = item.getItemMeta();

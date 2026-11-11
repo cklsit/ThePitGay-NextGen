@@ -19,7 +19,7 @@ public class AnimationButton extends Button {
 
     @Override
     public ItemStack getButtonItem(Player player) {
-        return new ItemBuilder(Material.STAINED_GLASS_PANE).durability(color).name("&c").build();
+        return new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE).durability(color).name("&c").build();
     }
 
     @Override

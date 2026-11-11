@@ -109,7 +109,7 @@ public class Bounty extends BukkitRunnable {
         float distance = PlayerUtil.getDistanceSQ(in, player);
         int viewDistance = dist;
         int value = viewDistance - 1;
-        int i = Einstein.clampi(value,0,viewDistance) << 4;
+        int i = Math.max(0, Math.min(viewDistance, value)) << 4;
         if (distance > (i * i)) {
             return true;
         }

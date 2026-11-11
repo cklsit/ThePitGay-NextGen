@@ -9,7 +9,6 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import lombok.SneakyThrows;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ClickEvent;
-import net.minecraft.server.v1_8_R3.MinecraftServer;
 import net.mizukilab.pit.util.SpecialUtil;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -199,7 +198,7 @@ public class CC {
     }
 
     public static void boardCast(String text) { //avoid the stacktrace
-        if (MinecraftServer.getServer().isRunning()) {
+        if (ThePit.getInstance() != null && ThePit.getInstance().isEnabled()) {
             Bukkit.getScheduler().runTaskAsynchronously(ThePit.getInstance(), () -> boardCast0(text));
         } else {
             boardCast0(text);
@@ -246,7 +245,7 @@ public class CC {
     }
 
     public static void send(MessageType type, Player player, String text) {
-        if (MinecraftServer.getServer().isRunning()) {
+        if (ThePit.getInstance() != null && ThePit.getInstance().isEnabled()) {
             Bukkit.getScheduler().runTaskAsynchronously(ThePit.getInstance(), () -> {
                 if (canPlayerSeeMessage(player, type)) {
                     player.sendMessage(CC.translate(text));

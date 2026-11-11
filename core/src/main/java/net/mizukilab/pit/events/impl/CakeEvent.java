@@ -4,15 +4,13 @@ import cn.charlotte.pit.ThePit;
 import cn.charlotte.pit.data.PlayerProfile;
 import cn.charlotte.pit.events.AbstractEvent;
 import cn.charlotte.pit.events.trigger.type.INormalEvent;
-import com.boydti.fawe.FaweAPI;
 import com.sk89q.worldedit.EditSession;
-import com.sk89q.worldedit.Vector;
-import com.sk89q.worldedit.blocks.BaseBlock;
-import com.sk89q.worldedit.blocks.BlockID;
-import com.sk89q.worldedit.bukkit.BukkitUtil;
-import com.sk89q.worldedit.bukkit.BukkitWorld;
+import com.sk89q.worldedit.WorldEdit;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.function.pattern.RandomPattern;
+import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.CuboidRegion;
+import com.sk89q.worldedit.world.block.BlockTypes;
 import net.mizukilab.pit.config.NewConfiguration;
 import net.mizukilab.pit.config.PitWorldConfig;
 import net.mizukilab.pit.medal.impl.challenge.CakeEventMedal;
@@ -88,21 +86,21 @@ public class CakeEvent extends AbstractEvent implements INormalEvent, Listener {
         if (valid.isEmpty()) throw new IllegalStateException("No valid cake regions configured");
         Location[] zone = valid.get(RandomUtil.random.nextInt(valid.size()));
         eventWorld = zone[0].getWorld();
-        final CuboidRegion region = new CuboidRegion(BukkitUtil.toVector(zone[0]), BukkitUtil.toVector(zone[1]));
-        final Vector pos1 = region.getPos1();
-        final Vector pos2 = region.getPos2();
+        final CuboidRegion region = new CuboidRegion(BukkitAdapter.asBlockVector(zone[0]), BukkitAdapter.asBlockVector(zone[1]));
+        final BlockVector3 pos1 = region.getMinimumPoint();
+        final BlockVector3 pos2 = region.getMaximumPoint();
         this.alignedBB = new AABB(pos1.getX(), pos1.getY(), pos1.getZ(), pos2.getX(), pos2.getY(), pos2.getZ());
 
         cn.charlotte.pit.events.EventWorldEdits.build(this, () -> {
-            BukkitWorld world = new BukkitWorld(eventWorld);
-            this.session = FaweAPI.getEditSessionBuilder(world).build();
+            com.sk89q.worldedit.world.World world = BukkitAdapter.adapt(eventWorld);
+            this.session = WorldEdit.getInstance().newEditSession(world);
 
             final RandomPattern pattern = new RandomPattern();
-            pattern.add(new BaseBlock(BlockID.CAKE_BLOCK), 0.94);
-            pattern.add(new BaseBlock(BlockID.STAINED_CLAY, 2), 0.03);
-            pattern.add(new BaseBlock(BlockID.STAINED_CLAY, 15), 0.03);
+            pattern.add(BlockTypes.CAKE, 0.94);
+            pattern.add(BlockTypes.ORANGE_TERRACOTTA, 0.03);
+            pattern.add(BlockTypes.BLACK_TERRACOTTA, 0.03);
 
-            session.setBlocks(region, pattern);
+            session.setBlocks((com.sk89q.worldedit.regions.Region) region, pattern);
 
             cn.charlotte.pit.events.EventWorldEdits.flush(session);
         });
@@ -170,14 +168,18 @@ public class CakeEvent extends AbstractEvent implements INormalEvent, Listener {
 
             cakePlayerData.cooldown = new Cooldown(100);
 
-            if (block.getType() == Material.CAKE_BLOCK) {
+            if (block.getType() == Material.CAKE) {
                 int baseCoins = 1;
 
-                if (block.getData() == 6) {
+                // 1.21：蛋糕的「已吃块数」是方块状态属性，不再用 Block#getData 的字节值。
+                org.bukkit.block.data.type.Cake cakeData =
+                        (org.bukkit.block.data.type.Cake) block.getBlockData();
+                if (cakeData.getBites() >= cakeData.getMaximumBites()) {
                     baseCoins += 5;
                     block.setType(Material.AIR);
                 } else {
-                    block.setData((byte) (block.getData() + 1));
+                    cakeData.setBites(cakeData.getBites() + 1);
+                    block.setBlockData(cakeData);
                 }
                 block.getState().update();
 
@@ -190,11 +192,11 @@ public class CakeEvent extends AbstractEvent implements INormalEvent, Listener {
                 profile.grindCoins(totalCoins);
                 profile.setCoins(profile.getCoins() + totalCoins);
 
-                player.playSound(player.getLocation(), Sound.EAT, 1, 1);
+                player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EAT, 1, 1);
 
                 CC.send(MessageType.EVENT, player, "&d&l蛋糕! &6+" + totalCoins + "金币 &d" + cakePlayerData.clicked + "次吃蛋糕" + " &6(" + numFormatTwo.format(cakePlayerData.coins) + "金币在这次事件中)");
 
-            } else if (block.getType() == Material.STAINED_CLAY) {
+            } else if (block.getType() == Material.TERRACOTTA) {
                 final byte data = block.getState().getData().getData();
                 if (data == 2) {
                     block.setType(Material.AIR);
@@ -206,7 +208,7 @@ public class CakeEvent extends AbstractEvent implements INormalEvent, Listener {
                     profile.grindCoins(totalCoins);
                     profile.setCoins(profile.getCoins() + totalCoins);
 
-                    player.playSound(player.getLocation(), Sound.EAT, 1, 1);
+                    player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EAT, 1, 1);
 
                     CC.send(MessageType.EVENT, player, "&d&l蛋糕! &7吃下了 &c樱桃 &6+20金币&7!");
                 } else if (data == 15) {
@@ -219,7 +221,7 @@ public class CakeEvent extends AbstractEvent implements INormalEvent, Listener {
                     profile.setExperience(profile.getExperience() + totalXp);
                     profile.applyExperienceToPlayer(player);
 
-                    player.playSound(player.getLocation(), Sound.EAT, 1, 1);
+                    player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EAT, 1, 1);
 
                     CC.send(MessageType.EVENT, player, "&d&l蛋糕! &7吃下了 &4巧克力 &b+20经验&7!");
                 }
@@ -230,7 +232,7 @@ public class CakeEvent extends AbstractEvent implements INormalEvent, Listener {
 
     private boolean canEat(Location location) {
         for (Location face : LocationUtil.getFaces(location)) {
-            if (face.getBlock().getType() != Material.CAKE_BLOCK && face.getBlock().getType() != Material.STAINED_CLAY) {
+            if (face.getBlock().getType() != Material.CAKE && face.getBlock().getType() != Material.TERRACOTTA) {
                 return true;
             }
         }

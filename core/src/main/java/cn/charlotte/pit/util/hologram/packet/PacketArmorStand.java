@@ -1,13 +1,10 @@
 package cn.charlotte.pit.util.hologram.packet;
 
+import cn.charlotte.pit.ThePit;
 import cn.hutool.core.collection.ConcurrentHashSet;
 import cn.hutool.core.lang.Pair;
-import cn.hutool.core.util.ReflectUtil;
-import net.minecraft.server.v1_8_R3.*;
-import net.mizukilab.pit.util.PublicUtil;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftArmorStand;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -15,52 +12,113 @@ import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 2022/2/26<br>
  * LimeCode<br>
+ * <p>
+ * 1.21 适配：原先依赖 NMS 幽灵实体与手写生成包，现改为真实 {@link ArmorStand} 实体，
+ * 可见性通过 {@link Player#hideEntity}/{@link Player#showEntity} 控制，语义与原实现一致。
  *
  * @author huanmeng_qwq
  */
 public class PacketArmorStand {
+
     public static final double DISTANCE = 64;
+    public static final String HOLOGRAM_TAG = "pit_hologram";
+
     protected String text;
     public Location location;
-    protected final ArmorStand entity;
+    protected volatile ArmorStand entity;
     protected final Set<Player> users;
     protected final Set<Player> viewing;
     protected final Set<Player> hiding;
 
+    protected boolean marker = false;
+    protected boolean basePlate = true;
+    protected boolean small = false;
+    protected boolean visible = true;
+    protected boolean nameVisible = true;
+
     public PacketArmorStand(String text, Location location) {
         this.text = text;
         this.location = location;
-        this.entity = ArmorStandHelper.memoryEntity(location);
         this.users = new ConcurrentHashSet<>();
         this.viewing = new ConcurrentHashSet<>();
         this.hiding = new ConcurrentHashSet<>();
         init();
-    }
-
-    public void init() {
-        if (!text.isEmpty()) {
-            entity.setCustomName(text);
-            entity.setCustomNameVisible(true);
-        } else {
-            entity.setCustomNameVisible(false);
+        // 主线程下沿用「构造即持有实体」的旧语义（附着实体的调用方在 spawn 后立即读取实体 ID）；
+        // 异步创建时交给 ensureEntity 延后到主线程执行。
+        if (Bukkit.isPrimaryThread()) {
+            ensureEntity();
         }
     }
 
+    public void init() {
+        this.nameVisible = !text.isEmpty();
+    }
+
     public void invisible() {
-        entity.setVisible(false);
+        this.visible = false;
     }
 
     public void small() {
-        entity.setSmall(true);
+        this.small = true;
+    }
+
+    public void marker() {
+        this.marker = true;
+    }
+
+    public void basePlate(boolean basePlate) {
+        this.basePlate = basePlate;
+    }
+
+    /**
+     * 惰性创建真实实体；异步线程下会调度到主线程并返回 null，调用方需容忍 null。
+     */
+    @Nullable
+    protected ArmorStand ensureEntity() {
+        ArmorStand current = this.entity;
+        if (current != null && current.isValid() && !current.isDead()) {
+            return current;
+        }
+        if (!Bukkit.isPrimaryThread()) {
+            Bukkit.getScheduler().runTask(ThePit.getInstance(), this::ensureEntity);
+            return null;
+        }
+        Location spawnLocation = this.location.clone();
+        if (spawnLocation.getWorld() == null) {
+            return null;
+        }
+        ArmorStand spawned = spawnLocation.getWorld().spawn(spawnLocation, ArmorStand.class, stand -> {
+            stand.setPersistent(false);
+            stand.setGravity(false);
+            stand.setSilent(true);
+            stand.setInvulnerable(true);
+            stand.setMarker(this.marker);
+            stand.setBasePlate(this.basePlate);
+            stand.setSmall(this.small);
+            stand.setVisible(this.visible);
+            stand.setCanPickupItems(false);
+            stand.setCustomNameVisible(this.nameVisible && !this.text.isEmpty());
+            if (!this.text.isEmpty()) {
+                stand.setCustomName(this.text);
+            }
+            stand.addScoreboardTag(HOLOGRAM_TAG);
+        });
+        this.entity = spawned;
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (!users.contains(player)) {
+                player.hideEntity(ThePit.getInstance(), spawned);
+            }
+        }
+        return spawned;
     }
 
     public void redisplay(Player user, boolean force) {
@@ -82,11 +140,12 @@ public class PacketArmorStand {
         viewing.remove(user);
     }
 
-    //MUST DO THIS AFTER THE USE IT CAN BE A FUCKING CRASHER for YOUR SERVER SILENT!!!!
-    //The dumb huanmeng_qwq
     public void recycleEntity() {
-        this.entity.remove(); //remove the memory entity from the list.
-        PublicUtil.removeFromWorld(entity);
+        ArmorStand current = this.entity;
+        this.entity = null;
+        if (current != null) {
+            current.remove();
+        }
     }
 
     public void removeAll() {
@@ -105,51 +164,57 @@ public class PacketArmorStand {
             viewing.remove(user);
             return;
         }
-        if (user.getLocation().distance(location) >= DISTANCE) {
+        if (user.getLocation().distanceSquared(location) >= DISTANCE * DISTANCE) {
             hiding.add(user);
             viewing.remove(user);
             return;
         }
         if (viewing.add(user) || force) {
-            sendEquipments(user);
+            ArmorStand current = ensureEntity();
+            if (current != null) {
+                user.showEntity(ThePit.getInstance(), current);
+            }
             hiding.remove(user);
         }
     }
 
+    /**
+     * 1.21 下装备由实体自身同步，无需手工发包，保留方法仅为兼容旧调用。
+     */
     public void sendEquipments(Player user) {
-        PacketPlayOutSpawnEntityLiving spawnEntityLiving = new PacketPlayOutSpawnEntityLiving(((CraftArmorStand) entity).getHandle());
-        EntityPlayer handle = ((CraftPlayer) user).getHandle();
-        handle.playerConnection.sendPacket(spawnEntityLiving);
-        {
-            for (Pair<EquipmentSlot, ItemStack> pair : getItems(entity)) {
-                PacketPlayOutEntityEquipment entityEquipment = new PacketPlayOutEntityEquipment(entity.getEntityId(), pair.getKey().ordinal(), PublicUtil.toNMStackQuick(pair.getValue()));
-                handle.playerConnection.sendPacket(entityEquipment);
-            }
+        ArmorStand current = ensureEntity();
+        if (current != null) {
+            user.showEntity(ThePit.getInstance(), current);
         }
     }
 
     private List<Pair<EquipmentSlot, ItemStack>> getItems(LivingEntity entity) {
         List<Pair<EquipmentSlot, ItemStack>> list = new ArrayList<>(6);
         EntityEquipment equipment = entity.getEquipment();
+        if (equipment == null) {
+            return list;
+        }
         for (EquipmentSlot equipmentSlot : EquipmentSlot.values()) {
-            switch (equipmentSlot.name()) {
-                case "HAND":
-                    list.add(new Pair<>(equipmentSlot, equipment.getItemInHand()));
+            switch (equipmentSlot) {
+                case HAND:
+                    list.add(new Pair<>(equipmentSlot, equipment.getItemInMainHand()));
                     break;
-                case "OFF_HAND":
-                    list.add(new Pair<>(equipmentSlot, ReflectUtil.invoke(equipment, "getItemInOffHand")));
+                case OFF_HAND:
+                    list.add(new Pair<>(equipmentSlot, equipment.getItemInOffHand()));
                     break;
-                case "FEET":
+                case FEET:
                     list.add(new Pair<>(equipmentSlot, equipment.getBoots()));
                     break;
-                case "LEGS":
+                case LEGS:
                     list.add(new Pair<>(equipmentSlot, equipment.getLeggings()));
                     break;
-                case "CHEST":
+                case CHEST:
                     list.add(new Pair<>(equipmentSlot, equipment.getChestplate()));
                     break;
-                case "HEAD":
+                case HEAD:
                     list.add(new Pair<>(equipmentSlot, equipment.getHelmet()));
+                    break;
+                default:
                     break;
             }
         }
@@ -162,14 +227,16 @@ public class PacketArmorStand {
             viewing.remove(user);
             return;
         }
-        if (!force && user.getLocation().distance(location) >= DISTANCE) {
+        if (!force && user.getLocation().distanceSquared(location) >= DISTANCE * DISTANCE) {
             hiding.add(user);
             viewing.remove(user);
             return;
         }
         if (hiding.add(user) || force) {
-            PacketPlayOutEntityDestroy destroy = new PacketPlayOutEntityDestroy(entity.getEntityId());
-            ((CraftPlayer) user).getHandle().playerConnection.sendPacket(destroy);
+            ArmorStand current = this.entity;
+            if (current != null) {
+                user.hideEntity(ThePit.getInstance(), current);
+            }
             viewing.remove(user);
         }
     }
@@ -182,15 +249,13 @@ public class PacketArmorStand {
 
     public void update() {
         clean();
-        updateView();
-        setText(text, false);
-        ArmorStand entity1 = this.entity;
-        CraftArmorStand entity11 = (CraftArmorStand) entity1;
-        PacketPlayOutEntityMetadata packetPlayOutEntityMetadata = new PacketPlayOutEntityMetadata(
-                entity1.getEntityId(), entity11.getHandle().getDataWatcher(), true);
-        for (Player user : viewing) {
-            ((CraftPlayer) user).getHandle().playerConnection.sendPacket(packetPlayOutEntityMetadata);
+        ArmorStand current = ensureEntity();
+        if (current == null) {
+            return;
         }
+        updateView();
+        current.setCustomName(this.text);
+        current.setCustomNameVisible(this.nameVisible && !this.text.isEmpty());
     }
 
     public void updateView() {
@@ -200,7 +265,7 @@ public class PacketArmorStand {
             if (!user.getWorld().equals(location.getWorld())) {
                 continue;
             }
-            if (user.getLocation().distance(location) >= DISTANCE) {
+            if (user.getLocation().distanceSquared(location) >= DISTANCE * DISTANCE) {
                 hide(user, false);
             } else {
                 show(user, false);
@@ -210,7 +275,7 @@ public class PacketArmorStand {
             if (!user.getWorld().equals(location.getWorld())) {
                 continue;
             }
-            if (user.getLocation().distance(location) < DISTANCE) {
+            if (user.getLocation().distanceSquared(location) < DISTANCE * DISTANCE) {
                 show(user, false);
             }
         }
@@ -233,11 +298,14 @@ public class PacketArmorStand {
             return this;
         }
         this.text = text;
-        if (!text.isEmpty()) {
-            entity.setCustomName(text);
-            entity.setCustomNameVisible(true);
-        } else {
-            entity.setCustomNameVisible(false);
+        ArmorStand current = this.entity;
+        if (current != null) {
+            if (!text.isEmpty()) {
+                current.setCustomName(text);
+                current.setCustomNameVisible(this.nameVisible);
+            } else {
+                current.setCustomNameVisible(false);
+            }
         }
         if (update) {
             update();
@@ -246,7 +314,11 @@ public class PacketArmorStand {
     }
 
     public PacketArmorStand setNameVisible(boolean visible) {
-        entity.setCustomNameVisible(visible);
+        this.nameVisible = visible;
+        ArmorStand current = this.entity;
+        if (current != null) {
+            current.setCustomNameVisible(visible);
+        }
         return this;
     }
 
@@ -259,7 +331,7 @@ public class PacketArmorStand {
     }
 
     public ArmorStand entity() {
-        return entity;
+        return ensureEntity();
     }
 
     public Set<Player> viewing() {
@@ -267,62 +339,35 @@ public class PacketArmorStand {
     }
 
     public void sendTo(Location to, boolean ground) {
-        double v = to.getX() - this.location.getX();
-        double p = to.getX() - this.location.getX();
-        double a = to.getZ() - location.getZ();
-        PacketPlayOutEntity.PacketPlayOutRelEntityMoveLook entityMoveLook = new PacketPlayOutEntity
-                .PacketPlayOutRelEntityMoveLook(entity.getEntityId(), (byte) v,
-                (byte) p, (byte) a, (byte) MathHelper.floor(to.getYaw() * 256.0F / 360F), (byte) MathHelper.floor(to.getPitch() * 256.0F / 360.0F), ground);
-        for (Player user : viewing) {
-            ((CraftPlayer) user).getHandle().playerConnection.sendPacket(entityMoveLook);
-        }
+        move(to, ground);
     }
 
     public void move(Location to, boolean ground) {
-        double teleportThreshold = 4;
-        double v = to.getX() - this.location.getX();
-        double p = to.getY() - this.location.getY();
-        double a = to.getZ() - location.getZ();
-
-        double distance = Math.abs(v) +
-                Math.abs(p) + Math.abs(a);
-
-
-        if (distance > teleportThreshold) {
-            this.sendTeleportPacket(to, ground);
-        } else {
-            PacketPlayOutEntity.PacketPlayOutRelEntityMove entityMove =
-                    new PacketPlayOutEntity.PacketPlayOutRelEntityMove(entity.getEntityId(), (byte) MathHelper.floor(v * 32D),
-                            (byte) MathHelper.floor(p * 32D), (byte) MathHelper.floor(a * 32D), ground);
-            for (Player user : viewing) {
-                ;
-                ((CraftPlayer) user).getHandle().playerConnection.sendPacket(entityMove);
-            }
-            senHeadYaw(to.getYaw());
+        Location target = to.clone();
+        this.location = target.clone();
+        ArmorStand current = this.entity;
+        if (current == null) {
+            return;
         }
-        ArmorStandHelper.setEntityLocation(entity, to.clone());
-        this.location = to.clone();
+        if (!Bukkit.isPrimaryThread()) {
+            Bukkit.getScheduler().runTask(ThePit.getInstance(), () -> current.teleport(target));
+            return;
+        }
+        current.teleport(target);
     }
 
+    /**
+     * 真实实体使用传送同步，旧的相对位移包逻辑不再需要。
+     */
     public void sendTeleportPacket(Location location, boolean ground) {
-        PacketPlayOutEntityTeleport entityTeleport = new PacketPlayOutEntityTeleport(entity.getEntityId(),
-                MathHelper.floor(location.getX() * 32), MathHelper.floor(location.getY() * 32), MathHelper.floor(location.getZ() * 32)
-                , getFixRotation(location.getYaw()), getFixRotation(location.getPitch()), ground);
-        for (Player user : viewing) {
-            ((CraftPlayer) user).getHandle().playerConnection.sendPacket(entityTeleport);
-        }
+        move(location, ground);
     }
-
 
     public static byte getFixRotation(final float yawpitch) {
         return (byte) (yawpitch * 256.0F / 360.0F);
     }
 
     public void senHeadYaw(float yaw) {
-        PacketPlayOutEntityHeadRotation entityHeadRotation = new PacketPlayOutEntityHeadRotation(((CraftArmorStand) entity).getHandle()
-                , getFixRotation(yaw));
-        for (Player user : viewing) {
-            ((CraftPlayer) user).getHandle().playerConnection.sendPacket(entityHeadRotation);
-        }
+        // 真实实体朝向随传送同步
     }
 }

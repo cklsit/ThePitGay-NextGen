@@ -25,7 +25,7 @@ import net.mizukilab.pit.item.type.mythic.MythicBowItem;
 import net.mizukilab.pit.item.type.mythic.MythicLeggingsItem;
 import net.mizukilab.pit.item.type.mythic.MythicSwordItem;
 import net.mizukilab.pit.map.kingsquests.item.Cherry;
-import net.mizukilab.pit.movement.PlayerMoveHandler;
+import net.mizukilab.pit.handlers.PlayerMoveHandler;
 import net.mizukilab.pit.parm.AutoRegister;
 import net.mizukilab.pit.parm.listener.IPlayerAssist;
 import net.mizukilab.pit.parm.listener.IPlayerBeKilledByEntity;

@@ -31,7 +31,9 @@ import java.util.List;
 @Skip
 public class Scoreboard implements AssembleAdapter {
 
-    private record RageFrame(RagePitEvent event, java.util.Map<java.util.UUID, RagePitEvent.DamageStanding> standings) { }
+    private record RageStanding(double damage, int rank) { }
+
+    private record RageFrame(RagePitEvent event, java.util.Map<java.util.UUID, RageStanding> standings) { }
     private final ThreadLocal<RageFrame> rageFrame = new ThreadLocal<>();
 
     private static final class CommonFrame {
@@ -46,8 +48,28 @@ public class Scoreboard implements AssembleAdapter {
         rageFrame.remove();
         IEpicEvent event = ThePit.getInstance().getEventFactory().getActiveEpicEvent();
         if (event instanceof RagePitEvent rage && rage.isActive()) {
-            rageFrame.set(new RageFrame(rage, rage.getDamageStandings()));
+            rageFrame.set(new RageFrame(rage, snapshotStandings(rage)));
         }
+    }
+
+    /**
+     * 一次更新内复用伤害排行：按伤害降序排一次，之后每个玩家只查表。
+     * 排行规则与 {@link RagePitEvent#getDamageRank(Player)} 一致（同伤害取最后一个名次）。
+     */
+    private static java.util.Map<java.util.UUID, RageStanding> snapshotStandings(RagePitEvent rage) {
+        java.util.List<RagePitEvent.DamageData> sorted = new java.util.ArrayList<>(rage.getDamageMap().values());
+        sorted.sort(java.util.Comparator.comparingDouble(RagePitEvent.DamageData::getDamage).reversed());
+        java.util.Map<Double, Integer> damageToRank = new java.util.HashMap<>(sorted.size());
+        int rank = 1;
+        for (RagePitEvent.DamageData data : sorted) {
+            damageToRank.put(data.getDamage(), rank);
+            rank++;
+        }
+        java.util.Map<java.util.UUID, RageStanding> standings = new java.util.HashMap<>(sorted.size());
+        for (RagePitEvent.DamageData data : sorted) {
+            standings.put(data.getUuid(), new RageStanding(data.getDamage(), damageToRank.get(data.getDamage())));
+        }
+        return standings;
     }
 
     @Override
@@ -128,8 +150,8 @@ public class Scoreboard implements AssembleAdapter {
             if (event instanceof RagePitEvent ragePit && ragePit.isActive()) {
                 lines.add("&f剩余: &a" + TimeUtil.millisToTimer(ragePit.getTimer().getRemaining()));
                 RageFrame frame = rageFrame.get();
-                RagePitEvent.DamageStanding standing = (frame != null && frame.event() == ragePit
-                        ? frame.standings() : ragePit.getDamageStandings()).get(player.getUniqueId());
+                RageStanding standing = (frame != null && frame.event() == ragePit
+                        ? frame.standings() : snapshotStandings(ragePit)).get(player.getUniqueId());
                 if (standing != null) {
                     int damage = (int) (standing.damage() / 2);
                     int rank = standing.rank();

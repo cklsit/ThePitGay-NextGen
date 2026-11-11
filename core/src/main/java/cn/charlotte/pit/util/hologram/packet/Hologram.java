@@ -18,7 +18,7 @@ public class Hologram extends PacketArmorStand {
         super.init();
         invisible();
         small();
-        entity.setMarker(true);
-        entity.setBasePlate(false);
+        marker();
+        basePlate(false);
     }
 }

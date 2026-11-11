@@ -3,7 +3,6 @@ package cn.charlotte.pit.events;
 import cn.charlotte.pit.ThePit;
 import org.bukkit.Bukkit;
 import com.sk89q.worldedit.EditSession;
-import com.boydti.fawe.util.SetQueue;
 
 import java.util.concurrent.*;
 import java.util.logging.Level;
@@ -68,13 +67,13 @@ public final class EventWorldEdits {
         try {
             long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
             while (!WORKER.awaitTermination(10, TimeUnit.MILLISECONDS) && System.nanoTime() < deadline) {
-                // FAWE's asynchronous flush waits for its main-thread queue. During disable
-                // Bukkit no longer ticks that queue, so drain our own pending edits here.
+                // FAWE/WE7 的会话把改动排在自己内部队列里，关闭阶段 Bukkit 不再 tick 该队列，
+                // 这里显式 flushSession 把剩余改动刷掉。
                 if (Bukkit.isPrimaryThread()) {
                     for (EditSession session : FLUSHING) {
-                        if (session.getQueue() != null
-                                && session.getQueue().getStage() == SetQueue.QueueStage.ACTIVE)
-                            SetQueue.IMP.flush(session.getQueue());
+                        if (session != null) {
+                            session.flushSession();
+                        }
                     }
                 }
             }

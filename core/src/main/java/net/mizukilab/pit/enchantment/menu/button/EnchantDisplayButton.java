@@ -44,7 +44,7 @@ public class EnchantDisplayButton extends Button {
         if (profile.getEnchantingScience() != null) {
             ItemStack itemStack = InventoryUtil.deserializeItemStack(profile.getEnchantingScience());
             if (itemStack != null && itemStack.getType() != null) {
-                player.playSound(player.getLocation(), Sound.VILLAGER_NO, 1, 1.2F);
+                player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1, 1.2F);
                 player.sendMessage(CC.translate("&c请先取下附魔的消耗材料!"));
                 return;
             }

@@ -189,7 +189,6 @@ public class Utils {
         }
         switch (internalName) {
             case "mythic_sword" -> mythicItem = new MythicSwordItem();
-            case "mythic_hammer" -> mythicItem = new net.mizukilab.pit.item.type.mythic.MythicHammerItem();
             case "mythic_bow" -> mythicItem = new MythicBowItem();
             case "mythic_leggings" -> mythicItem = new MythicLeggingsItem();
             case "angel_chestplate" -> mythicItem = new AngelChestplate();
@@ -343,13 +342,35 @@ public class Utils {
         return canUseGem0(false, item);
     }
 
+    /**
+     * 把玩家当前手持/护腿同步到档案，供战斗结算读取。
+     * 1.21：手持槽位用 getItemInMainHand（getItemInHand 已移除）。
+     */
+    public static void refreshPlayerEquipment(org.bukkit.entity.Player player,
+                                              cn.charlotte.pit.data.PlayerProfile profile) {
+        if (player == null || profile == null) return;
+        org.bukkit.inventory.PlayerInventory inventory = player.getInventory();
+        org.bukkit.inventory.ItemStack hand = inventory.getItemInMainHand();
+        if (hand == null || hand.getType() == org.bukkit.Material.AIR
+                || hand.getType() == org.bukkit.Material.LEATHER_LEGGINGS
+                || hand.getType() == org.bukkit.Material.PAPER) {
+            profile.heldItemStack = null;
+            profile.heldItem = null;
+        } else {
+            profile.heldItemStack = hand;
+            profile.heldItem = getMythicItem(hand);
+        }
+        org.bukkit.inventory.ItemStack leggings = inventory.getLeggings();
+        profile.leggingItemStack = leggings;
+        profile.leggings = getMythicItem(leggings);
+    }
     public static boolean canUseGem0(boolean rare, org.bukkit.inventory.ItemStack item) {
         final net.mizukilab.pit.item.IMythicItem mythicItem = getMythicItem(item);
         if (mythicItem == null || !mythicItem.isEnchanted() || mythicItem.isBoostedByGem()
                 || mythicItem.isBoostedByGlobalGem()) {
             return false;
         }
-        if (mythicItem.getColor() == net.mizukilab.pit.enchantment.rarity.MythicColor.DARK) {
+        if (mythicItem.getColor() == net.mizukilab.pit.item.MythicColor.DARK) {
             return false;
         }
         return canUseGemSeries(rare, mythicItem);
@@ -362,7 +383,7 @@ public class Utils {
             int level = entry.getIntValue();
             net.mizukilab.pit.enchantment.AbstractEnchantment key = entry.getKey();
             boolean rareResult = rare == (key.getRarity().getParentType()
-                    == net.mizukilab.pit.enchantment.AbstractEnchantment.EnchantmentRarity.RarityType.RARE);
+                    == net.mizukilab.pit.enchantment.rarity.EnchantmentRarity.RarityType.RARE);
             if (rareResult && key.getMaxEnchantLevel() > level) {
                 return true;
             }

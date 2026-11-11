@@ -311,16 +311,8 @@ public class EnchantButton extends Button {
         }
         if (level > 0) {
             mythicItem.setLive(mythicItem.getLive() + mythicItem.getMaxLive() - maxLive);
-            // 64 铸缝：重铸时额外保留 live 不被消耗
-            int seam = mythicItem.getEnchantmentLevel("hammer_064");
-            if (seam > 0) {
-                net.mizukilab.pit.enchantment.AbstractEnchantment seamEnchant =
-                        ThePit.getInstance().getEnchantmentFactor().getEnchantmentMap().get("hammer_064");
-                if (seamEnchant instanceof net.mizukilab.pit.enchantment.type.hammer.HammerEnchantBase seamBase) {
-                    int keep = (int) Math.round(seamBase.valueAt(seam));
-                    mythicItem.setLive(Math.min(mythicItem.getMaxLive(), mythicItem.getLive() + keep));
-                }
-            }
+            // 神话之锤「铸缝」（hammer_064）属于 main 分支的 hammer 特性，NextGen 基线不含，
+            // 待该特性迁回后在此恢复额外 live 保留逻辑。
         } else {
 
             mythicItem.setLive(mythicItem.getMaxLive());
@@ -369,27 +361,8 @@ public class EnchantButton extends Button {
         rareResults = rareResults.stream().filter(abstractEnchantment -> !isBlackList(player, abstractEnchantment)).collect(Collectors.toList());
         results = results.stream().filter(abstractEnchantment -> !isBlackList(player, abstractEnchantment)).collect(Collectors.toList());
 
-        // 神话之锤：季节性附魔仅在当前季度开放时并入稀有池，未开放不进候选
-        if (mythicItem instanceof net.mizukilab.pit.item.IMythicHammer) {
-            rareResults.addAll(list.stream()
-                    .filter(e -> e.getRarity() == EnchantmentRarity.SEASONAL)
-                    .filter(net.mizukilab.pit.enchantment.seasonal.SeasonalOpenService::isOpen)
-                    .collect(Collectors.toList()));
-
-            // M1/M2 互斥：已持有其一则不再提供另一条
-            java.util.Set<String> owned = mythicItem.getEnchantments().keySet().stream()
-                    .map(AbstractEnchantment::getNbtName)
-                    .collect(Collectors.toSet());
-            java.util.function.Predicate<AbstractEnchantment> blocked = e -> {
-                String n = e.getNbtName();
-                return (owned.contains("hammer_005") && "hammer_006".equals(n))
-                        || (owned.contains("hammer_006") && "hammer_005".equals(n))
-                        || (owned.contains("hammer_022") && "hammer_036".equals(n))
-                        || (owned.contains("hammer_036") && "hammer_022".equals(n));
-            };
-            results.removeIf(blocked);
-            rareResults.removeIf(blocked);
-        }
+        // 神话之锤的季节性附魔与 hammer M1/M2 互斥属于 main 分支的 hammer 特性，
+        // NextGen 基线既没有 hammer 附魔也没有 SEASONAL 稀有度，这里跳过，等特性迁回时再补。
         //Enchant Start
         switch (color) {
             case DARK: {
@@ -546,18 +519,11 @@ public class EnchantButton extends Button {
     }
 
     /**
-     * 卷轴可用的季节性条目：只在当前季度开放集合内产出，跨季持有卷轴自动失效。
+     * 神话之锤的季节性词条：NextGen 基线没有 SEASONAL 稀有度与 hammer 附魔，恒为空池。
+     * 该特性从 main 迁回时替换这里的实现。
      */
     private List<AbstractEnchantment> getBookSeasonalResults(Player player, ItemStack item, Player ignored) {
-        return ThePit.getInstance()
-                .getEnchantmentFactor()
-                .getEnchantments()
-                .stream()
-                .filter(abstractEnchantment -> abstractEnchantment.canApply(item))
-                .filter(abstractEnchantment -> abstractEnchantment.getRarity() == EnchantmentRarity.SEASONAL)
-                .filter(net.mizukilab.pit.enchantment.seasonal.SeasonalOpenService::isOpen)
-                .filter(abstractEnchantment -> !isBlackList(player, abstractEnchantment))
-                .collect(Collectors.toList());
+        return java.util.Collections.emptyList();
     }
 
     private boolean hasAvailableBookRareEnchantment(List<AbstractEnchantment> rareResults, List<AbstractEnchantment> enchantments) {

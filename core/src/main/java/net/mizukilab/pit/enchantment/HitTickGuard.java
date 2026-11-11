@@ -1,7 +1,7 @@
 package net.mizukilab.pit.enchantment;
 
 import cn.charlotte.pit.ThePit;
-import net.minecraft.server.v1_8_R3.MinecraftServer;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -33,7 +33,8 @@ public final class HitTickGuard {
     private record Check(String enchantment, UUID holder, UUID source, boolean defence) { }
 
     private void advance() {
-        int now = MinecraftServer.currentTick;
+        // Paper 暴露的服务端 tick 计数器，语义与原 MinecraftServer.currentTick 相同
+        int now = Bukkit.getCurrentTick();
         if (now == tick) return;
         tick = now;
         meleeCounts.clear(); bowCounts.clear(); checks.clear();

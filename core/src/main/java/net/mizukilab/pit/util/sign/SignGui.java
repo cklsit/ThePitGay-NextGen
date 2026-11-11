@@ -1,20 +1,16 @@
 package net.mizukilab.pit.util.sign;
 
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.events.PacketAdapter;
-import com.comphenix.protocol.events.PacketEvent;
-import com.comphenix.protocol.wrappers.WrappedChatComponent;
-import net.minecraft.server.v1_8_R3.BlockPosition;
-import net.minecraft.server.v1_8_R3.EntityPlayer;
-import net.minecraft.server.v1_8_R3.PacketPlayOutOpenSignEditor;
-import net.minecraft.server.v1_8_R3.PlayerConnection;
-import net.md_5.bungee.api.chat.TextComponent;
-import net.md_5.bungee.chat.ComponentSerializer;
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.event.PacketListenerAbstract;
+import com.github.retrooper.packetevents.event.PacketListenerPriority;
+import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.util.Vector3i;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientUpdateSign;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerOpenSignEditor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.Vector;
@@ -23,6 +19,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * 虚拟告示牌输入框。
+ * <p>
+ * 1.21 适配：原实现依赖 ProtocolLib 拦截 {@code UPDATE_SIGN} 并强制转换 CraftPlayer；
+ * 现改为 PacketEvents（已内置）：仅对该玩家伪造告示牌方块与文本，下发打开编辑器包，再拦截提交包读取四行文本。
+ *
  * @Author: EmptyIrony
  * @Date: 2021/1/19 21:33
  */
@@ -31,45 +32,40 @@ public class SignGui {
     protected Map<String, Vector> signLocations = new ConcurrentHashMap<>();
     protected Map<String, SignGUIListener> listeners = new ConcurrentHashMap<>();
 
-    public SignGui(JavaPlugin plugin) {
-        ProtocolLibrary.getProtocolManager().addPacketListener(new PacketAdapter(plugin, PacketType.Play.Client.UPDATE_SIGN) {
-                    @Override
-                    public void onPacketReceiving(PacketEvent event) {
-                        final Player player = event.getPlayer();
-                        Vector v = signLocations.get(player.getName());
-                        if (v == null) return;
-                        com.comphenix.protocol.wrappers.BlockPosition bp = event.getPacket().getBlockPositionModifier().
-                                getValues().get(0);
-                        if (bp.getX() != v.getBlockX()) {
-                            return;
-                        }
-                        if (bp.getY() != v.getBlockY()) {
-                            return;
-                        }
-                        if (bp.getZ() != v.getBlockZ()) {
-                            return;
-                        }
-                        event.setCancelled(true);
-                        final WrappedChatComponent[] chatarray = event.getPacket().getChatComponentArrays().readSafely(0);
-                        if (chatarray == null || chatarray.length != 4) return;
-                        final String[] lines = new String[4];
-                        try {
-                            for (int i = 0; i < 4; i++) lines[i] = plainText(chatarray[i].getJson());
-                        } catch (RuntimeException malformed) { return; }
-                        if (!signLocations.remove(player.getName(), v)) return;
-                        final SignGUIListener response = listeners.remove(player.getName());
-                        if (response != null) {
-                            event.setCancelled(true);
-                            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                                if (player.isOnline()) response.onSignDone(player, lines);
-                            }, 1);
-                        }
-                    }
-                });
-    }
+    private final JavaPlugin plugin;
 
-    static String plainText(String json) {
-        return TextComponent.toPlainText(ComponentSerializer.parse(json));
+    public SignGui(JavaPlugin plugin) {
+        this.plugin = plugin;
+        PacketEvents.getAPI().getEventManager().registerListener(new PacketListenerAbstract(PacketListenerPriority.NORMAL) {
+            @Override
+            public void onPacketReceive(PacketReceiveEvent event) {
+                if (event.getPacketType() != PacketType.Play.Client.UPDATE_SIGN) {
+                    return;
+                }
+                Player player = event.getPlayer();
+                if (player == null) {
+                    return;
+                }
+                Vector expected = signLocations.get(player.getName());
+                if (expected == null) {
+                    return;
+                }
+                WrapperPlayClientUpdateSign wrapper = new WrapperPlayClientUpdateSign(event);
+                Vector3i position = wrapper.getBlockPosition();
+                if (position.getX() != expected.getBlockX()
+                        || position.getY() != expected.getBlockY()
+                        || position.getZ() != expected.getBlockZ()) {
+                    return;
+                }
+                signLocations.remove(player.getName());
+                SignGUIListener response = listeners.remove(player.getName());
+                String[] lines = wrapper.getTextLines();
+                if (response != null) {
+                    event.setCancelled(true);
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> response.onSignDone(player, lines), 1L);
+                }
+            }
+        });
     }
 
     public void cancel(Player player) {
@@ -79,28 +75,15 @@ public class SignGui {
 
     public void open(Player player, String[] messages, SignGUIListener response) {
         Location loc = new Location(player.getWorld(), 0, 1, 0);
-        player.sendBlockChange(loc, Material.SIGN_POST, (byte) 0);
+        // 只对该玩家伪造方块与文本，服务端不产生真实方块
+        player.sendBlockChange(loc, Material.OAK_SIGN.createBlockData());
         player.sendSignChange(loc, messages);
 
-        try {
-            EntityPlayer handle = ((CraftPlayer) player).getHandle();
-            PlayerConnection connection = handle.playerConnection;
+        PacketEvents.getAPI().getPlayerManager().sendPacket(player,
+                new WrapperPlayServerOpenSignEditor(new Vector3i(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()), true));
 
-            PacketPlayOutOpenSignEditor packet = new PacketPlayOutOpenSignEditor(
-                    new BlockPosition(
-                            loc.getX(),
-                            loc.getY(),
-                            loc.getZ()
-                    )
-            );
-
-            signLocations.put(player.getName(), loc.toVector());
-            listeners.put(player.getName(), response);
-            connection.sendPacket(packet);
-        } catch (Exception x) {
-            cancel(player);
-            throw new IllegalStateException("Unable to open sign editor", x);
-        }
+        signLocations.put(player.getName(), loc.toVector());
+        listeners.put(player.getName(), response);
     }
 
     public interface SignGUIListener {

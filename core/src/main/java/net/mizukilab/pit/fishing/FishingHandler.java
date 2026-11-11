@@ -1,23 +1,19 @@
 package net.mizukilab.pit.fishing;
 
 import cn.charlotte.pit.ThePit;
-import net.minecraft.server.v1_8_R3.EntityItem;
-import net.minecraft.server.v1_8_R3.MathHelper;
-import net.minecraft.server.v1_8_R3.WorldServer;
 import net.mizukilab.pit.parm.AutoRegister;
-import net.mizukilab.pit.util.PublicUtil;
 import net.mizukilab.pit.util.item.ItemBuilder;
 import net.mizukilab.pit.util.random.RandomUtil;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.v1_8_R3.CraftWorld;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftEntity;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.util.Vector;
 
 /**
  * @Author: EmptyIrony
@@ -30,46 +26,42 @@ public class FishingHandler implements Listener {
     public void onFishing(PlayerFishEvent event) {
         if (event.getState() == PlayerFishEvent.State.CAUGHT_FISH) {
             event.setExpToDrop(0);
-            event.getCaught().remove();
+            if (event.getCaught() != null) {
+                event.getCaught().remove();
+            }
 
-            Location location = event.getCaught().getLocation();
+            Location location = event.getCaught() == null
+                    ? event.getPlayer().getLocation() : event.getCaught().getLocation();
 
             ItemStack itemStack = this.generateItem(event.getPlayer(), location);
-            EntityItem entityItem = this.generateEntity(event.getPlayer(), location, itemStack);
-            CraftEntity item = entityItem.getBukkitEntity();
+            Item item = this.generateEntity(event.getPlayer(), location, itemStack);
             item.setMetadata("gold", new FixedMetadataValue(ThePit.getInstance(), RandomUtil.random.nextInt(5) + 5));
-
-        } else if (event.getState() == PlayerFishEvent.State.FISHING) {
-            ItemStack item = event.getPlayer().getItemInHand();
-
         }
     }
 
+    /**
+     * 1.21 适配：原先手写 {@code EntityItem} 的 NMS 坐标/速度，改为 Bukkit 掉落物实体 + 速度向量。
+     */
+    private Item generateEntity(Player player, Location dropLocation, ItemStack item) {
+        Item entityItem = dropLocation.getWorld().dropItem(dropLocation, item, entity -> entity.setPersistent(false));
 
-    private EntityItem generateEntity(Player player, Location dropLocation, ItemStack item) {
-        WorldServer worldServer = ((CraftWorld) dropLocation.getWorld()).getHandle();
-        EntityItem entityItem = new EntityItem(worldServer, dropLocation.getX(), dropLocation.getY(), dropLocation.getZ(), PublicUtil.toNMStackQuick(item));
-        worldServer.addEntity(entityItem);
+        double dx = player.getLocation().getX() - dropLocation.getX();
+        double dy = player.getLocation().getY() - dropLocation.getY();
+        double dz = player.getLocation().getZ() - dropLocation.getZ();
+        double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        double factor = 0.1D;
 
-        double d5 = player.getLocation().getX() - dropLocation.getX();
-        double d6 = player.getLocation().getY() - dropLocation.getY();
-        double d7 = player.getLocation().getZ() - dropLocation.getZ();
-        double d8 = MathHelper.sqrt(d5 * d5 + d6 * d6 + d7 * d7);
-        double d9 = 0.1D;
-
-        entityItem.motX = d5 * d9;
-        entityItem.motY = d6 * d9 + (double) MathHelper.sqrt(d8) * 0.08D;
-        entityItem.motZ = d7 * d9;
-
+        entityItem.setVelocity(new Vector(
+                dx * factor,
+                dy * factor + Math.sqrt(distance) * 0.08D,
+                dz * factor
+        ));
         return entityItem;
     }
 
     ItemBuilder build = new ItemBuilder(Material.GOLD_INGOT);
 
     private ItemStack generateItem(Player player, Location location) {
-
-        return build
-                .build();
+        return build.build();
     }
-
 }

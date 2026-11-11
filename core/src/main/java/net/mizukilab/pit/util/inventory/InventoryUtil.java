@@ -3,7 +3,6 @@ package net.mizukilab.pit.util.inventory;
 import cn.charlotte.pit.data.PlayerProfile;
 import cn.charlotte.pit.data.sub.PlayerInv;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.minecraft.server.v1_8_R3.*;
 import net.mizukilab.pit.util.PlayerUtil;
 import net.mizukilab.pit.util.PublicUtil;
 import net.mizukilab.pit.util.chat.CC;
@@ -11,16 +10,12 @@ import net.mizukilab.pit.util.item.ItemBuilder;
 import net.mizukilab.pit.util.item.ItemUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.List;
 import java.util.Random;
 
@@ -317,39 +312,48 @@ public class InventoryUtil {
     public static String serializeItemStack(ItemStack itemStack) {
         if (itemStack == null || itemStack.getType().equals(Material.AIR)) return "null";
 
-        ByteArrayOutputStream outputStream = null;
         try {
-            net.minecraft.server.v1_8_R3.ItemStack nmsStack = PublicUtil.toNMStackQuick(itemStack);
-            NBTTagCompound nbtTagCompound = new NBTTagCompound();
-            nmsStack.save(nbtTagCompound);
-            outputStream = new ByteArrayOutputStream();
-            NBTCompressedStreamTools.a(nbtTagCompound, outputStream);
-        } catch (SecurityException | IllegalArgumentException | IOException e) {
-            e.printStackTrace();
-            return null;
+            // Paper 1.20.5+ 提供稳定的物品字节序列化，替代手工 NBT 压缩流
+            return "B:" + java.util.Base64.getEncoder().encodeToString(itemStack.serializeAsBytes());
+        } catch (Throwable e) {
+            // 某些物品（如神话之甲）serializeAsBytes 会抛异常；此前直接返回 Java null，
+            // 拼进字符串后变成字面量 "null"，导致物品在存档里被抹掉。
+            cn.charlotte.pit.ThePit.getInstance().getLogger()
+                    .warning("[Inv] serializeAsBytes 失败，回退 legacy: " + itemStack.getType() + " -> " + e);
         }
-
-        return java.util.Base64.getEncoder().encodeToString(outputStream.toByteArray());
+        try {
+            java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+            org.bukkit.util.io.BukkitObjectOutputStream boos = new org.bukkit.util.io.BukkitObjectOutputStream(out);
+            boos.writeObject(itemStack);
+            boos.close();
+            return "L:" + java.util.Base64.getEncoder().encodeToString(out.toByteArray());
+        } catch (Throwable e) {
+            cn.charlotte.pit.ThePit.getInstance().getLogger()
+                    .severe("[Inv] legacy 序列化同样失败，物品将丢失: " + itemStack.getType() + " -> " + e);
+            return "null";
+        }
     }
 
 
     public static ItemStack deserializeItemStack(String itemStackString) {
         if (itemStackString == null || "null".equals(itemStackString)) return null;
 
-        ByteArrayInputStream inputStream = new ByteArrayInputStream(java.util.Base64.getDecoder().decode(itemStackString));
-
-        NBTTagCompound nbtTagCompound = null;
-        ItemStack itemStack = null;
         try {
-            nbtTagCompound = NBTCompressedStreamTools.a(inputStream);
-            net.minecraft.server.v1_8_R3.ItemStack nmsStack = net.minecraft.server.v1_8_R3.ItemStack.createStack(nbtTagCompound);
-            itemStack = CraftItemStack.asBukkitCopy(nmsStack);
-        } catch (IllegalArgumentException | SecurityException | IOException e) {
-            e.printStackTrace();
+            if (itemStackString.startsWith("L:")) {
+                byte[] legacy = java.util.Base64.getDecoder().decode(itemStackString.substring(2));
+                org.bukkit.util.io.BukkitObjectInputStream bois =
+                        new org.bukkit.util.io.BukkitObjectInputStream(new java.io.ByteArrayInputStream(legacy));
+                Object obj = bois.readObject();
+                bois.close();
+                return obj instanceof ItemStack ? (ItemStack) obj : null;
+            }
+            String base64 = itemStackString.startsWith("B:") ? itemStackString.substring(2) : itemStackString;
+            return ItemStack.deserializeBytes(java.util.Base64.getDecoder().decode(base64));
+        } catch (Throwable e) {
+            cn.charlotte.pit.ThePit.getInstance().getLogger()
+                    .warning("[Inv] 反序列化失败: " + e);
             return null;
         }
-
-        return itemStack;
     }
 
     public static boolean isInvFull(Player player) {
@@ -371,6 +375,24 @@ public class InventoryUtil {
             }
         }
         return true;
+    }
+
+    private static boolean isArmorMaterial(Material type) {
+        String name = type.name();
+        return name.endsWith("_HELMET") || name.endsWith("_CHESTPLATE")
+                || name.endsWith("_LEGGINGS") || name.endsWith("_BOOTS");
+    }
+
+    private static boolean isSwordMaterial(Material type) {
+        return switch (type) {
+            case WOODEN_SWORD, STONE_SWORD, IRON_SWORD, GOLDEN_SWORD,
+                 DIAMOND_SWORD, NETHERITE_SWORD -> true;
+            default -> false;
+        };
+    }
+
+    private static boolean isBowMaterial(Material type) {
+        return type == Material.BOW || type == Material.CROSSBOW;
     }
 
     private static final ItemStack DEFAULT_SWORD = new ItemBuilder(Material.IRON_SWORD).internalName("default_sword").defaultItem().canDrop(false).canSaveToEnderChest(false).buildWithUnbreakable();
@@ -404,15 +426,14 @@ public class InventoryUtil {
 
             if (ItemUtil.isDefaultItem(item) && ItemUtil.canReplace(item)) {
                 //player.getInventory().remove(item);
-                net.minecraft.server.v1_8_R3.ItemStack nmStackQuick = PublicUtil.toNMStackQuick(item);
-                if (nmStackQuick.getItem() instanceof ItemArmor) {
+                if (isArmorMaterial(item.getType())) {
                     inventory.remove(item);
                 }
-                if (nmStackQuick.getItem() instanceof ItemSword && swordFound) {
+                if (isSwordMaterial(item.getType()) && swordFound) {
                     inventory.remove(item);
                     swordFound = false;
                 }
-                if (nmStackQuick.getItem() instanceof ItemBow && bowFound) {
+                if (isBowMaterial(item.getType()) && bowFound) {
                     inventory.remove(item);
                     swordFound = false;
                 }
@@ -562,7 +583,7 @@ public class InventoryUtil {
 
     private static int firstPartial(PlayerInventory playerInv, ItemStack item) {
         ItemStack[] inventory = playerInv.getContents();
-        ItemStack filteredItem = CraftItemStack.asCraftCopy(item);
+        ItemStack filteredItem = item.clone();
         for (int i = 35; i > -1; i--) {
             ItemStack cItem = inventory[i];
             if (cItem != null && cItem.getAmount() < cItem.getMaxStackSize() && cItem.isSimilar(filteredItem)) {
@@ -597,7 +618,7 @@ public class InventoryUtil {
                 } else {
                     // More than a single stack!
                     if (item.getAmount() > inventory.getMaxStackSize()) {
-                        CraftItemStack stack = CraftItemStack.asCraftCopy(item);
+                        ItemStack stack = item.clone();
                         stack.setAmount(inventory.getMaxStackSize());
                         inventory.setItem(firstFree, stack);
                         item.setAmount(item.getAmount() - inventory.getMaxStackSize());

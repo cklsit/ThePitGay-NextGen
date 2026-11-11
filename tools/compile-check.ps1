@@ -5,11 +5,13 @@
 .DESCRIPTION
     Compiles every Java source in core/src/main/java with javac directly, using the
     compile classpath resolved once by Gradle (cached in .gradle/compile-classpath.txt).
-    All diagnostics are written to build/compile-check.log (no console line wrapping),
-    then summarised per file.
+    Diagnostics are written to build/<LogName> (no console line wrapping) and summarised
+    per file. Safe to run while other agents edit sources: it does not touch Gradle.
 
-    Runs of this script may safely happen while other agents work; it does not touch
-    the Gradle build directory.
+    -XDshould-stop.ifError=GENERATE is passed on the real command line: with the default
+    policy javac skips annotation processing as soon as any unit has an ENTER phase error,
+    which disables Lombok and produces hundreds of bogus "cannot find symbol getXxx()".
+    With GENERATE the compiler keeps going, so reported errors are real.
 
 .PARAMETER Refresh
     Re-resolve the compile classpath through Gradle before compiling.
@@ -19,6 +21,9 @@
 
 .PARAMETER Top
     How many files to show in the summary (default 25).
+
+.PARAMETER LogName
+    Log file name under build/. Use a distinct name per agent to avoid clobbering.
 
 .EXAMPLE
     pwsh -File tools/compile-check.ps1 -Filter "npclib"
@@ -86,7 +91,7 @@ New-Item -ItemType Directory -Force (Split-Path $logFile) | Out-Null
 
 # Windows caps the command line near 32k characters and the compile classpath alone is
 # bigger than that, so every javac argument goes into an @argfile.
-$argFile = Join-Path ([System.IO.Path]::GetTempPath()) "pit-compile-args.txt"
+$argFile = Join-Path ([System.IO.Path]::GetTempPath()) ("pit-compile-args-" + ($LogName -replace '[^a-zA-Z0-9]', '-') + ".txt")
 $argLines = New-Object System.Collections.Generic.List[string]
 $argLines.Add("-encoding"); $argLines.Add("UTF-8")
 $argLines.Add("-proc:full")
@@ -100,15 +105,25 @@ $sources | ForEach-Object { $argLines.Add($_) }
 
 $psi = New-Object System.Diagnostics.ProcessStartInfo
 $psi.FileName = $javac
-$psi.Arguments = "-J-Duser.language=en -J-Duser.country=US @`"$argFile`""
+$psi.Arguments = @(
+    "-J-Duser.language=en",
+    "-J-Duser.country=US",
+    "-XDshould-stop.ifError=GENERATE",
+    "@$argFile"
+) -join ' '
 $psi.UseShellExecute = $false
 $psi.RedirectStandardError = $true
 $psi.RedirectStandardOutput = $true
 $psi.CreateNoWindow = $true
 $process = [System.Diagnostics.Process]::Start($psi)
-$stderr = $process.StandardError.ReadToEnd()
-$null = $process.StandardOutput.ReadToEnd()
+$stderrTask = $process.StandardError.ReadToEndAsync()
+$stdout = $process.StandardOutput.ReadToEnd()
+$stderr = $stderrTask.Result
 $process.WaitForExit()
+if ($process.ExitCode -eq 2) {
+    Write-Output "javac rejected the arguments:"
+    Write-Output $stdout
+}
 [System.IO.File]::WriteAllText($logFile, $stderr, (New-Object System.Text.UTF8Encoding($false)))
 
 $prefix = [regex]::Escape($repo + "\core\src\main\java\")
