@@ -111,6 +111,9 @@ tasks.named<ShadowJar>("shadowJar") {
     relocate("net.sourceforge.pinyin4j", "net.mizukilab.pit.libs.mythicframework.pinyin4j")
     relocate("org.yaml.snakeyaml", "net.mizukilab.pit.libs.mythicframework.yaml")
     relocate("xyz.upperlevel.spigot", "net.mizukilab.pit.libs")
+    // 发包层统一走 PacketEvents，随核心 shade 进 jar 并重定位，避免与外部安装的 PacketEvents 冲突。
+    relocate("com.github.retrooper.packetevents", "net.mizukilab.pit.libs.packetevents")
+    relocate("io.github.retrooper.packetevents", "net.mizukilab.pit.libs.packetevents")
     exclude("kotlin/**", "junit/**", "org/junit/**")
     from("build/tmp/processed-resources")
     mergeServiceFiles()
@@ -120,7 +123,9 @@ dependencies {
     testImplementation("org.mockito:mockito-inline:4.11.0")
 
     // P1：构建目标从 Spigot 1.8.8 切到 Paper 1.21.8
-    compileOnly("io.papermc.paper:paper-api:1.21.8-R0.1-SNAPSHOT")
+    compileOnly(libs.paper.api)
+    // 收包/发包统一走 PacketEvents（shade 进产物），不再依赖 NMS。
+    implementation(libs.packetevents)
     compileOnly(fileTree(mapOf("dir" to "../libs", "include" to listOf("*.jar"),
         "exclude" to listOf("citizens*.jar", "Citizens*.jar"))))
     // 授权校验库随核心打包（shadowJar 会把它 relocate 到 net.mizukilab.pit.license）。

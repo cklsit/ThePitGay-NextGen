@@ -2,12 +2,13 @@
 
 adventure = "4.17.0"
 adventure-platform = "4.3.2"
+paper = "1.21.8-R0.1-SNAPSHOT"
 server_8 = "1.8.8-R0.1-SNAPSHOT"
 protocolLib = "5.1.0"
 scoreboard-library = "2.1.8"
 kotlin = "2.0.0-RC3"
 mongodb = "3.12.11"
-packetevents = "2.3.0"
+packetevents = "2.14.0"
 yamlassist = "1.0.5"
 gui = "2.2.2"
 shadow = "8.1.7"
@@ -43,6 +44,7 @@ kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test-junit", vers
 mongodb = { group = "org.mongodb", name = "mongo-java-driver", version.ref = "mongodb" }
 
 spigot_8 = { group = "org.spigotmc", name = "spigot", version.ref = "server_8" }
+paper_api = { group = "io.papermc.paper", name = "paper-api", version.ref = "paper" }
 
 protocollib = { group = "net.dmulloy2", name = "ProtocolLib", version.ref = "protocolLib" }
 
@@ -52,7 +54,7 @@ scoreboardlibrary-kotlin = { group = "net.megavex", name = "scoreboard-library-e
 scoreboardlibrary-packetevents = { group = "net.megavex", name = "scoreboard-library-packetevents", version.ref = "scoreboard-library" }
 scoreboardlibrary-18 = { group = "net.megavex", name = "scoreboard-library-v1_8_R3", version.ref = "scoreboard-library" }
 
-packetevents = { group = "com.github.retrooper.packetevents", name = "spigot", version.ref = "packetevents" }
+packetevents = { group = "com.github.retrooper", name = "packetevents-spigot", version.ref = "packetevents" }
 yamlassist = { group = "me.neznamy", name = "yamlassist", version.ref = "yamlassist" }
 
 gui = { group = "com.huanmeng-qwq", name = "Bukkit-Gui", version.ref = "gui" }

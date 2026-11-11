@@ -1,0 +1,14 @@
+// Emits the :core compile classpath into cp-list.txt (consumed by tools/compile-check.ps1).
+allprojects { project ->
+    project.afterEvaluate {
+        if (project.configurations.findByName("compileClasspath") != null) {
+            project.tasks.register("printCompileCp") {
+                doLast {
+                    def out = new File(project.rootDir, "cp-list.txt")
+                    out.text = project.configurations.getByName("compileClasspath").files.collect { it.absolutePath }.join(System.lineSeparator())
+                    println "wrote " + out.absolutePath
+                }
+            }
+        }
+    }
+}
