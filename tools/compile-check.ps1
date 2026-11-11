@@ -26,14 +26,15 @@
 param(
     [switch]$Refresh,
     [string]$Filter = "",
-    [int]$Top = 25
+    [int]$Top = 25,
+    [string]$LogName = "compile-check.log"
 )
 
 $ErrorActionPreference = "Continue"
 $repo = Split-Path -Parent $PSScriptRoot
 $classpathFile = Join-Path $repo ".gradle/compile-classpath.txt"
 $initScript = Join-Path $PSScriptRoot "print-classpath.gradle"
-$logFile = Join-Path $repo "build/compile-check.log"
+$logFile = Join-Path $repo ("build/" + $LogName)
 
 function Find-JdkTool([string]$Name) {
     $candidates = @()
@@ -78,7 +79,7 @@ $sourcePath = @(
 
 $sources = Get-ChildItem (Join-Path $repo "core/src/main/java") -Recurse -Filter *.java |
     ForEach-Object { $_.FullName }
-$outputDir = Join-Path ([System.IO.Path]::GetTempPath()) "pit-compile-check"
+$outputDir = Join-Path ([System.IO.Path]::GetTempPath()) ("pit-compile-check-" + ($LogName -replace '[^a-zA-Z0-9]', '-'))
 if (Test-Path $outputDir) { Remove-Item -Recurse -Force $outputDir }
 New-Item -ItemType Directory -Force $outputDir | Out-Null
 New-Item -ItemType Directory -Force (Split-Path $logFile) | Out-Null
