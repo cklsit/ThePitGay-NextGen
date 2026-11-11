@@ -896,4 +896,9 @@ public class ThePit extends JavaPlugin implements PluginMessageListener {
     }
 
 
+
+    /** 内部 API 桥：供扩展与命令调用核心能力（openAuctionMenu 等）。 */
+    public static cn.charlotte.pit.api.PitInternalHook getApi() {
+        return net.mizukilab.pit.impl.PitInternalImpl.INSTANCE;
+    }
 }
