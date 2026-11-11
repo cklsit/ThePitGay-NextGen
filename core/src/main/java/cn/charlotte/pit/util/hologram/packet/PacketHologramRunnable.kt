@@ -19,7 +19,9 @@ class PacketHologramRunnable : BukkitRunnable() {
         @JvmStatic
         fun deSpawnAll() {
             holograms.forEach {
-                it.hologram.entity.remove()
+                // entity 只有在第一次 update/spawn 之后才存在；未生成过的全息这里会是 null，
+                // 直接 remove() 会让插件 disable 阶段抛 NPE。
+                it.hologram.entity?.remove()
             }
             holograms.clear()
         }
