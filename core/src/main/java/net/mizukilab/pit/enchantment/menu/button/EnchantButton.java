@@ -2,22 +2,25 @@ package net.mizukilab.pit.enchantment.menu.button;
 
 import cn.charlotte.pit.ThePit;
 import cn.charlotte.pit.data.PlayerProfile;
+import cn.charlotte.pit.data.sub.EnchantmentRecord;
 import cn.charlotte.pit.event.StartEnchantLogicEvent;
 import cn.charlotte.pit.events.genesis.GenesisTeam;
 import cn.hutool.core.lang.func.Consumer3;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.mizukilab.pit.config.NewConfiguration;
 import net.mizukilab.pit.enchantment.AbstractEnchantment;
-import net.mizukilab.pit.data.operator.ProfileOperator;
-import net.mizukilab.pit.data.operator.SuPromise;
 import net.mizukilab.pit.enchantment.menu.MythicWellMenu;
-import net.mizukilab.pit.handlers.AnimationHandler;
+import net.mizukilab.pit.enchantment.rarity.EnchantmentRarity;
+import net.mizukilab.pit.enchantment.type.limit.ILimit;
 import net.mizukilab.pit.event.PitPlayerEnchantEvent;
 import net.mizukilab.pit.item.AbstractPitItem;
 import net.mizukilab.pit.item.IMythicItem;
 import net.mizukilab.pit.item.MythicColor;
+import net.mizukilab.pit.item.factory.ItemFactory;
 import net.mizukilab.pit.item.type.MythicEnchantingTable;
 import net.mizukilab.pit.menu.shop.button.AbstractShopButton;
 import net.mizukilab.pit.util.FuncsKt;
@@ -32,7 +35,7 @@ import net.mizukilab.pit.util.inventory.InventoryUtil;
 import net.mizukilab.pit.util.item.ItemBuilder;
 import net.mizukilab.pit.util.item.ItemUtil;
 import net.mizukilab.pit.util.menu.Button;
-import nya.Skip;
+import net.mizukilab.pit.util.random.RandomUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -40,20 +43,26 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.jetbrains.annotations.NotNull;
 
+import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * @Author: EmptyIrony
  * @Date: 2021/2/11 16:51
  */
-@Skip
+
 public class EnchantButton extends Button {
 
+    SecureRandom random = RandomUtil.random;
     private final ItemStack item;
     private final MythicWellMenu menu;
+
     public EnchantButton(ItemStack item, MythicWellMenu menu) {
         this.item = item;
         this.menu = menu;
@@ -132,7 +141,7 @@ public class EnchantButton extends Button {
             } else {
                 lines.add("&a此附魔物品已被提升至最大等级!");
             }
-            if (color == MythicColor.DARK || color == MythicColor.RAGE) {
+            if ((color == MythicColor.DARK || color == MythicColor.RAGE) && !PlayerUtil.isPlayerUnlockedPerk(player, "heresy_perk")) {
                 if (!PlayerUtil.isPlayerUnlockedPerk(player, "heresy_perk")) {
                     lines.clear();
                     lines.add("&c请先解锁精通天赋 &6邪术 &c后重试!");
@@ -154,15 +163,8 @@ public class EnchantButton extends Button {
 
     @Override
     public void clicked(Player player, int slot, ClickType clickType, int hotbarButton, ItemStack currentItem) {
+        // 从profile中获取最新的物品数据，而不是使用构造函数传入的旧数据
         PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
-        synchronized (profile) {
-            if (!profile.isLoaded() || profile.code != ProfileOperator.OPCODE_FREE
-                    || (menu.getAnimationData().isStartEnchanting() && !menu.getAnimationData().isFinished())) return;
-            enchant(player, profile);
-        }
-    }
-
-    private void enchant(Player player, PlayerProfile profile) {
         String enchantingItemStr = profile.getEnchantingItem();
         
         ItemStack actualItem = null;
@@ -170,11 +172,16 @@ public class EnchantButton extends Button {
             actualItem = InventoryUtil.deserializeItemStack(enchantingItemStr);
         }
         
+        // 如果profile中没有物品或物品为空，则使用传入的item作为备用
+        if (actualItem == null || actualItem.getType() == Material.AIR) {
+            actualItem = this.item;
+        }
+        
         if (actualItem == null || actualItem.getType() == Material.AIR) {
             return;
         }
 
-        IMythicItem mythicItem = Utils.getMythicItem0(actualItem.clone());
+        IMythicItem mythicItem = ((ItemFactory)ThePit.getInstance().getItemFactory()).getIMythicItem(actualItem);
 
         if (mythicItem == null) return;
 
@@ -186,7 +193,7 @@ public class EnchantButton extends Button {
         MythicColor color = MythicColor.valueOf(mythicColor.toUpperCase());
         int level = mythicItem.getTier();
 
-        if (color == MythicColor.DARK || color == MythicColor.RAGE) {
+        if ((color == MythicColor.DARK || color == MythicColor.RAGE) && !PlayerUtil.isPlayerUnlockedPerk(player, "heresy_perk")) {
             if (!PlayerUtil.isPlayerUnlockedPerk(player, "heresy_perk")) {
                 return;
             }
@@ -200,24 +207,9 @@ public class EnchantButton extends Button {
         if (profile.getCoins() < getPrice(player, level + 1, color)) {
             return;
         }
-
-        StartEnchantLogicEvent start = new StartEnchantLogicEvent(player);
-        start.callEvent();
-        if (start.isCancelled() || !start.isAllowEnchant()) return;
-
-        double originalCoins = profile.getCoins();
-        String originalScience = profile.getEnchantingScience();
-        String originalBook = profile.getEnchantingBook();
-        Runnable rollback = () -> {
-            profile.setCoins(originalCoins);
-            profile.setEnchantingItem(enchantingItemStr);
-            profile.setEnchantingScience(originalScience);
-            profile.setEnchantingBook(originalBook);
-            menu.getAnimationData().setStartEnchanting(false);
-            menu.getAnimationData().setFinished(false);
-            menu.getAnimationData().setEnd(true);
-            player.sendMessage(CC.translate("&c附魔失败，硬币和材料已退回。"));
-        };
+        if (Utils.canUseMythicBook(player, actualItem) && !hasAvailableBookRareEnchantment(player, actualItem, mythicItem, color, level + 1)) {
+            return;
+        }
         if (level == (color == MythicColor.DARK ? 1 : 2)) {
             if (PlayerUtil.getPlayerUnlockedPerkLevel(player, "Mythicism") < 4) {
                 return;
@@ -229,17 +221,12 @@ public class EnchantButton extends Button {
             }
         }
         profile.setCoins(profile.getCoins() - getPrice(player, level + 1, color));
+        //handle enchant - 使用最新的物品数据
+        doEnchant(actualItem, player, mythicItem);
 
         menu.getAnimationData().setFinished(false);
         menu.getAnimationData().setStartEnchanting(true);
-        menu.getAnimationData().setEnd(false);
         menu.getAnimationData().setAnimationTick(0);
-        try {
-            doEnchant(actualItem, player, profile, mythicItem, start, rollback);
-        } catch (Throwable failure) {
-            rollback.run();
-            ThePit.getInstance().getLogger().log(java.util.logging.Level.SEVERE, "Enchantment failed", failure);
-        }
 
         menu.setClosedByMenu(true);
         menu.openMenu(player);
@@ -252,13 +239,12 @@ public class EnchantButton extends Button {
      * @param player
      * @param mythicItem
      */
-    private void doEnchant(ItemStack item, Player player, PlayerProfile profile, IMythicItem mythicItem,
-                           StartEnchantLogicEvent start, Runnable rollback) {
-        Consumer3<ItemStack, AbstractPitItem, Player> consumer = start.getConsumer();
+    private void doEnchant(ItemStack item, Player player, IMythicItem mythicItem) {
+
+        StartEnchantLogicEvent startEnchantLogicEvent = new StartEnchantLogicEvent(player);
+        startEnchantLogicEvent.callEvent();
+        Consumer3<ItemStack, AbstractPitItem, Player> consumer = startEnchantLogicEvent.getConsumer();
         if(consumer != null){
-            if (profile.disallow() != profile) {
-                rollback.run();
-                return;
             consumer.accept(item,mythicItem,player);
             if(!startEnchantLogicEvent.isCancelled()) {
                 new PitPlayerEnchantEvent(player, mythicItem, mythicItem).callEvent();
@@ -439,46 +425,59 @@ public class EnchantButton extends Button {
                     break;
                 }
             }
-            try {
-                consumer.accept(item, mythicItem, player);
-                if (start.isCancelled() || !start.isAllowEnchant()) {
-                    rollback.run();
-                    return;
+            default: {
+                RandomUtil.switchSeed();
+                if (level == 1) {
+                    if(!NewConfiguration.INSTANCE.getAlwaysT2Enchant()) {
+                        announcement = levelTier1MythicEnchantLogic(item, player, mythicItem,level, rareResults, announcement, results, enchantments);
+                        //Tier 1 Enchant End
+                    } else{
+                        announcement = levelTier2MythicEnchantLogic(item, player, mythicItem,level, rareResults, announcement, color, enchantments,results);
+
+                    }
+                } else if (level == 2) {
+                    announcement = levelTier2MythicEnchantLogic(item, player, mythicItem,level, rareResults, announcement, color, enchantments, results);
+                } else if (level == 3) {
+                    announcement = levelTier3MythicEnchantLogic(item, player, mythicItem,level, rareResults, announcement, results, enchantments, color);
                 }
-                end(player, mythicItem);
-                finishEnchant(player, profile, mythicItem, mythicItem, false);
-            } finally {
-                profile.allow();
             }
+        }
+
+        if (mythicItem.color == MythicColor.DARK_GREEN && mythicItem.getEnchantmentLevel("trash_panda_enchant") >= 1) {
+            int randomLive = RandomUtil.random.nextInt(30, 41);
+            mythicItem.live = randomLive;
+            mythicItem.maxLive = randomLive;
+        }
+
+        mythicItem.getEnchantmentRecords()
+                .add(new EnchantmentRecord(
+                        player.getName(),
+                        "Enchant Table",
+                        System.currentTimeMillis()
+                ));
+
+        //Check if the mythic item have a prefix and announce it
+        //reload it , maybe trash code
+        //mythicItem.loadFromItemStack(mythicItem.toItemStack());
+        if(startEnchantLogicEvent.isCancelled()){
             return;
         }
-
-        boolean useBook = Utils.canUseMythicBook(player, item);
-        menu.getAnimationData().setEnd(false);
-        SuPromise<EnchantRequest> consumers = ThePit.getInstance().getEnchTable().enchantItem(player, profile, mythicItem, useBook);
-        consumers.promise(i -> {
-            if(i.isFail()){
-                rollback.run();
-                return;
-            }
-            finishEnchant(player, profile, mythicItem, i.getMythic(), i.isAnnouncement());
-        });
-    }
-
-    private void finishEnchant(Player player, PlayerProfile profile, IMythicItem before, IMythicItem result, boolean announce) {
-        // The result is already committed. A listener failure must not refund a successful enchant.
-        try {
-            new PitPlayerEnchantEvent(player, before, result).callEvent();
-            // Preserve extensions that modify the result in the post-enchant event.
-            end(player, result);
-            if (announce || result.getPrefix() != null) beginAnnounceAsync(player, result, profile);
-        } catch (Throwable failure) {
-            ThePit.getInstance().getLogger().log(java.util.logging.Level.SEVERE, "Post-enchantment listener failed", failure);
-        } finally {
-            // The result is ready; the animator still plays the full sequence.
-            // rapid-enchanting only allows closing the menu to skip it manually.
-            menu.getAnimationData().setEnd(true);
+        new PitPlayerEnchantEvent(player, mythicItem, mythicItem).callEvent();
+        if (mythicItem.getPrefix() != null) {
+            announcement = true;
         }
+
+        if (announcement) {
+            PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
+
+            beginAnnounceAsync(player, mythicItem, profile);
+        }
+        end(player, mythicItem);
+    }
+    public void writeOut(ItemStack stack,IMythicItem item){
+        ItemStack itemStack = item.toItemStack();
+        stack.setData(itemStack.getData());
+        stack.setItemMeta(itemStack.getItemMeta());
     }
     private static BaseComponent[] toEmptyHover(IMythicItem mythicItem) {
         // 1.21：无法再序列化物品 NBT 作为悬停，退化为物品名文本
@@ -509,18 +508,23 @@ public class EnchantButton extends Button {
                     this.cancel();
                 }
             }
-        }.runTaskTimer(ThePit.getInstance(), 50, 5);
+        }.runTaskTimerAsynchronously(ThePit.getInstance(), 50, 5);
     }
 
     private static void end(Player player, IMythicItem mythicItem) {
         PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
-        ItemStack result = mythicItem.toItemStack();
-        String encoded = InventoryUtil.serializeItemStack(result);
-        if (encoded == null) throw new IllegalStateException("Failed to serialize enchanted item");
-        profile.setEnchantingItem(encoded);
-        IMythicItem.clearCache(result);
+        profile.setEnchantingItem(InventoryUtil.serializeItemStack(mythicItem.toItemStack()));
     }
 
+    private List<AbstractEnchantment> getBookRareResults(Player player, ItemStack item, MythicColor color, int level) {
+        List<AbstractEnchantment> list = ThePit.getInstance()
+                .getEnchantmentFactor()
+                .getEnchantments()
+                .stream()
+                .filter(abstractEnchantment -> abstractEnchantment.canApply(item))
+                .toList();
+        List<AbstractEnchantment> rareResults = list.stream()
+                .filter(abstractEnchantment -> abstractEnchantment.getRarity() == EnchantmentRarity.RARE).collect(Collectors.toList());
 
         if (color == MythicColor.DARK) {
             rareResults = list.stream()
@@ -936,6 +940,19 @@ public class EnchantButton extends Button {
     }
 
     /**
+     * 返回升级至T3为附魔提供的随机等级(1~3) 概率分布6:2:2
+     *
+     * @return int Level
+     */
+    private int getRandomLevel() {
+        if (RandomUtil.hasSuccessfullyByChance(0.6)) {
+            return 1;
+        } else {
+            return random.nextInt(2) + 2;
+        }
+    }
+
+    /**
      * 移除玩家指定颜色的裤子
      *
      * @param player 玩家
@@ -950,16 +967,15 @@ public class EnchantButton extends Button {
             return false;
         }
 
-        if (!"mythic_leggings".equals(ItemUtil.getInternalName(itemStack))
-                || !color.getInternalName().equals(ItemUtil.getItemStringData(itemStack, "mythic_color"))) return false;
-        if (itemStack.getAmount() > 1) {
-            itemStack.setAmount(itemStack.getAmount() - 1);
-            String remaining = InventoryUtil.serializeItemStack(itemStack);
-            if (remaining == null) return false;
-            profile.setEnchantingScience(remaining);
-        } else {
-            profile.setEnchantingScience(null);
+        String mythic_color = ItemUtil.getItemStringData(itemStack, "mythic_color");
+        for (MythicColor mythicColor : MythicColor.values()) {
+            if (mythicColor.getInternalName().equals(mythic_color)) {
+                profile.setEnchantingScience(InventoryUtil.serializeItemStack(new ItemStack(Material.AIR)));
+                return true;
+            }
         }
-        return true;
+
+        return false;
     }
+
 }

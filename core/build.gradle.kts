@@ -132,6 +132,7 @@ dependencies {
     implementation("zone.rong:imaginebreaker:2.1")
     compileOnly(libs.adventure.bukkit)
     compileOnly("com.caoccao.javet:javet:3.1.4")
+    compileOnly("commons-lang:commons-lang:2.6")
     compileOnly("org.projectlombok:lombok:1.18.32")
     annotationProcessor("org.projectlombok:lombok:1.18.32")
     compileOnly(libs.luckperms)

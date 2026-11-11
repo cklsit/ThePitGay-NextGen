@@ -36,7 +36,6 @@ import net.mizukilab.pit.util.inventory.InventoryUtil;
 import net.mizukilab.pit.util.level.LevelUtil;
 import net.mizukilab.pit.util.random.RandomUtil;
 import net.mizukilab.pit.util.rank.RankUtil;
-import nya.Skip;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Sound;
