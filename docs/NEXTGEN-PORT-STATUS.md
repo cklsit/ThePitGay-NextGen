@@ -81,6 +81,10 @@ Bot（`NPCLib#createFighterRobot`，用临时冒烟插件调用）——四项�
 菜单与命令（同一冒烟插件调用）：
 - Bot 作为真实玩家执行 `/spawn`、`/settings` 均返回 true（命令注册正常；`/pi` 是 `/pitadmin pi` 的子命令，不是顶层命令）
 - `AdminItemMenu` 可正常打开（物品渲染 + PDC 读取整条路径无异常）
+- 菜单批量开测：`PlayerOptionMenu` / `PackageMenu` / `MedalMainMenu` / `PrestigeMainMenu` /
+  `HeresyMenu` / `HubMenu` 都能正常打开并显示标题；`PerkMenu`、`AuctionMenu` 未进入渲染
+  （前者需要已有 perk 数据，后者需要拍卖行数据，属业务前置而非报错）；`MythicWellMenu` 无无参构造
+
 
 
 ### 本轮修掉的运行时问题
