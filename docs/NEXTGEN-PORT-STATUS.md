@@ -56,11 +56,16 @@
 `Enabling ThePitUltimate v4.4.11-20261028` → `Loaded configuration/mongodb/NPCFactory/CustomEntityNPCFactory/Events`
 → `Done (~30s)` → **空跑 90 秒 0 异常** → 正常 `Disabling v4.4.11-20261028`。
 
-Bot（`NPCLib#createFighterRobot`，用临时冒烟插件调用）：
-- 生成成功：世界实体 +1，`BotEntity` 的 Bukkit 实体是 `CraftPlayer`，出现在 `Bukkit.getOnlinePlayers()` 里
-- **存活**：生成后持续在线（`online=true / alive=true / removed=false`）
-- **可击杀**：`Player#damage(100)` → 血量 0 → `dead=true` → 实体移除
-- 未验证：击杀者连杀结算、按 respawnDelay 重生（需要真实玩家当攻击者）
+Bot（`NPCLib#createFighterRobot`，用临时冒烟插件调用）——四项验收全部在本机 Paper 1.21.8 上跑通：
+- **出现**：世界实体 +1，Bukkit 实体是 `CraftPlayer`，进入 `Bukkit.getOnlinePlayers()`
+- **可击杀**：`Player#damage(...)` → 血量 0 → `dead` → 实体移除（插件的限伤逻辑会削峰，
+  冒烟脚本先把血降到 1 再补刀）
+- **加连杀**：另一只 Bot 作为攻击者击杀后，击杀者档案 `kills` / `highestStreaks` 从 0 涨到 2
+  （注意：一次击杀计数 +2，疑似死亡结算走了两次，需实机复核真人击杀的计数）
+- **重生**：带 `respawnDelay(40)` 的 Bot 死亡后 2 秒以新 UUID 重新上线，在线数恢复
+
+仍未验证：真人客户端看到的 NPC 外观/点击、道具与附魔台、事件刷地形、机器人战斗 AI 表现。
+
 
 本轮为此修掉的问题：
 1. **PacketEvents 把机器人踢下线**（`failed to inject into a channel`）：`BotEntity.spawn` 把
