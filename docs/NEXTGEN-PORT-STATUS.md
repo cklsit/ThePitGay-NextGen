@@ -65,7 +65,14 @@ Bot（`NPCLib#createFighterRobot`，用临时冒烟插件调用）——四项�
   改为下一 tick 再清守卫后已修正，冒烟复测 kills=1 / streaks=1）
 - **重生**：带 `respawnDelay(40)` 的 Bot 死亡后 2 秒以新 UUID 重新上线，在线数恢复
 
-仍未验证：真人客户端看到的 NPC 外观/点击、道具与附魔台、事件刷地形、机器人战斗 AI 表现。
+仍未验证：真人客户端看到的 NPC 外观/点击、道具与附魔台界面、事件刷地形、机器人战斗 AI 表现。
+
+物品 PDC 数据层（同一冒烟插件调用）：
+- `MythicSwordItem#toItemStack()` → `GOLDEN_SWORD`
+- `Utils.getMythicItem(stack)` → 还原成 `MythicSwordItem`；`ItemUtil.getInternalName(stack)` → `mythic_sword`
+- `stack.serializeAsBytes()` → `ItemStack.deserializeBytes()` 往返后内部名与神话类型都保持
+- `stack.clone()` 保留 PDC；普通钻石剑 `getMythicItem` 返回 null（不会误判）
+
 
 
 本轮为此修掉的问题：
