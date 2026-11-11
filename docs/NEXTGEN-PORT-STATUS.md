@@ -73,6 +73,23 @@ Bot（`NPCLib#createFighterRobot`，用临时冒烟插件调用）——四项�
 - `stack.serializeAsBytes()` → `ItemStack.deserializeBytes()` 往返后内部名与神话类型都保持
 - `stack.clone()` 保留 PDC；普通钻石剑 `getMythicItem` 返回 null（不会误判）
 
+全息与 WorldEdit 7（同一冒烟插件调用）：
+- `HologramAPI.createHologram(...)` 正常创建（世界实体 +1），`removeHologram` 后实体数回落
+- `CakeEvent.onActive()` / `onInactive()` 无异常：`WorldEdit#newEditSession`、`BlockTypes`、
+  `RandomPattern`、`setBlocks`、撤销流程在 1.21.8 + FAWE 2.16.2 上可用
+
+### 本轮修掉的运行时问题
+
+1. **`HologramAPI` 在 1.21.8 无法初始化**：静态初始化用 1.8 反射工具探测版本
+   （`Minecraft.VERSION`），在 Paper 1.21.8 上解析不到 `net.minecraft.server.UNKNOWN.Entity`，
+   类初始化直接失败，所有全息（14 处调用）全部不可用。改为固定 1.21 语义，删掉 1.8 发包与
+   ProtocolSupport 分支。
+2. **附加插件 hook 缺失时全息整体失效**：`HologramAPI.createHologram` 原本直接调
+   `ThePit.api.createHologram`，未装附加插件时 NPE；现在回退到内置 `PacketHologram`。
+3. **全息盔甲架跨重启累积**：真实实体随区块保存，强杀/停机不走 despawn 就残留；
+   启动时按 scoreboard tag `pit_hologram` 清理已加载区块里的残留。
+
+
 
 
 本轮为此修掉的问题：
