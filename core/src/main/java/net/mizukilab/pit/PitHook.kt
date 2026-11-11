@@ -163,7 +163,7 @@ object PitHook {
         if(!delayReloadEnchTable){
             ThePit.getInstance().enchTable.reload();
         }
-        Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), {
+        Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), Runnable {
             if(delayReloadEnchTable) {
                 ThePit.getInstance().enchTable.reload()
             }
@@ -337,7 +337,7 @@ object PitHook {
         try {
             var itemFactor = ThePit.getInstance().itemFactor
             itemFactor.registerItems(clazzList)
-            Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), {
+            Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), Runnable {
                 itemFactor.registerItems(ItemConstructor.getItems())
             }, 10)
         } catch (e: Exception) {
@@ -553,7 +553,7 @@ private fun loadEnchants() {
 //    }
     enchantmentFactor.init(classes)
     EnchantedConstructor.apply {
-        Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), {
+        Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), Runnable {
             enchantmentFactor.init(getEnchantments())
         }, 10);
     }
@@ -687,7 +687,7 @@ private fun loadPerks() {
     )
 
     perkFactory.init(classes as Collection<Class<*>>?)
-    Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), {
+    Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), Runnable {
         perkFactory.init(PerkConstructor.getPerks())
     }, 10)
 }
