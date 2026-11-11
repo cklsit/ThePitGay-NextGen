@@ -14,7 +14,6 @@ import net.minecraft.server.level.ClientInformation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.CommonListenerCookie;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.PositionMoveRotation;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -36,6 +35,7 @@ import java.util.function.BiConsumer;
 public class BotEntity extends ServerPlayer {
     private final boolean walking;
     private final String sourceName;
+    private final String displayName;
     private final BiConsumer<BotEntity, DamageSource> deathHandler;
     private final BiConsumer<BotEntity, Runnable> stepHandler;
     private BotConnection connectionHandle;
@@ -78,8 +78,11 @@ public class BotEntity extends ServerPlayer {
         );
         this.walking = options.walking();
         this.sourceName = options.name();
+        this.displayName = options.displayName();
         this.deathHandler = options.deathHandler();
         this.stepHandler = options.stepHandler();
+        // 机器人不落盘：否则每只 bot 都会留下 playerdata / stats / advancements 文件。
+        this.persist = false;
         this.setPos(location.getX(), location.getY(), location.getZ());
         this.setYRot(0.0F);
         this.setXRot(0.0F);
@@ -112,10 +115,15 @@ public class BotEntity extends ServerPlayer {
             super(PacketFlow.SERVERBOUND);
         }
 
+        /**
+         * 注意：{@code Connection} 不是 {@code @Sharable}，不能再交给 {@code EmbeddedChannel} 构造器
+         * 添加一次（会抛 ChannelPipelineException），这里只由 {@code configurePacketHandler} 挂载。
+         */
         void attach() {
-            EmbeddedChannel channel = new EmbeddedChannel(this);
+            EmbeddedChannel channel = new EmbeddedChannel();
             this.channel = channel;
             this.address = channel.remoteAddress();
+            configureSerialization(channel.pipeline(), PacketFlow.SERVERBOUND, false, null);
             this.configurePacketHandler(channel.pipeline());
         }
 
@@ -125,6 +133,14 @@ public class BotEntity extends ServerPlayer {
 
         @Override
         public void send(Packet<?> packet, ChannelFutureListener listener) {
+        }
+
+        @Override
+        public void send(Packet<?> packet, ChannelFutureListener listener, boolean flush) {
+        }
+
+        @Override
+        public void tick() {
         }
     }
 
@@ -145,6 +161,11 @@ public class BotEntity extends ServerPlayer {
         }
         if (this.hurtTime > 0) {
             this.hurtTime--;
+        }
+        // doTick 被置空后 Player.tick() 不再执行，攻击强度计数器必须自己推进，
+        // 否则每次平砍只有约 20% 伤害（getAttackStrengthScale 恒接近 0）。
+        if (this.attackStrengthTicker < 1000) {
+            this.attackStrengthTicker++;
         }
         super.tick();
     }
@@ -186,12 +207,9 @@ public class BotEntity extends ServerPlayer {
     }
 
     @Override
-    public void swing(InteractionHand hand) {
-        super.swing(hand);
-    }
-
-    @Override
     public void die(DamageSource source) {
+        // 先走原版死亡流程（PlayerDeathEvent、统计、死亡消息），再交给 Bot 模块回收并重生。
+        super.die(source);
         this.deathHandler.accept(this, source);
     }
 
@@ -208,8 +226,8 @@ public class BotEntity extends ServerPlayer {
 
     @Override
     public net.minecraft.network.chat.Component getDisplayName() {
-        return this.sourceName == null ? super.getDisplayName()
-                : net.minecraft.network.chat.Component.literal(this.sourceName);
+        return this.displayName == null ? super.getDisplayName()
+                : net.minecraft.network.chat.Component.literal(this.displayName);
     }
 
     /**
@@ -231,12 +249,13 @@ public class BotEntity extends ServerPlayer {
     /**
      * 下线：机器人以真实登录身份存在，必须走 {@code PlayerList.remove} 才能从在线列表、
      * 统计与实体追踪里干净摘除（会触发 {@code PlayerQuitEvent}，与原版玩家一致）。
+     * {@code PlayerList.remove} 内部已经做过 removePlayerImmediately，不要再调 discard()，
+     * 否则 {@code EntityRemoveEvent} 与 level callback 会跑两遍。
      */
     public void destroy() {
         MinecraftServer server = this.getServer();
         if (this.isRemoved()) return;
         server.getPlayerList().remove(this);
-        this.discard();
         BotConnection connection = this.connectionHandle;
         if (connection != null && connection.channel != null) {
             connection.channel.close();

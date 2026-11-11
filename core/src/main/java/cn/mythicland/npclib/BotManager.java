@@ -15,6 +15,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -169,10 +170,24 @@ final class BotManager implements Listener, AutoCloseable {
         bot.damageTick = this.tick + 1;
     }
 
+    /**
+     * 机器人以真实登录身份上线，但不应在聊天栏广播“加入服务器”。
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onJoin(PlayerJoinEvent event) {
+        if (event.getPlayer() instanceof org.bukkit.craftbukkit.entity.CraftPlayer craftPlayer
+                && craftPlayer.getHandle() instanceof BotEntity) {
+            event.joinMessage(null);
+        }
+    }
+
     private void tick() {
         this.tick++;
         spawnRespawns();
-        List<Player> players = List.copyOf(Bukkit.getOnlinePlayers());
+        // 机器人自身也在在线玩家列表里，但它们不该作为“观察者”参与可见性裁剪与目标选择。
+        List<Player> players = Bukkit.getOnlinePlayers().stream()
+                .filter(player -> !this.bots.containsKey(player.getUniqueId()))
+                .collect(java.util.stream.Collectors.toList());
         this.visibility.activity(players, this.tick);
         if (this.tick % 10 == 1) {
             this.selector.clear();
