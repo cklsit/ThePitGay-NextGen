@@ -100,7 +100,8 @@ tasks.named<ShadowJar>("shadowJar") {
     relocate("panda", "net.mizukilab.pit.libs")
     relocate("dev.rollczi", "net.mizukilab.pit.libs")
     relocate("cn.hutool", "net.mizukilab.pit.libs")
-    relocate("net.kyori", "net.mizukilab.pit.libs")
+    // 注意：不要重定位 net.kyori —— Paper API 的方法签名用的是服务端自带的 adventure 类型，
+    // 重定位后调用 PlayerJoinEvent#joinMessage 等会 NoSuchMethodError。
     relocate("net.jodah", "net.mizukilab.pit.libs")
     // Preserve the NPC API descriptors consumed by existing extensions.
     relocate("cn.mythicland.npclib", "net.mizukilab.pit.libs.npclib")

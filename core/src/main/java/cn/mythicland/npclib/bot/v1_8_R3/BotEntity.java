@@ -98,9 +98,22 @@ public class BotEntity extends ServerPlayer {
         BotConnection connection = new BotConnection();
         connection.attach();
         this.connectionHandle = connection;
+        // PacketEvents 会在 PlayerJoinEvent 里找玩家的频道；找不到就把玩家踢下线
+        // （"PacketEvents failed to inject into a channel"）。机器人用的是 EmbeddedChannel，
+        // 属于它认可的 fake channel，先把频道登记进去即可跳过注入与踢人。
+        registerPacketEventsChannel(connection.channel);
         server.getPlayerList().placeNewPlayer(
                 connection, this, CommonListenerCookie.createInitial(this.getGameProfile(), false)
         );
+    }
+
+    private void registerPacketEventsChannel(io.netty.channel.Channel channel) {
+        try {
+            com.github.retrooper.packetevents.PacketEvents.getAPI()
+                    .getProtocolManager().setChannel(getUUID(), channel);
+        } catch (Throwable throwable) {
+            // PacketEvents 未初始化（独立跑 Bot 模块的单测/工具）时忽略。
+        }
     }
 
     /**
@@ -259,6 +272,12 @@ public class BotEntity extends ServerPlayer {
         BotConnection connection = this.connectionHandle;
         if (connection != null && connection.channel != null) {
             connection.channel.close();
+        }
+        try {
+            com.github.retrooper.packetevents.PacketEvents.getAPI()
+                    .getProtocolManager().removeChannelById(getUUID());
+        } catch (Throwable throwable) {
+            // PacketEvents 未初始化时忽略。
         }
         this.connectionHandle = null;
     }

@@ -538,7 +538,7 @@ object NewConfiguration {
         "event-online-required.block_head" to 999,
         "event-online-required.squads" to 999,
 
-        "highest-prestige" to Integer.MAX_VALUE,
+        "highest-prestige" to 35,
         "seasonal-override" to "auto",
         "title.event.epic.animation" to listOf(
             "&5&l大型事件! ",

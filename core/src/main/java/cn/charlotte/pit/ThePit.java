@@ -239,6 +239,8 @@ public class ThePit extends JavaPlugin implements PluginMessageListener {
         Loader.start();
         postLoad();
 
+        // 玩家退出收尾要用这个单例（CombatListener#handleQuit），必须启动。
+        new net.mizukilab.pit.runnable.ProfileLoadRunnable(this);
     }
 
     private void postLoad() {
@@ -545,7 +547,10 @@ public class ThePit extends JavaPlugin implements PluginMessageListener {
         // 发包层统一走 PacketEvents：加载阶段完成 API 绑定与 load，
         // onEnable 期间的 SignGui / 可见性伪装等组件依赖它。
         PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this));
-        PacketEvents.getAPI().getSettings().checkForUpdates(false).bStats(false);
+        PacketEvents.getAPI().getSettings().checkForUpdates(false).bStats(false)
+                // 机器人用的是 EmbeddedChannel，PacketEvents 注入不进去就会踢人；
+                // 关闭「注入失败即踢出」，否则 Bot 一生成就被断开。
+                .kickIfTerminated(false);
         PacketEvents.getAPI().load();
     }
 

@@ -172,10 +172,19 @@ public class LevelUtil {
     public static void bootCache() {
         booting = true;
         booted = false;
-        int limit = NewConfiguration.INSTANCE.getPrestige();
+        // 配置项 highest-prestige 若取到极大值，limit * maxLevel 会整型溢出成负数并抛
+        // NegativeArraySizeException，连带打断玩家存档写入。这里加上限与溢出保护。
+        int limit = Math.max(1, Math.min(NewConfiguration.INSTANCE.getPrestige(), 1000));
         PitGlobalConfig globalConfig = ThePit.getInstance().getGlobalConfig();
-        int maxLevel = globalConfig.maxLevel;
-        double[] plevelMappingRaw = new double[limit * maxLevel];
+        int maxLevel = Math.max(1, Math.min(globalConfig.maxLevel, 1000));
+        double[] plevelMappingRaw;
+        try {
+            plevelMappingRaw = new double[Math.multiplyExact(limit, maxLevel)];
+        } catch (ArithmeticException | OutOfMemoryError overflow) {
+            limit = 1;
+            maxLevel = 1;
+            plevelMappingRaw = new double[1];
+        }
         for (int prestige = 0; prestige < limit; prestige++) {
             int levelMapping = prestige * maxLevel;
             for (int ia = 0; ia < maxLevel; ia++) {

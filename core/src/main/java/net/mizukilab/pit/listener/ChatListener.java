@@ -74,11 +74,12 @@ public class ChatListener implements Listener {
 
         cooldown.put(player.getUniqueId(), new Cooldown(3, TimeUnit.SECONDS));
         if (NewConfiguration.INSTANCE.getCustomChatFormatEnable()) {
-            event.setFormat(CC.translate(PlaceholderAPI
-                    .setPlaceholders(player, NewConfiguration.INSTANCE.getCustomChatFormat()
-                            .replace("%s", "$s"))
-                    .replace("$s", "%s")
-            ));
+            String format = NewConfiguration.INSTANCE.getCustomChatFormat().replace("%s", "$s");
+            // PlaceholderAPI 是可选依赖：未安装时跳过变量替换，避免事件里抛 NoClassDefFoundError。
+            if (org.bukkit.Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+                format = PlaceholderAPI.setPlaceholders(player, format);
+            }
+            event.setFormat(CC.translate(format.replace("$s", "%s")));
         } else {
             if ("&7".equalsIgnoreCase(rank)) {
                 event.setFormat(CC.translate(tag

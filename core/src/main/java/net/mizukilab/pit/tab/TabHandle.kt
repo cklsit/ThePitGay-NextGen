@@ -64,8 +64,9 @@ open class TabHandle {
 
     private fun updatePlayerTabList(player: Player, headerText: String, footerText: String) {
         try {
-            val header = if ('%' in headerText) PlaceholderAPI.setPlaceholders(player, headerText) else headerText
-            val footer = if ('%' in footerText) PlaceholderAPI.setPlaceholders(player, footerText) else footerText
+            val papiReady = org.bukkit.Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")
+            val header = if (papiReady && '%' in headerText) PlaceholderAPI.setPlaceholders(player, headerText) else headerText
+            val footer = if (papiReady && '%' in footerText) PlaceholderAPI.setPlaceholders(player, footerText) else footerText
             val previous = lastSent[player.uniqueId]
             if (previous?.player === player && previous.header == header && previous.footer == footer) return
 
