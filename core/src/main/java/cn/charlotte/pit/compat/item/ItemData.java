@@ -54,31 +54,48 @@ public final class ItemData {
     @Nullable
     public static String getString(@Nullable ItemStack stack, String name) {
         PersistentDataContainer pdc = container(stack, false);
-        return pdc == null ? null : pdc.get(key(name), PersistentDataType.STRING);
+        return pdc == null ? null : read(pdc, key(name), PersistentDataType.STRING);
     }
 
     @Nullable
     public static Integer getInt(@Nullable ItemStack stack, String name) {
         PersistentDataContainer pdc = container(stack, false);
-        return pdc == null ? null : pdc.get(key(name), PersistentDataType.INTEGER);
+        return pdc == null ? null : read(pdc, key(name), PersistentDataType.INTEGER);
     }
 
     @Nullable
     public static Long getLong(@Nullable ItemStack stack, String name) {
         PersistentDataContainer pdc = container(stack, false);
-        return pdc == null ? null : pdc.get(key(name), PersistentDataType.LONG);
+        return pdc == null ? null : read(pdc, key(name), PersistentDataType.LONG);
     }
 
     @Nullable
     public static Double getDouble(@Nullable ItemStack stack, String name) {
         PersistentDataContainer pdc = container(stack, false);
-        return pdc == null ? null : pdc.get(key(name), PersistentDataType.DOUBLE);
+        return pdc == null ? null : read(pdc, key(name), PersistentDataType.DOUBLE);
     }
 
     public static boolean getBoolean(@Nullable ItemStack stack, String name) {
         PersistentDataContainer pdc = container(stack, false);
-        Byte value = pdc == null ? null : pdc.get(key(name), PersistentDataType.BYTE);
+        Byte value = pdc == null ? null : read(pdc, key(name), PersistentDataType.BYTE);
         return value != null && value != 0;
+    }
+
+    /**
+     * 读取 PDC 值，类型不匹配时返回 null。
+     *
+     * <p>1.8 的 {@code tag.extra} 里同一个键可能先后被写成字符串或数字；
+     * 迁移到强类型的 PDC 后，用错类型的读取会抛 {@link IllegalArgumentException}
+     * （Paper 的 CraftPersistentDataTypeRegistry 直接断言），
+     * 把整条物品/菜单渲染路径打断。这里统一吞掉类型不匹配。</p>
+     */
+    @Nullable
+    private static <T, Z> Z read(PersistentDataContainer pdc, NamespacedKey key, PersistentDataType<T, Z> type) {
+        try {
+            return pdc.get(key, type);
+        } catch (IllegalArgumentException typeMismatch) {
+            return null;
+        }
     }
 
     @NotNull
