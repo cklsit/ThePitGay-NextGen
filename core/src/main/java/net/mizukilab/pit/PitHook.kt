@@ -114,7 +114,8 @@ import java.lang.Boolean
 
 object PitHook {
     @JvmStatic
-    val gitVersion = "4.4.9-20261016"
+    val gitVersion: String
+        get() = cn.charlotte.pit.ThePit.getInstance()?.description?.version ?: "dev"
 
     @JvmStatic
     val itemVersion = "buuid"

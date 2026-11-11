@@ -441,6 +441,11 @@ public class ThePit extends JavaPlugin implements PluginMessageListener {
     }
 
     private void loadGame() {
+        // 事件/保护逻辑通过 ClearRunnable.getClearRunnable() 取实例，必须在这里启动，
+        // 否则 ItemSpawnEvent 等路径会拿到 null。
+        new net.mizukilab.pit.runnable.ClearRunnable()
+                .runTaskTimer(ThePit.getInstance(), 20, 20);
+
         new GlobalSweeper()
                 .runTaskTimer(ThePit.getInstance(), 20, 20);
 

@@ -16,7 +16,9 @@ public class NametagThread extends BukkitRunnable {
      */
     public NametagThread(NametagHandler handler) {
         this.handler = handler;
-        Bukkit.getScheduler().runTaskTimer(ThePit.getInstance(), this, 0, 20);
+        // Paper 1.21 的调度器拒绝把 BukkitRunnable 实例当任务参数传入，
+        // 必须用 BukkitRunnable 自己的 runTaskTimer。
+        this.runTaskTimer(ThePit.getInstance(), 0L, 20L);
     }
 
     @Override
