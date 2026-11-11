@@ -78,6 +78,11 @@ Bot（`NPCLib#createFighterRobot`，用临时冒烟插件调用）——四项�
 - `CakeEvent.onActive()` / `onInactive()` 无异常：`WorldEdit#newEditSession`、`BlockTypes`、
   `RandomPattern`、`setBlocks`、撤销流程在 1.21.8 + FAWE 2.16.2 上可用
 
+菜单与命令（同一冒烟插件调用）：
+- Bot 作为真实玩家执行 `/spawn`、`/settings` 均返回 true（命令注册正常；`/pi` 是 `/pitadmin pi` 的子命令，不是顶层命令）
+- `AdminItemMenu` 可正常打开（物品渲染 + PDC 读取整条路径无异常）
+
+
 ### 本轮修掉的运行时问题
 
 1. **`HologramAPI` 在 1.21.8 无法初始化**：静态初始化用 1.8 反射工具探测版本
@@ -88,6 +93,11 @@ Bot（`NPCLib#createFighterRobot`，用临时冒烟插件调用）——四项�
    `ThePit.api.createHologram`，未装附加插件时 NPE；现在回退到内置 `PacketHologram`。
 3. **全息盔甲架跨重启累积**：真实实体随区块保存，强杀/停机不走 despawn 就残留；
    启动时按 scoreboard tag `pit_hologram` 清理已加载区块里的残留。
+4. **PDC 读到错误类型会抛异常**：1.8 的 `tag.extra` 里同一个键可能先后写成字符串与数字，
+   迁到强类型 PDC 后按错误类型读取会抛 `IllegalArgumentException`（Paper 直接断言），
+   打断整条物品/菜单渲染。`ItemData` 的各 `get` 现在类型不匹配时返回 null。
+   症状：管理菜单打开时抛 `The found tag instance (StringTag) cannot store Integer`，
+   菜单实际没开（`getOpenInventory` 停在 Crafting）；修复后菜单正常打开。
 
 
 
