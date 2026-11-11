@@ -1,7 +1,6 @@
 package spg.lgdev.handler;
 
 import com.google.common.util.concurrent.AtomicDouble;
-import net.minecraft.server.v1_8_R3.PacketPlayInFlying;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
@@ -10,10 +9,10 @@ import org.bukkit.entity.Player;
  */
 public interface MovementHandler {
 
-    void handleUpdateLocation(Player var1, Location var2, Location var3, PacketPlayInFlying var4);
+    void handleUpdateLocation(Player var1, Location var2, Location var3, Object var4);
     default void handleUpdateSpeed(Player var1, AtomicDouble speed,Location in,Location out){
 
     }
-    void handleUpdateRotation(Player var1, Location var2, Location var3, PacketPlayInFlying var4);
+    void handleUpdateRotation(Player var1, Location var2, Location var3, Object var4);
 
 }

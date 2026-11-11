@@ -7,7 +7,6 @@ import cn.hutool.core.collection.ConcurrentHashSet;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import net.minecraft.server.v1_8_R3.EnumParticle;
-import net.minecraft.server.v1_8_R3.PacketPlayInFlying;
 import net.minecraft.server.v1_8_R3.PacketPlayOutWorldParticles;
 import net.mizukilab.pit.config.PitWorldConfig;
 import net.mizukilab.pit.util.aabb.AABB;
@@ -340,12 +339,12 @@ public class PlayerMoveHandler implements MovementHandler, Listener {
 
 
     @Override
-    public void handleUpdateLocation(Player player, Location location, Location location1, PacketPlayInFlying packetPlayInFlying) {
+    public void handleUpdateLocation(Player player, Location location, Location location1, Object packetPlayInFlying) {
         checkMove(location, location1, player.getPlayer());
     }
 
     @Override
-    public void handleUpdateRotation(Player player, Location location, Location location1, PacketPlayInFlying packetPlayInFlying) {
+    public void handleUpdateRotation(Player player, Location location, Location location1, Object packetPlayInFlying) {
         IOperator iOperator = ThePit.getInstance().getProfileOperator().getIOperator(player.getUniqueId());
         if(iOperator != null) {
             PlayerProfile profile = iOperator.profile();
