@@ -31,7 +31,7 @@ class KungFuKnowledgePerk : AbstractPerk(), Listener, IAttackEntity {
     }
 
     override fun getIcon(): Material {
-        return Material.RAW_BEEF
+        return Material.BEEF
     }
 
     override fun requireCoins(): Double {

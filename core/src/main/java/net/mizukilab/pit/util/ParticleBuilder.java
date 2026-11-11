@@ -63,11 +63,11 @@ public class ParticleBuilder {
     }
 
     public static void playColoredDust(Location loc, Color color) {
-        ParticleBuilder.playColored(loc, color, EnumParticle.REDSTONE);
+        ParticleBuilder.playColored(loc, color, Particle.REDSTONE);
     }
 
     public static void playColoredSpell(Location loc, Color color) {
-        ParticleBuilder.playColored(loc, color, EnumParticle.SPELL_MOB);
+        ParticleBuilder.playColored(loc, color, Particle.SPELL_MOB);
     }
 }
 

@@ -157,7 +157,7 @@ public class PlayerMoveHandler implements MovementHandler, Listener {
             player.playSound(player.getLocation(), Sound.EXPLODE, 1.5f, 0.8f);
             player.playSound(player.getLocation(), Sound.FIREWORK_LAUNCH, 1.0f, 1.2f);
             PacketPlayOutWorldParticles explosionPacket = new PacketPlayOutWorldParticles(
-                    EnumParticle.EXPLOSION_LARGE, true,
+                    Particle.EXPLOSION_LARGE, true,
                     (float) to.getX(), (float) to.getY(), (float) to.getZ(),
                     0.3F, 0.3F, 0.3F, 0, 8
             );
@@ -230,7 +230,7 @@ public class PlayerMoveHandler implements MovementHandler, Listener {
                     try {
                         if (ticks % 3 == 0) {
                             Location loc = armorStand.getLocation();
-                            EnumParticle particleType = isDescending ? EnumParticle.DRIP_WATER : EnumParticle.CLOUD;
+                            EnumParticle particleType = isDescending ? Particle.DRIP_WATER : Particle.CLOUD;
 
                             PacketPlayOutWorldParticles trailPacket = new PacketPlayOutWorldParticles(
                                     particleType, true,
@@ -273,7 +273,7 @@ public class PlayerMoveHandler implements MovementHandler, Listener {
 
                         try {
                             PacketPlayOutWorldParticles landingPacket = new PacketPlayOutWorldParticles(
-                                    EnumParticle.CLOUD, true,
+                                    Particle.CLOUD, true,
                                     (float) safeLandingLoc.getX(), (float) safeLandingLoc.getY(), (float) safeLandingLoc.getZ(),
                                     0.5F, 0.1F, 0.5F, 0, 8
                             );
