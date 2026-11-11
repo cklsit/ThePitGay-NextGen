@@ -29,8 +29,7 @@ class EnchantBookButton(
     }
 
     private val noneItem: ItemStack
-        get() = ItemBuilder(Material.STAINED_GLASS_PANE)
-            .durability(15)
+        get() = ItemBuilder(Material.BLACK_STAINED_GLASS_PANE)
             .name("&d放入附魔卷轴")
             .lore(
                 "&7将&6神话物品&7和&d附魔卷轴&7放入神话之井",
