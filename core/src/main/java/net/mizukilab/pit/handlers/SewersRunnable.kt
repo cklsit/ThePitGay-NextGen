@@ -55,7 +55,7 @@ object SewersRunnable : BukkitRunnable(), Listener {
                         return
                     }
                     locs.forEach { loc ->
-                        generateRandomParticlesAroundChest(loc, Effect.HAPPY_VILLAGER)
+                        generateRandomParticlesAroundChest(loc, org.bukkit.Particle.HAPPY_VILLAGER)
                     }
                 }
             }
@@ -80,14 +80,14 @@ object SewersRunnable : BukkitRunnable(), Listener {
 
     @EventHandler
     fun onPlayerInteract(event: PlayerInteractEvent) {
-        if (event.action == Action.RIGHT_CLICK_BLOCK && event.clickedBlock.type == Material.CHEST) {
-            if (event.clickedBlock.hasMetadata("Sewers_Chest")) {
-                claim(event.player, event.clickedBlock.location)
+        if (event.action == Action.RIGHT_CLICK_BLOCK && event.clickedBlock?.type == Material.CHEST) {
+            if ((event.clickedBlock?.hasMetadata("Sewers_Chest") == true)) {
+                event.clickedBlock?.let { claim(event.player, it.location) }
             }
         }
     }
 
-    private fun generateRandomParticlesAroundChest(center: Location, effect: Effect) {
+    private fun generateRandomParticlesAroundChest(center: Location, effect: org.bukkit.Particle) {
         repeat(25) {
             val randomXOffset = Random.nextDouble(-1.5, 1.5)
             val randomZOffset = Random.nextDouble(-1.5, 1.5)
@@ -99,7 +99,7 @@ object SewersRunnable : BukkitRunnable(), Listener {
 
             val particleLoc = center.clone().add(randomXOffset, randomHeightOffset, randomZOffset)
 
-            particleLoc.world.playEffect(particleLoc, effect, 3, 3)
+            particleLoc.world.spawnParticle(effect, particleLoc, 1, 0.0, 0.0, 0.0, 0.0)
         }
     }
 
