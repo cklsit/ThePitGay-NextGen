@@ -1,0 +1,51 @@
+#插件消息前缀
+Prefix: "&8[&bI&fRINA&8] &f| "
+
+#此段填入你想生效的伤害范围 0% ~ Infinity (0.00 ~ Infinity)
+#窝是暗改大王。嘻嘻嘻嘻嘻嘻嘻嘻嘻。(我操, 恶俗啊)
+DamageValidRange:
+  Enable: false
+  Amount: 0.8 #80%
+
+#此段填入 生命吸收金色爱心 的最大值 (2 = 1❤)
+LimitAbsorptionHearts: 60
+
+#此段填入你的PlayerData文件夹路径
+#该功能防止玩家在ThePitPremium未完全启动时通过读取PlayerData进行Dupe
+#注意! 此段不可未空
+PlayerDataPath: ""
+
+#此段为加入时为玩家广播的消息
+# $PlayerName "玩家名称"
+# $PlayerDisplayName "也是玩家名称"
+JoinMessage:
+  Enable: false
+  Messages:
+    - "&7欢迎回家! &e$PlayerName"
+    - "&7准备好迎接新的挑战了吗?"
+    - "&7加油吧! 祝你有一个美好的一天!"
+
+#此段填入你想轮播的公告内容
+Announcements:
+  - "&e&l公告! &7天坑乱斗中允许组队！"
+  - "&e&l公告! &7禁止利用Bug以及其他破坏平衡性的特性进行作弊!"
+  - "&e&l公告! &7如果您觉得这里很不错, 请多多为我们宣传!"
+  #- "&e&l公告! &f我们的官方申诉群: &f1. &e&n534444410 &f2. &e&n831281451 &7玩家交流群: &e&n983380002"
+  #- "&e&l公告! &7输入 &6/tps &7和 &6/ping &7可以查看服务器的当前状态!"
+  - "&e&l公告! &7邀请玩家进服游玩拥有海量福利! 领到手软!"
+
+#垃圾桶设置（/lj 指令）
+Trash:
+  ClearInterval-Minutes: 5
+  ClearMessage: "&7垃圾桶 >> &c垃圾桶里的物品已被清空"
+
+#此段填入你想给予玩家在挂机池中的免费福利的数额
+#不要在 Coin & Experience 的空中填入字符串。
+FreeCoinAndExperience:
+  Enable: true
+  GetEXP-Message: "&b&l挂机奖励！ &7你获得了 &b%exp%经验."
+  GetCoin-Message: "&6&l挂机奖励！ &7你获得了 &6%coin%硬币."
+  GetItem-Message: "&f&l挂机奖励！ &7你获得了 &f%count%x &b灵泉&f碎片."
+  GetKills-Message: "&c&l挂机奖励！ &7你获得了 &f%kills% &7击杀数."
+  NoEnoughCoals-Message: "&c&l修复失败！ &7你没有足够的暗聚块来修复你手中的神话物品."
+  SuccessfulFixItemInHand-Message: "&a&l修复成功！ &7成功修复您手中的神话物品."

@@ -50,3 +50,4 @@ confusion
 .env.*
 # javac parameter dumps produced by tools/compile-check.ps1 diagnostics
 javac.*.args
+build-*.log

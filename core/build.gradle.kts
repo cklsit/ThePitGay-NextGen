@@ -150,6 +150,8 @@ dependencies {
     implementation(libs.book)
     compileOnly(libs.slf4j)
     implementation(libs.litecommands)
+    // ThePitAddon 合并进来的代码用 Reflections 扫描扩展类
+    implementation("org.reflections:reflections:0.10.2")
     implementation("zone.rong:imaginebreaker:2.1")
     compileOnly(libs.adventure.bukkit)
     compileOnly("com.caoccao.javet:javet:3.1.4")

@@ -553,6 +553,7 @@ private fun loadEnchants() {
 //        classes += Volley_B::class.java
 //        classes -= VolleyEnchant::class.java
 //    }
+    classes += net.mizukilab.pit.enchantment.type.hammer.HammerEnchantRegistrar.classes()
     enchantmentFactor.init(classes)
     EnchantedConstructor.apply {
         Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), Runnable {
@@ -801,6 +802,14 @@ private fun registerListeners() {
         WarehouseListener::class.java,
         iSpigot::class.java,
         HologramMarco::class.java,
+        net.mizukilab.pit.enchantment.type.hammer.HammerCombatHandler::class.java,
+        net.mizukilab.pit.enchantment.type.hammer.HammerSpecialEffects::class.java,
+        net.mizukilab.pit.enchantment.type.hammer.HammerSpecialEffectsBatch2::class.java,
+        net.mizukilab.pit.enchantment.type.hammer.HammerConditionalEffects::class.java,
+        net.mizukilab.pit.enchantment.type.hammer.HammerSpecialEffectsBatch3::class.java,
+        net.mizukilab.pit.enchantment.type.hammer.HammerSpecialEffectsBatch4::class.java,
+        net.mizukilab.pit.enchantment.type.hammer.HammerMiscHooks::class.java,
+        net.mizukilab.pit.enchantment.type.hammer.HammerSpecialEffectsBatch5::class.java,
     )
     for (aClass in classes) {
         try {
@@ -813,6 +822,10 @@ private fun registerListeners() {
             e.printStackTrace()
         }
     }
+
+    Bukkit.getPluginManager().registerEvents(
+        net.mizukilab.pit.enchantment.type.hammer.HammerBudget, ThePit.getInstance()
+    )
 
     ProtocolLibrary.getProtocolManager().asynchronousManager
         .registerAsyncHandler(PacketListener()).start()

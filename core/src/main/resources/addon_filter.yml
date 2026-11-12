@@ -1,0 +1,20 @@
+# 过滤器规则配置文件
+# 可以创建多个过滤器规则, 每个过滤器规则可以互相独立
+# 未填写的值则默认匹配所有满足该条件的物品, 物品必须同时满足不为空的规则时才会被过滤
+# 警告: 如果所有值都为空, 则会过滤玩家所有物品
+# 过滤过程将清空物品的所有附魔, 请谨慎使用
+example-filter:
+  enabled: false
+  # 物品的internal内部名
+  internal-blacklist:
+    - ""
+  # 物品的uuid
+  uuid-blacklist:
+    - ""
+  enchantment-records-blacklist:
+    # 第一次附魔的玩家
+    first-enchanter:
+      - ""
+    # 第一次附魔的时间
+    first-enchantment-time:
+      - ""
