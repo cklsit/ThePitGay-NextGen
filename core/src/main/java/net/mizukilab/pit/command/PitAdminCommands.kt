@@ -703,13 +703,13 @@ class PitAdminCommands {
         }
         val tradeA = ThePit.getInstance()
             .mongoDB
-            .tradeCollection
-            .find(Filters.eq("playerA", profile.uuid))
+            .trades
+            .find("playerA", profile.uuid)
 
         val tradeB = ThePit.getInstance()
             .mongoDB
-            .tradeCollection
-            .find(Filters.eq("playerB", profile.uuid))
+            .trades
+            .find("playerB", profile.uuid)
 
         val data: MutableList<TradeData> = ArrayList()
         for (tradeData in tradeA) {

@@ -62,8 +62,8 @@ public class CDKButton extends Button {
         if (clickType == ClickType.RIGHT) {
             ThePit.getInstance()
                     .getMongoDB()
-                    .getCdkCollection()
-                    .deleteOne(Filters.eq("cdk", data.getCdk()));
+                    .getCdks()
+                    .deleteOne("cdk", data.getCdk());
             player.closeInventory();
             CDKData.getCachedCDK().remove(data.getCdk());
             player.sendMessage(CC.translate("&cIts done"));

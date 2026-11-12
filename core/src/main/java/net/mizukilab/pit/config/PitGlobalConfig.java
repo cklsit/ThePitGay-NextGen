@@ -72,6 +72,17 @@ public class PitGlobalConfig extends Configuration {
             path = "eigenToken"
     )
     private String token;
+
+    /**
+     * 存储后端：sqlite（默认，单文件 thepit.db）或 mongodb。
+     */
+    @Setter
+    @Getter
+    @ConfigData(
+            path = "storage.type"
+    )
+    private String storageType = "sqlite";
+
     @Setter
     @Getter
     @ConfigData(

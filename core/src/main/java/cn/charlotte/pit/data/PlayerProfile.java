@@ -378,8 +378,8 @@ public class PlayerProfile {
                 .getMongoDB();
 
         PlayerProfile playerProfile = mongoDB
-                .getProfileCollection()
-                .findOne(Filters.eq("uuid", uuid.toString()));
+                .getProfiles()
+                .findOne("uuid", uuid.toString());
 
         if (playerProfile != null) {
             //load mail
@@ -399,13 +399,13 @@ public class PlayerProfile {
      */
     public static void gcBackups(Iterable<PlayerInvBackup> invBackups, PlayerProfile playerProfile, boolean add) {
         long lastTime = 0;
-        JacksonMongoCollection<PlayerInvBackup> invCollection = ThePit.getInstance().getMongoDB().getInvCollection();
+        cn.charlotte.pit.data.storage.DocumentCollection<PlayerInvBackup> invCollection = ThePit.getInstance().getMongoDB().getInvBackups();
         for (PlayerInvBackup backup : invBackups) {
             long between = Math.abs(ChronoUnit.DAYS.between(Instant.now(), Instant.ofEpochMilli(backup.getTimeStamp())));
             if (Math.abs(backup.getTimeStamp() - lastTime) < 10 * 60 * 1000
                     || between > 20) {
                 lastTime = backup.getTimeStamp();
-                invCollection.deleteOne(Filters.eq("backupUuid", backup.getBackupUuid()));
+                invCollection.deleteOne("backupUuid", backup.getBackupUuid());
                 continue;
             }
             lastTime = backup.getTimeStamp();
@@ -423,9 +423,8 @@ public class PlayerProfile {
     @JsonIgnore
     public static PlayerProfile loadPlayerProfileByName(String name) {
         // 查询所有匹配的文档
-        List<PlayerProfile> allProfiles = ThePit.getInstance().getMongoDB().getProfileCollection()
-                .find(Filters.eq("lowerName", name.toLowerCase()))
-                .into(new ArrayList<>());
+        List<PlayerProfile> allProfiles = ThePit.getInstance().getMongoDB().getProfiles()
+                .find("lowerName", name.toLowerCase());
 
         // Reuse this query for zero/one match too; keep the first document on ties.
         PlayerProfile latest = null;
@@ -444,8 +443,8 @@ public class PlayerProfile {
     public static void loadMail(PlayerProfile playerProfile, UUID uuid) {
         PlayerMailData mailData = ThePit.getInstance()
                 .getMongoDB()
-                .getMailCollection()
-                .findOne(Filters.eq("uuid", uuid.toString()));
+                .getMails()
+                .findOne("uuid", uuid.toString());
 
         if (mailData == null) {
             mailData = new PlayerMailData();
@@ -646,8 +645,8 @@ public class PlayerProfile {
 
         ThePit.getInstance()
                 .getMongoDB()
-                .getProfileCollection()
-                .replaceOne(Filters.eq("uuid", this.uuid), this, new ReplaceOptions().upsert(true));
+                .getProfiles()
+                .replaceOne("uuid", this.uuid, this);
     }
 
     public PlayerProfile load() {
@@ -789,8 +788,8 @@ public class PlayerProfile {
 
             ThePit.getInstance()
                     .getMongoDB()
-                    .getProfileCollection()
-                    .replaceOne(Filters.eq("uuid", this.uuid), profile, new ReplaceOptions().upsert(true));
+                    .getProfiles()
+                    .replaceOne("uuid", this.uuid, profile);
         } else {
             if (!this.loaded) {
                 return false;
@@ -826,8 +825,8 @@ public class PlayerProfile {
 
         ThePit.getInstance()
                 .getMongoDB()
-                .getProfileCollection()
-                .replaceOne(Filters.eq("uuid", this.uuid), wipedData.getWipedProfile(), new ReplaceOptions().upsert(true));
+                .getProfiles()
+                .replaceOne("uuid", this.uuid, wipedData.getWipedProfile());
 
         return true;
     }
@@ -1179,8 +1178,16 @@ public class PlayerProfile {
 
     public void setRenown(int renown) {
         final Player player = Bukkit.getPlayer(this.getPlayerUuid());
-        if (player != null && renown > this.renown) {
-            new PitGainRenownEvent(player, renown - this.renown).callEvent();
+        int delta = renown - this.renown;
+        if (player != null && delta > 0) {
+            // 存档反序列化发生在异步线程，这里不能直接 callEvent；
+            // 主线程直接触发，异步时转回主线程，保持奖励结算语义。
+            if (Bukkit.isPrimaryThread()) {
+                new PitGainRenownEvent(player, delta).callEvent();
+            } else {
+                Bukkit.getScheduler().runTask(ThePit.getInstance(),
+                        () -> new PitGainRenownEvent(player, delta).callEvent());
+            }
         }
         this.renown = renown;
     }
@@ -1602,7 +1609,8 @@ public class PlayerProfile {
 
     public void setStreakKills(double kills) {
         final PitStreakKillChangeEvent event = new PitStreakKillChangeEvent(this, this.streakKills, kills);
-        if (kills > 0) {
+        // 反序列化在异步线程执行，事件只能在主线程触发。
+        if (kills > 0 && Bukkit.isPrimaryThread()) {
             event.callEvent();
         }
         if (event.isCancelled()) {
@@ -1808,7 +1816,7 @@ public class PlayerProfile {
             Bukkit.getLogger().warning("Executing fetch inventory backups on main thread for " + this.playerName);
         }
         return ThePit.getInstance().getMongoDB().
-                getInvCollection().find(Filters.eq("uuid", uuid));
+                getInvBackups().find("uuid", uuid);
     }
 
     @Beta
@@ -1818,7 +1826,7 @@ public class PlayerProfile {
             Bukkit.getLogger().warning("Executing fetch inventory backups on main thread for " + this.playerName);
         }
         return ThePit.getInstance().getMongoDB().
-                getInvCollection().find(Filters.eq("uuid", uuid)).projection(Projections.include("timeStamp", "backupUuid", "uuid"));
+                getInvBackups().find("uuid", uuid);
     }
 
     public double getGoldStackAddon() {

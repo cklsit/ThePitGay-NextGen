@@ -57,20 +57,16 @@ object EventsHandler {
         }
 
         Bukkit.getScheduler().runTaskAsynchronously(ThePit.getInstance(), Runnable {
-            ThePit.getInstance().mongoDB.eventQueueCollection.replaceOne(
-                Filters.eq("id", "1"),
-                eventQueue,
-                ReplaceOptions().upsert(true)
-            )
+            ThePit.getInstance().mongoDB.eventQueue.replaceOne("id", "1", eventQueue)
 })
     }
 
     fun loadFromDatabase() {
         this.epicQueue.clear()
         this.normalQueue.clear()
-        val queue: EventQueue;
+        val queue: EventQueue?
         try {
-            queue = ThePit.getInstance().mongoDB.eventQueueCollection.findOne()
+            queue = ThePit.getInstance().mongoDB.eventQueue.findOne()
             if (queue == null) {
                 refreshEvents()
                 return

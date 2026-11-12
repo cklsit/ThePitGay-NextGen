@@ -29,8 +29,8 @@ public class PlayerInvBackup {
     public void save() {
         ThePit.getInstance()
                 .getMongoDB()
-                .getInvCollection()
-                .replaceOne(Filters.eq("backupUuid", backupUuid), this, new ReplaceOptions().upsert(true));
+                .getInvBackups()
+                .replaceOne("backupUuid", backupUuid, this);
     }
 
     public String getUuid() {

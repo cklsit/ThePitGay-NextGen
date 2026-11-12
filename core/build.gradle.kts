@@ -164,6 +164,8 @@ dependencies {
     compileOnly(libs.narshorn)
     compileOnly(libs.protocollib)
     implementation(libs.jedis)
+    // 默认存储后端：SQLite（单 jar 免外部依赖），Mongo 仍可选
+    implementation(libs.sqlite.jdbc)
     implementation("org.mongojack:mongojack:5.0.1")
     implementation("org.mongodb:mongodb-driver-sync:5.2.0")
 

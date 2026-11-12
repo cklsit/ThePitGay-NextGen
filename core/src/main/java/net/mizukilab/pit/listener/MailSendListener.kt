@@ -77,9 +77,7 @@ class MailSendListener : Listener {
         if (event.message.equals("confirm", true)) {
             object : BukkitRunnable() {
                 override fun run() {
-                    ThePit.getInstance().mongoDB.rewardCollection.replaceOne(
-                        Filters.eq("mailId", data.mailId), data, ReplaceOptions().upsert(true)
-                    )
+                    ThePit.getInstance().mongoDB.rewards.replaceOne("mailId", data.mailId, data)
 
                     FixedRewardData.refreshAll()
                     player.sendMessage(CC.translate("&aOK!"))

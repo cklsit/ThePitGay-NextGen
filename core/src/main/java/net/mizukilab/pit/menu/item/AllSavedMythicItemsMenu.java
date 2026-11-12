@@ -63,13 +63,16 @@ public class AllSavedMythicItemsMenu extends Menu {
         }
         Menu previous = Menu.find(player);
         DatabaseTasks.submit(player, () -> {
-            MongoCollection<Document> collection = ThePit.getInstance().getMongoDB().getDatabase().getCollection("saved_mythic_items");
-            Document filter = playerId == null ? new Document() : new Document("createdByName", playerId);
-            long total = collection.countDocuments(filter);
+            net.mizukilab.pit.database.MongoDB.RawCollection collection = ThePit.getInstance().getMongoDB().getSavedMythicItems();
+            long total = playerId == null ? collection.countAll() : collection.count("createdByName", playerId);
             int lastPage = (int) Math.max(1, (total + ITEMS_PER_PAGE - 1) / ITEMS_PER_PAGE);
             int selectedPage = Math.min(page, lastPage);
-            List<Document> found = collection.find(filter).sort(new Document("createdAt", -1).append("_id", -1))
-                    .skip((selectedPage - 1) * ITEMS_PER_PAGE).limit(ITEMS_PER_PAGE).into(new ArrayList<>());
+            List<Document> found = new ArrayList<>();
+            for (java.util.Map<String, Object> raw : collection.page(
+                    playerId == null ? null : "createdByName", playerId, "createdAt", true,
+                    (selectedPage - 1) * ITEMS_PER_PAGE, ITEMS_PER_PAGE)) {
+                found.add(new Document(raw));
+            }
             return new PageResult(selectedPage, total, found);
         }, result -> {
             if (!player.hasPermission("pit.admin") || Menu.find(player) != previous) return;
@@ -215,10 +218,10 @@ public class AllSavedMythicItemsMenu extends Menu {
 
             if (!player.hasPermission("pit.admin")) return;
             if (clickType == ClickType.SHIFT_RIGHT) {
-                MongoCollection<Document> collection = ThePit.getInstance().getMongoDB().getDatabase().getCollection("saved_mythic_items");
+                net.mizukilab.pit.database.MongoDB.RawCollection collection = ThePit.getInstance().getMongoDB().getSavedMythicItems();
                 Menu previous = Menu.find(player);
-                DatabaseTasks.submit(player, () -> collection.deleteOne(new Document("uuid", uuid)), result -> {
-                    player.sendMessage(CC.translate(result.getDeletedCount() > 0 ? "&a成功删除物品!" : "&c记录已不存在。"));
+                DatabaseTasks.submit(player, () -> collection.deleteOneCount("uuid", uuid), deleted -> {
+                    player.sendMessage(CC.translate(deleted > 0 ? "&a成功删除物品!" : "&c记录已不存在。"));
                     if (Menu.find(player) == previous) new AllSavedMythicItemsMenu(currentPage, playerId).openMenu(player);
                 });
                 return;

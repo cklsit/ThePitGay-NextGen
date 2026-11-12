@@ -2,17 +2,16 @@ package net.mizukilab.pit.handlers;
 
 import cn.charlotte.pit.ThePit;
 import cn.charlotte.pit.data.LeaderBoardEntry;
-import com.mongodb.client.FindIterable;
-import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Projections;
-import com.mongodb.client.model.Sorts;
+import cn.charlotte.pit.data.PlayerProfile;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import lombok.SneakyThrows;
 import net.mizukilab.pit.util.rank.RankUtil;
 import nya.Skip;
-import org.bson.Document;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -22,6 +21,8 @@ import java.util.UUID;
 @Skip
 public class LeaderBoardRunnable extends BukkitRunnable {
 
+    private static final long ACTIVE_WINDOW_MILLIS = 7L * 24 * 60 * 60 * 1000;
+
     @SneakyThrows
     @Override
     public void run() {
@@ -29,36 +30,31 @@ public class LeaderBoardRunnable extends BukkitRunnable {
         updateLeaderboardData();
     }
 
+    /**
+     * 排行榜统计。
+     *
+     * <p>原实现直接读 Mongo 集合；storage.type=sqlite 时没有原始驱动可用，
+     * 这里统一走 DocumentCollection，按 totalExp 降序。</p>
+     */
     public static void updateLeaderboardData() {
-        FindIterable<Document> documents = ThePit.getInstance()
+        List<PlayerProfile> profiles = new ArrayList<>(ThePit.getInstance()
                 .getMongoDB()
-                .getCollection()
-                .find()
-                .projection(Projections.include("totalExp", "uuid", "experience", "prestige", "lastLogoutTime"))
-                .sort(Sorts.descending("totalExp"))
-                .filter(Filters.gte("lastLogoutTime", System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000));
+                .getProfiles()
+                .findAll());
+        long activeSince = System.currentTimeMillis() - ACTIVE_WINDOW_MILLIS;
+        profiles.removeIf(profile -> profile == null
+                || profile.getLastLogoutTime() < activeSince
+                || profile.getPlayerUuid() == null);
+        profiles.sort(Comparator.comparingDouble(PlayerProfile::getTotalExp).reversed());
 
-        Object2ObjectLinkedOpenHashMap<UUID,LeaderBoardEntry> entries = new Object2ObjectLinkedOpenHashMap<>();
-        int i = 1;
-        for (Document document : documents) {
-            try {
-                String uuid = document.getString("uuid");
-                final Object expObj = document.get("experience");
-                Double experience;
-                try {
-                    experience = (Double) expObj;
-                } catch (Exception e) {
-                    experience = Double.valueOf(((Integer) expObj));
-                }
-                int prestige = document.getInteger("prestige");
-                int rank = i;
-                UUID uuid1 = UUID.fromString(uuid);
-                String playerRealColoredName = RankUtil.getPlayerRealColoredName(uuid1);
-                entries.putAndMoveToLast(uuid1,new LeaderBoardEntry(playerRealColoredName, uuid1, rank, experience, prestige));
-                i++;
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        Object2ObjectLinkedOpenHashMap<UUID, LeaderBoardEntry> entries = new Object2ObjectLinkedOpenHashMap<>();
+        int rank = 1;
+        for (PlayerProfile profile : profiles) {
+            UUID uuid = profile.getPlayerUuid();
+            entries.putAndMoveToLast(uuid, new LeaderBoardEntry(
+                    RankUtil.getPlayerRealColoredName(uuid), uuid, rank,
+                    profile.getExperience(), profile.getPrestige()));
+            rank++;
         }
         LeaderBoardEntry.setLeaderBoardEntries(entries);
     }

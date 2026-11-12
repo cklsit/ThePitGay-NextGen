@@ -1,8 +1,6 @@
 package net.mizukilab.pit.command
 
 import cn.charlotte.pit.ThePit
-import com.mongodb.client.model.Filters
-import com.mongodb.client.model.ReplaceOptions
 import dev.rollczi.litecommands.annotations.argument.Arg
 import dev.rollczi.litecommands.annotations.argument.Key
 import dev.rollczi.litecommands.annotations.command.RootCommand
@@ -50,7 +48,7 @@ class PitItemCommands {
             player.sendMessage(CC.translate("&c&l错误! &c序列化物品失败."))
             return
         }
-        val collection = ThePit.getInstance().mongoDB.database.getCollection("saved_mythic_items")
+        val collection = ThePit.getInstance().mongoDB.savedMythicItems
         val doc = Document()
             .append("uuid", uuid)
             .append("internal", internal)
@@ -59,7 +57,7 @@ class PitItemCommands {
             .append("createdByName", player.name)
             .append("createdAt", System.currentTimeMillis())
         DatabaseTasks.submit(player, {
-            collection.replaceOne(Filters.eq("uuid", uuid), doc, ReplaceOptions().upsert(true))
+            collection.replaceOne("uuid", uuid, doc)
         }, {
             // Do not replace an item the player moved or changed while MongoDB was working.
             if (player.inventory.heldItemSlot == heldSlot && player.itemInHand == item) {
@@ -81,9 +79,9 @@ class PitItemCommands {
 
     @Execute(name = "searchItem")
     fun searchItem(@Context player: Player, @Arg("uuid") uuid: String) {
-        val collection = ThePit.getInstance().mongoDB.database.getCollection("saved_mythic_items")
-        DatabaseTasks.submit(player, { collection.find(Filters.eq("uuid", uuid)).first() }, { found ->
-            val encoded = found?.getString("item")
+        val collection = ThePit.getInstance().mongoDB.savedMythicItems
+        DatabaseTasks.submit(player, { collection.findOne("uuid", uuid) }, { found ->
+            val encoded = found?.get("item") as? String
             if (encoded == null) {
                 player.sendMessage(CC.translate("&c未找到有效的物品记录。"))
             } else {
@@ -112,9 +110,9 @@ class PitItemCommands {
     @Execute(name = "removeItem")
     @Permission("pit.admin")
     fun removeItem(@Context player: Player, @Arg("uuid") uuid: String) {
-        val collection = ThePit.getInstance().mongoDB.database.getCollection("saved_mythic_items")
-        DatabaseTasks.submit(player, { collection.deleteOne(Filters.eq("uuid", uuid)) }, { result ->
-            if (result.deletedCount > 0) {
+        val collection = ThePit.getInstance().mongoDB.savedMythicItems
+        DatabaseTasks.submit(player, { collection.deleteOneCount("uuid", uuid) }, { deleted ->
+            if (deleted > 0) {
                 player.sendMessage(CC.translate("&a已删除物品记录: &f$uuid"))
             } else {
                 player.sendMessage(CC.translate("&c未找到可删除的记录: &e$uuid"))
