@@ -208,7 +208,8 @@ object PitHook {
                 PitAdminCommands(),
                 PitCommands(),
                 PitItemCommands(),
-                PitAdminDupeFixCommands()
+                PitAdminDupeFixCommands(),
+                BotCommands()
             )
             .settings {
                 it.nativePermissions(true)

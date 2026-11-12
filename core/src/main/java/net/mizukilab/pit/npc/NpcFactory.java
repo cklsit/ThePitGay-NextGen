@@ -28,6 +28,11 @@ public class NpcFactory implements Listener {
     @Getter private final List<AbstractPitNPC> pitNpc = new ArrayList<>();
     private BukkitTask refreshTask;
 
+    /** 供 /botspawn 这类管理命令直接创建机器人。 */
+    public NPCLib getNpcLib() {
+        return npcLib;
+    }
+
     public boolean hasNPC(Entity entity) {
         return entity != null && NPCManager.getByEntityId(entity.getEntityId()) != null;
     }

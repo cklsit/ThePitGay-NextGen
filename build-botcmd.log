@@ -1,0 +1,209 @@
+﻿.\gradlew.bat : Picked up JAVA_TOOL_OPTIONS: -Duser.language=en -Duser.country=US
+所在位置 行:1 字符: 192
++ ... ountry=US'; .\gradlew.bat :core:shadowJar --console=plain --no-daemon ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Picked up JAVA_...user.country=US:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.5/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :
+ThePitUltimate version: 4.4.11-20261028
+
+> Task :core:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:processResources UP-TO-DATE
+> Task :core:generateEffectiveLombokConfig
+
+> Task :core:compileKotlin
+w: Lombok Kotlin compiler plugin is an experimental feature. See: https://kotlinlang.org/docs/components-stability.html.
+w: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/PitHook.kt:109:8 'object EnchantedConstructor : Any' is deprecated. No use.
+w: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/PitHook.kt:110:8 'object ItemConstructor : Any' is deprecated. No use.
+w: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/PitHook.kt:111:8 'object PerkConstructor : Any' is deprecated. No use.
+w: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/PitHook.kt:118:56 'val description: PluginDescriptionFile' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/PitHook.kt:149:48 'val description: PluginDescriptionFile' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/PitHook.kt:343:42 'object ItemConstructor : Any' is deprecated. No use.
+w: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/PitHook.kt:557:5 'object EnchantedConstructor : Any' is deprecated. No use.
+w: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/PitHook.kt:693:26 'object PerkConstructor : Any' is deprecated. No use.
+w: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/command/PitAdminCommands.kt:94:13 Condition is always 'false'.
+w: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/command/PitAdminCommands.kt:106:13 Condition is always 'false'.
+w: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/command/PitAdminCommands.kt:112:35 'static fun getPlayerProfileByUuid(uuid: UUID!): PlayerProfile!' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/command/PitAdminCommands.kt:442:37 'static fun getPlayerProfileByUuid(uuid: UUID!): PlayerProfile!' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/command/PitAdminCommands.kt:458:53 'static fun getPlayerProfileByUuid(uuid: UUID!): PlayerProfile!' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/command/PitAdminCommands.kt:574:37 'fun remove(p0: AbstractEnchantment!): Int?' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/command/PitAdminCommands.kt:668:46 'fun newInstance(): CapturedType(out AbstractPitItem!)!' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/command/PitAdminCommands.kt:671:35 'fun newInstance(): CapturedType(out AbstractPitItem!)!' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/command/PitAdminCommands.kt:733:37 'static fun getPlayerProfileByUuid(uuid: UUID!): PlayerProfile!' is deprecated. Deprecated in Java.
+w: file:///C:/Users/Jonson/Documents/ThePitUltimate/core/src/main/java/net/mizukilab/pit/command/PitAdminCommands.kt:765:20 'var maxHealth: Double' is deprecated. Deprecated in Java.
+
+> Task :core:compileJava
+Picked up JAVA_TOOL_OPTIONS: -Duser.language=en -Duser.country=US
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\cn\charlotte\pit\ThePit.java:93: warning: Not generating ge
+tApi(): A method with that name already exists
+    @Getter
+    ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\handlers\AnimationHandler.java:267: warni
+ng: [removal] getData() in Block has been deprecated and marked for removal
+            player.sendBlockChange(location, block.getType(), block.getData());
+                                                                   ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\handlers\AsyncTickHandler.java:196: warni
+ng: [removal] setLastDamageCause(EntityDamageEvent) in Entity has been deprecated and marked for removal
+                        player.setLastDamageCause(null); //fix memory leak
+                              ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\cn\charlotte\pit\util\hologram\reflection\ClassBuilder.java
+:115: warning: [removal] getTypeId() in EntityType has been deprecated and marked for removal
+        Object spawnPacketSkull = NMSClass.PacketPlayOutSpawnEntity.getConstructor(NMSClass.Entity, int.class).newInsta
+nce(skull, EntityType.WITHER_SKULL.getTypeId());
+                                                                                                                       
+                                  ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\enchantment\menu\button\EnchantButton.jav
+a:452: warning: [removal] getData() in ItemStack has been deprecated and marked for removal
+        stack.setData(itemStack.getData());
+                               ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\enchantment\menu\button\EnchantButton.jav
+a:452: warning: [removal] setData(MaterialData) in ItemStack has been deprecated and marked for removal
+        stack.setData(itemStack.getData());
+             ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\enchantment\runnable\AnimationRunnable.ja
+va:290: warning: [removal] getData() in Block has been deprecated and marked for removal
+            player.sendBlockChange(location, block.getType(), block.getData());
+                                                                   ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\enchantment\type\op\BounceBowEnchant.java
+:91: warning: [removal] setBounce(boolean) in Projectile has been deprecated and marked for removal
+                event.getEntity().setBounce(true);
+                                 ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\enchantment\type\rare\SeriousSituationEnc
+hant.java:82: warning: [removal] setKnockbackStrength(int) in AbstractArrow has been deprecated and marked for removal
+                    arrow.setKnockbackStrength(getPunch(level));
+                         ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\events\impl\CakeEvent.java:92: warning: [
+removal] getX() in BlockVector3 has been deprecated and marked for removal
+        this.alignedBB = new AABB(pos1.getX(), pos1.getY(), pos1.getZ(), pos2.getX(), pos2.getY(), pos2.getZ());
+                                      ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\events\impl\CakeEvent.java:92: warning: [
+removal] getY() in BlockVector3 has been deprecated and marked for removal
+        this.alignedBB = new AABB(pos1.getX(), pos1.getY(), pos1.getZ(), pos2.getX(), pos2.getY(), pos2.getZ());
+                                                   ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\events\impl\CakeEvent.java:92: warning: [
+removal] getZ() in BlockVector3 has been deprecated and marked for removal
+        this.alignedBB = new AABB(pos1.getX(), pos1.getY(), pos1.getZ(), pos2.getX(), pos2.getY(), pos2.getZ());
+                                                                ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\events\impl\CakeEvent.java:92: warning: [
+removal] getX() in BlockVector3 has been deprecated and marked for removal
+        this.alignedBB = new AABB(pos1.getX(), pos1.getY(), pos1.getZ(), pos2.getX(), pos2.getY(), pos2.getZ());
+                                                                             ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\events\impl\CakeEvent.java:92: warning: [
+removal] getY() in BlockVector3 has been deprecated and marked for removal
+        this.alignedBB = new AABB(pos1.getX(), pos1.getY(), pos1.getZ(), pos2.getX(), pos2.getY(), pos2.getZ());
+                                                                                          ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\events\impl\CakeEvent.java:92: warning: [
+removal] getZ() in BlockVector3 has been deprecated and marked for removal
+        this.alignedBB = new AABB(pos1.getX(), pos1.getY(), pos1.getZ(), pos2.getX(), pos2.getY(), pos2.getZ());
+                                                                                                       ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\events\impl\CakeEvent.java:200: warning: 
+[removal] getData() in BlockState has been deprecated and marked for removal
+                final byte data = block.getState().getData().getData();
+                                                  ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\events\impl\major\BlockHeadEvent.java:108
+: warning: [removal] getData() in Block has been deprecated and marked for removal
+                        BlockData blockData = new BlockData(belowLocation.getBlock().getType(), belowLocation.getBlock(
+).getData(), player);
+                                                                                                                       
+ ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\events\impl\major\BlockHeadEvent.java:213
+: warning: [removal] getData() in Block has been deprecated and marked for removal
+                        BlockData blockData = new BlockData(blockLocation.getBlock().getType(), blockLocation.getBlock(
+).getData(), killer);
+                                                                                                                       
+ ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\events\impl\major\BlockHeadEvent.java:229
+: warning: [removal] getData() in Block has been deprecated and marked for removal
+                        BlockData blockData = new BlockData(blockLocation.add(0.0, -1.0, 0.0).getBlock().getType(), blo
+ckLocation.add(0.0, -1.0, 0.0).getBlock().getData(), killer);
+                                                                                                                       
+                                         ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\events\impl\major\BlockHeadEvent.java:245
+: warning: [removal] getData() in Block has been deprecated and marked for removal
+                        BlockData blockData = new BlockData(blockLocation.add(0.0, -2.0, 0.0).getBlock().getType(), blo
+ckLocation.add(0.0, -2.0, 0.0).getBlock().getData(), killer);
+                                                                                                                       
+                                         ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\events\impl\major\BlockHeadEvent.java:262
+: warning: [removal] spawnFallingBlock(Location,Material,byte) in World has been deprecated and marked for removal
+        FallingBlock fb = location.getWorld().spawnFallingBlock(location, killerData.block, (byte) 0);
+                                             ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\events\impl\major\BlockHeadEvent.java:263
+: warning: [removal] spawnFallingBlock(Location,Material,byte) in World has been deprecated and marked for removal
+        FallingBlock fb2 = location.getWorld().spawnFallingBlock(location, killerData.block, (byte) 0);
+                                              ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\events\impl\major\BlockHeadEvent.java:264
+: warning: [removal] spawnFallingBlock(Location,Material,byte) in World has been deprecated and marked for removal
+        FallingBlock fb3 = location.getWorld().spawnFallingBlock(location, killerData.block, (byte) 0);
+                                              ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\events\impl\major\BlockHeadEvent.java:265
+: warning: [removal] spawnFallingBlock(Location,Material,byte) in World has been deprecated and marked for removal
+        FallingBlock fb4 = location.getWorld().spawnFallingBlock(location, killerData.block, (byte) 0);
+                                              ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\events\impl\major\BlockHeadEvent.java:266
+: warning: [removal] spawnFallingBlock(Location,Material,byte) in World has been deprecated and marked for removal
+        FallingBlock fb5 = location.getWorld().spawnFallingBlock(location, killerData.block, (byte) 0);
+                                              ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\events\impl\major\BlockHeadEvent.java:267
+: warning: [removal] spawnFallingBlock(Location,Material,byte) in World has been deprecated and marked for removal
+        FallingBlock fb6 = location.getWorld().spawnFallingBlock(location, killerData.block, (byte) 0);
+                                              ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\events\impl\major\BlockHeadEvent.java:268
+: warning: [removal] spawnFallingBlock(Location,Material,byte) in World has been deprecated and marked for removal
+        FallingBlock fb7 = location.getWorld().spawnFallingBlock(location, killerData.block, (byte) 0);
+                                              ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\events\impl\major\BlockHeadEvent.java:269
+: warning: [removal] spawnFallingBlock(Location,Material,byte) in World has been deprecated and marked for removal
+        FallingBlock fb8 = location.getWorld().spawnFallingBlock(location, killerData.block, (byte) 0);
+                                              ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\events\impl\major\HamburgerEvent.java:115
+: warning: [removal] getData() in Block has been deprecated and marked for removal
+        player.sendBlockChange(location.clone().add(0, -1, 0), location.clone().add(0, -1, 0).getBlock().getType(), loc
+ation.clone().add(0, -1, 0).getBlock().getData());
+                                                                                                                       
+                                      ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\events\impl\major\HamburgerEvent.java:116
+: warning: [removal] getData() in Block has been deprecated and marked for removal
+        player.sendBlockChange(location.clone().add(0, -2, 0), location.clone().add(0, -2, 0).getBlock().getType(), loc
+ation.clone().add(0, -2, 0).getBlock().getData());
+                                                                                                                       
+                                      ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\events\impl\major\HamburgerEvent.java:139
+: warning: [removal] getSkullType() in Skull has been deprecated and marked for removal
+                if (skull.getSkullType() == SkullType.PLAYER) {
+                         ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\events\impl\major\HamburgerEvent.java:139
+: warning: [removal] SkullType in org.bukkit has been deprecated and marked for removal
+                if (skull.getSkullType() == SkullType.PLAYER) {
+                                            ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\listener\GameEffectListener.java:336: war
+ning: [removal] setLastDamageCause(EntityDamageEvent) in Entity has been deprecated and marked for removal
+            player.setLastDamageCause(event);
+                  ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\util\music\Instrument.java:177: warning: 
+[removal] valueOf(String) in Sound has been deprecated and marked for removal
+                    return Sound.valueOf("NOTE_PIANO");
+                                ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\util\music\Instrument.java:179: warning: 
+[removal] valueOf(String) in Sound has been deprecated and marked for removal
+                return Sound.valueOf(this.legacyName);
+                            ^
+C:\Users\Jonson\Documents\ThePitUltimate\core\src\main\java\net\mizukilab\pit\util\music\Instrument.java:181: warning: 
+[removal] valueOf(String) in Sound has been deprecated and marked for removal
+                return Sound.valueOf("BLOCK_NOTE_BLOCK_HARP");
+                            ^
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: Some input files use unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+36 warnings
+
+> Task :core:classes
+> Task :core:shadowJar
+
+BUILD SUCCESSFUL in 1m 48s
+5 actionable tasks: 4 executed, 1 up-to-date
