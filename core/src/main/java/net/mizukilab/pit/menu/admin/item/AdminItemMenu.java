@@ -6,6 +6,7 @@ import net.mizukilab.pit.item.type.*;
 import net.mizukilab.pit.item.type.mythic.MythicLeggingsItem;
 import net.mizukilab.pit.map.kingsquests.item.MiniCake;
 import net.mizukilab.pit.menu.admin.item.button.MythicItemButton;
+import net.mizukilab.pit.menu.admin.item.button.MythicHammerButton;
 import net.mizukilab.pit.menu.admin.item.button.PitItemButton;
 import net.mizukilab.pit.menu.admin.item.button.RedPacketButton;
 import net.mizukilab.pit.menu.admin.item.button.ShopItemButton;
@@ -124,7 +125,7 @@ public class AdminItemMenu extends Menu {
         addRow(buttons, 5, "§6收纳、方块与染色", (byte) 1,
                 new PantsBundleShopButton(), new SwordBundleShopButton(), new BowBundleShopButton(),
                 new ShopItemButton(Material.TNT, "tnt", 64), new ShopItemButton(Material.OBSIDIAN, "shopItem", 64),
-                new MythicItemButton(8));
+                new MythicItemButton(8), new MythicHammerButton());
         return buttons;
     }
 

@@ -24,10 +24,16 @@ public final class NpcViewCompatibility implements Listener {
 
     private void enableIfAvailable() {
         if (stopBridge != null || !Bukkit.getPluginManager().isPluginEnabled("NPCView")) return;
-        NpcDeathAnimationListener bridge = new NpcDeathAnimationListener(plugin);
-        bridge.start();
-        stopBridge = bridge::close;
-        plugin.getLogger().info("NPCView compatibility: NPC death animation filtering enabled.");
+        // 包过滤依赖 ProtocolLib；未安装或版本不兼容时跳过，不影响 NPC 本身
+        if (!Bukkit.getPluginManager().isPluginEnabled("ProtocolLib")) return;
+        try {
+            NpcDeathAnimationListener bridge = new NpcDeathAnimationListener(plugin);
+            bridge.start();
+            stopBridge = bridge::close;
+            plugin.getLogger().info("NPCView compatibility: NPC death animation filtering enabled.");
+        } catch (Throwable throwable) {
+            plugin.getLogger().warning("NPCView compatibility disabled: " + throwable.getMessage());
+        }
     }
 
     @EventHandler
