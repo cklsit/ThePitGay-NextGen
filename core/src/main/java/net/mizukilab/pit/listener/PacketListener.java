@@ -1,141 +1,62 @@
 package net.mizukilab.pit.listener;
 
 import cn.charlotte.pit.ThePit;
-import cn.charlotte.pit.data.PlayerProfile;
-import cn.charlotte.pit.data.operator.IOperator;
-import cn.charlotte.pit.data.operator.IProfilerOperator;
 import cn.charlotte.pit.event.PotionAddEvent;
-import com.comphenix.protocol.reflect.EquivalentConverter;
-import com.comphenix.protocol.wrappers.*;
-import net.mizukilab.pit.events.impl.major.RedVSBlueEvent;
-import net.mizukilab.pit.util.item.ItemBuilder;
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.events.PacketAdapter;
-import com.comphenix.protocol.events.PacketContainer;
-import com.comphenix.protocol.events.PacketEvent;
-import lombok.SneakyThrows;
+import com.github.retrooper.packetevents.event.PacketListenerAbstract;
+import com.github.retrooper.packetevents.event.PacketSendEvent;
+import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityEffect;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
 /**
- * @Author: EmptyIrony
- * @Date: 2021/2/4 14:56
+ * 药水效果加成的包监听。
+ *
+ * <p>原实现基于 ProtocolLib 的 {@code ENTITY_EFFECT} 结构修改器读取字段；
+ * 1.21 该包结构改为 Holder 后旧字段索引越界（FieldAccessException），
+ * 现改用插件内置的 PacketEvents 解析同一个包。</p>
  */
-
-public class PacketListener extends PacketAdapter {
-    public PacketListener() {
-        super(ThePit.getInstance(), PacketType.Play.Server.ENTITY_EQUIPMENT, PacketType.Play.Server.ENTITY_EFFECT);//PacketType.Play.Server.SCOREBOARD_TEAM, PacketType.Play.Server.PLAYER_INFO);
-    }
+public class PacketListener extends PacketListenerAbstract {
 
     @Override
-    @SneakyThrows
-    public void onPacketSending(PacketEvent event) {
-        PacketContainer packet = event.getPacket();
-        final Player player = event.getPlayer();
-        if (packet.getType() == PacketType.Play.Server.ENTITY_EQUIPMENT) {
-            processRvBPackets(packet);
-        } else if (packet.getType() == PacketType.Play.Server.ENTITY_EFFECT) {
-            processPotionAddEvent(packet, player);
-       }
-//            processPlayerInfo(player,packet);
-//        } else if(packet.getType() == PacketType.Play.Server.SCOREBOARD_TEAM) {
-//            processPlayerTeam(player,packet);
-//        }
-    }
+    public void onPacketSend(PacketSendEvent event) {
+        if (event.getPacketType() != PacketType.Play.Server.ENTITY_EFFECT) return;
+        Player player = event.getPlayer();
+        if (player == null) return;
 
-    private static void processPlayerTeam(Player player,PacketContainer container){
-        String read = container.getStrings().read(0);
-        Player player1 = Bukkit.getPlayer(read);
+        WrapperPlayServerEntityEffect wrapper = new WrapperPlayServerEntityEffect(event);
+        if (wrapper.getEntityId() != player.getEntityId()) return;
 
-        if(player1 != null){
-            System.out.println(player1);
-            PlayerProfile playerProfileByUuid = PlayerProfile.getPlayerProfileByUuid(player1.getUniqueId());
+        PotionEffectType type = toBukkitType(wrapper);
+        if (type == null) return;
 
-
-            if (playerProfileByUuid.isLoaded()) {
-                if(playerProfileByUuid.isNicked()){
-                    container.getStrings().write(0,playerProfileByUuid.getNickName());
-                    System.out.println(container.getHandle());
-                }
-            }
-        }
-    }
-   // static ListConvertor listConvertor = new ListConvertor();
-    public static class ListConvertor implements EquivalentConverter<String> {
-
-        @Override
-        public Object getGeneric(String strings) {
-            return strings;
-        }
-
-        @Override
-        public String getSpecific(Object o) {
-            return o.toString();
-        }
-
-        @Override
-        public Class<String> getSpecificType() {
-            return String.class;
-        }
-    }
-    private static void processPlayerInfo(Player player,PacketContainer packet) {
-        IProfilerOperator profileOperator = ThePit.getInstance().getProfileOperator();
-        List<PlayerInfoData> read = packet.getPlayerInfoDataLists().read(0);
-        ArrayList<PlayerInfoData> objects = new ArrayList<>(read.size());
-        EnumWrappers.PlayerInfoAction read1 = packet.getPlayerInfoAction().read(0);
-        if (read1 == EnumWrappers.PlayerInfoAction.ADD_PLAYER) {
-            Iterator<PlayerInfoData> iterator = read.iterator();
-            while (iterator.hasNext()) {
-                PlayerInfoData next = iterator.next();
-                IOperator iOperator = profileOperator.getIOperator(next.getProfile().getUUID());
-                if (iOperator != null && iOperator.isLoaded()) {
-                    System.out.println(iOperator);
-                    PlayerProfile profile = iOperator.profile();
-                    if (profile.isNicked()) {
-                        WrappedGameProfile wrappedGameProfile = new WrappedGameProfile(next.getProfileId(), profile.getNickName());
-                        PlayerInfoData e = new PlayerInfoData(next.getProfileId(), 20, next.isListed(), next.getGameMode(), wrappedGameProfile, WrappedChatComponent.fromLegacyText(profile.getNickName()), next.getProfileKeyData());
-
-                        objects.add(e);
-                        iterator.remove();
-                    }
-                }
-            }
-            objects.addAll(read);
-            packet.getPlayerInfoDataLists().write(0, objects);
-        }
-    }
-
-    private static void processPotionAddEvent(PacketContainer container, Player player) {
-        final Integer entityId = container.getIntegers().read(0);
-        if (player.getEntityId() != entityId) return;
-
-        final PotionEffectType potion = PotionEffectType.getById(container.getBytes().read(0));
-        final Byte level = container.getBytes().read(1);
-        final Integer duration = container.getIntegers().read(1);
-        final boolean hide = container.getBytes().read(2) == 1;
+        final int amplifier = wrapper.getEffectAmplifier();
+        final int duration = wrapper.getEffectDurationTicks();
+        final boolean ambient = wrapper.isAmbient();
+        final boolean particles = wrapper.isVisible();
 
         Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), () -> {
-            PotionAddEvent potionEvent = new PotionAddEvent(player, new PotionEffect(potion, level, duration, hide));
+            PotionAddEvent potionEvent = new PotionAddEvent(player,
+                    new PotionEffect(type, duration, amplifier, ambient, particles));
             potionEvent.callEvent();
-
             if (potionEvent.isCancelled()) {
-                Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), () -> {
-                    player.removePotionEffect(potion);
-                }, 1L);
+                Bukkit.getScheduler().runTaskLater(ThePit.getInstance(),
+                        () -> player.removePotionEffect(type), 1L);
             }
         }, 1L);
     }
 
-    private static void processRvBPackets(Object packet) {
-        // 1.21：队伍护甲配色不再通过篡改 PacketPlayOutEntityEquipment 实现，
-        // 由 RedVSBlueEvent 在装备变更时直接下发（见 VisibleApi）。
+    private static PotionEffectType toBukkitType(WrapperPlayServerEntityEffect wrapper) {
+        try {
+            String name = wrapper.getPotionType().getName().toString();
+            if (name == null || name.isEmpty()) return null;
+            PotionEffectType type = PotionEffectType.getByKey(NamespacedKey.fromString(name));
+            return type != null ? type : PotionEffectType.getByName(name);
+        } catch (Throwable ignored) {
+            return null;
+        }
     }
 }

@@ -262,7 +262,8 @@ object PitHook {
         FreeExpRunnable().runTaskTimer(ThePit.getInstance(), 20 * 60 * 15, 20 * 60 * 15)
         NightVisionRunnable().runTaskTimer(ThePit.getInstance(), 20, 20)
 
-        PacketHologramRunnable().runTaskTimerAsynchronously(ThePit.getInstance(), 20, 20)
+        // 全息走真实盔甲架实体，必须在主线程做实体跟踪
+        PacketHologramRunnable().runTaskTimer(ThePit.getInstance(), 20, 20)
 
         LeaderBoardRunnable().runTaskTimerAsynchronously(ThePit.getInstance(), 0, 10 * 20 * 60)
         if (Boolean.getBoolean("unsafeBounty")) {
@@ -827,8 +828,8 @@ private fun registerListeners() {
         net.mizukilab.pit.enchantment.type.hammer.HammerBudget, ThePit.getInstance()
     )
 
-    ProtocolLibrary.getProtocolManager().asynchronousManager
-        .registerAsyncHandler(PacketListener()).start()
+        // 药水事件改用 PacketEvents 监听，不再依赖 ProtocolLib 的异步包处理
+        com.github.retrooper.packetevents.PacketEvents.getAPI().getEventManager().registerListener(PacketListener())
     if (Bukkit.getPluginManager().getPlugin("MythicMobs") != null) {
         Bukkit.getPluginManager().registerEvents(MythicMobListener, ThePit.getInstance());
     }
