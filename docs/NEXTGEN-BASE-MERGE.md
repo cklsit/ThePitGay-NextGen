@@ -45,3 +45,9 @@
   `Powered by Irina, ShanguanLinG, MIYU` → `Done`，日志 0 ERROR
 - 本机 MongoDB：`storage.type: mongodb` → `Storage backend: MongoDB (connected)`，同一 jar
 - 机器人命令与 NPC 点击分发（`NPCInteractEvent` 触发）在冒烟环境验证通过
+## /pi 物品菜单（神话之锤）
+
+- `/pi` → `AdminItemMenu` 第 6 行新增 `MythicHammerButton`（slot 52）
+  - 左键：获得一把空白神话之锤
+  - 右键：打开 `HammerEnchantMenu`，分页列出全部 `hammer_*` 附魔，点击获得带该附魔（3 级）的锤子
+- 冒烟验证：`/pi` 正常打开、slot 52 为金斧按钮、附魔菜单 27 格首页 18 个锤子附魔
