@@ -25,6 +25,25 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Cache Paper NMS jars
+        id: paper-nms-cache
+        uses: actions/cache@v4
+        with:
+          path: .gradle/paper-nms
+          key: paper-nms-1.21.8-60
+
+      - name: Prepare Paper 1.21.8 NMS jars
+        if: steps.paper-nms-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          BUILD_URL=$(curl -fsSL https://fill.papermc.io/v3/projects/paper/versions/1.21.8/builds | jq -r '.[0].downloads["server:default"].url')
+          echo "Paper jar: $BUILD_URL"
+          curl -fsSL -o "$RUNNER_TEMP/paper.jar" "$BUILD_URL"
+          mkdir -p .gradle/paper-nms
+          cd .gradle/paper-nms
+          java -Dpaperclip.patchonly=true -jar "$RUNNER_TEMP/paper.jar"
+          test -f versions/1.21.8/paper-1.21.8.jar
+
       - name: Make gradlew executable
         run: chmod +x gradlew
 
