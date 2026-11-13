@@ -81,6 +81,7 @@ object SewersRunnable : BukkitRunnable(), Listener {
             }
         }
 
+        ThePit.getInstance().logger.info("[Sewers] chest points=" + locs.size + " spawned=" + count)
         existSewersChest = locs
     }
 
