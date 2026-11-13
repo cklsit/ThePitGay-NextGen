@@ -4,7 +4,8 @@ ThePitGay-NextGen 的 Paper 1.21.8 维护分支。以 NextGen 为底座，整合
 
 - 上游：<https://github.com/ImMengXin0/ThePitGay-NextGen>
 - 本仓库：<https://github.com/cklsit/ThePitGay-NextGen>
-- 发行包：`core/build/libs/ThePitGay-V.jar`（Release 附带）
+- 发行包：[Releases](https://github.com/cklsit/ThePitGay-NextGen/releases) 中的 `ThePitGay-V.jar`（构建产物路径 `core/build/libs/ThePitGay-V.jar`）
+- 最新版本：v5.0.0（Paper 1.21.8）
 
 ## 环境要求
 
