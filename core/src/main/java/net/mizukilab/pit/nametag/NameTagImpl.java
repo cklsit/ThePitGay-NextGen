@@ -100,6 +100,8 @@ public class NameTagImpl implements NametagAdapter {
                         displayName = CC.translate("&9&l隐士" + " " + RankUtil.getPlayerRankColor(profile.getPlayerUuid()));
                     }
                     if (profile.getChosePerk().get(5).getPerkInternalName().equalsIgnoreCase("uber_streak") && profile.getStreakKills() >= 100) {
+                    String steakPlusName = uberSteakPlusTabName(profile);
+                    if (steakPlusName != null) displayName = steakPlusName;
                         final int level = Math.min(400, (((int) profile.getStreakKills()) / 100) * 100);
                         displayName = CC.translate("&d&l登峰造极" + " " + level + " " + RankUtil.getPlayerRankColor(profile.getPlayerUuid()));
                     }
@@ -152,8 +154,9 @@ public class NameTagImpl implements NametagAdapter {
                     suffix.append(" ");
                 }
             }
-            if (displayName.length() > 16) {
-                displayName = displayName.substring(0, 15);
+            // 1.21 的队伍前缀上限为 64，超级连杀名 + 连杀数会超过旧的 16 字符截断
+            if (displayName.length() > 64) {
+                displayName = displayName.substring(0, 63);
 
             }
 
@@ -168,6 +171,15 @@ public class NameTagImpl implements NametagAdapter {
         }
 
         return tags;
+    }
+
+    /** 超级登封造极 的 TAB 名称：紫色名称 + 当前连杀数；未激活返回 null。 */
+    public static String uberSteakPlusTabName(PlayerProfile profile) {
+        if (profile == null || profile.getChosePerk() == null) return null;
+        var chosen = profile.getChosePerk().get(5);
+        if (chosen == null || !"uber_steak_plus".equalsIgnoreCase(chosen.getPerkInternalName())) return null;
+        if (profile.getStreakKills() < 1000) return null;
+        return CC.translate("&d&l超级登封造极 " + (int) profile.getStreakKills() + " " + RankUtil.getPlayerRankColor(profile.getPlayerUuid()));
     }
 
     @Override
