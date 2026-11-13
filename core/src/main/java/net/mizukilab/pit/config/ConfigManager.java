@@ -126,6 +126,80 @@ public class ConfigManager {
         return null;
     }
 
+    /**
+     * 内置地图：把打包在 jar 里的 pit_arena 地图解压到服务器根目录并加载，
+     * 同时安装配套的地图配置（id 与坐标一一对应），并把当前地图光标切到内置地图，
+     * 保证开服即使用内置地图。
+     */
+    public void ensureBundledMap() {
+        final String mapName = "pit_arena";
+        try {
+            java.nio.file.Path dataFolder = instance.getDataFolder().toPath();
+            java.nio.file.Path worldsDir = dataFolder.resolve("worlds");
+            Files.createDirectories(worldsDir);
+            java.nio.file.Path mapConfig = worldsDir.resolve(mapName + ".yml");
+            if (!Files.exists(mapConfig)) {
+                try (InputStream in = getClass().getResourceAsStream("/worlds/" + mapName + ".yml")) {
+                    if (in != null) {
+                        Files.copy(in, mapConfig);
+                        instance.getLogger().info("[Map] bundled map config installed: " + mapConfig);
+                    }
+                }
+            }
+            File worldDir = new File(Bukkit.getWorldContainer(), mapName);
+            if (!worldDir.exists()) {
+                try (InputStream in = getClass().getResourceAsStream("/maps/" + mapName + ".zip")) {
+                    if (in == null) {
+                        instance.getLogger().warning("[Map] bundled map archive missing");
+                        return;
+                    }
+                    extractZip(in, worldDir);
+                    instance.getLogger().info("[Map] bundled map extracted: " + worldDir.getAbsolutePath());
+                }
+            }
+            if (Bukkit.getWorld(mapName) == null) {
+                org.bukkit.World world = new org.bukkit.WorldCreator(mapName).createWorld();
+                instance.getLogger().info("[Map] bundled map loaded: " + (world != null ? world.getName() : "null"));
+            }
+            int targetId = 2;
+            if (Files.exists(mapConfig)) {
+                java.util.regex.Matcher idMatcher = java.util.regex.Pattern
+                        .compile("(?m)^id:\\s*(\\d+)")
+                        .matcher(Files.readString(mapConfig, java.nio.charset.StandardCharsets.UTF_8));
+                if (idMatcher.find()) {
+                    targetId = Integer.parseInt(idMatcher.group(1));
+                }
+            }
+            if (getGlobal() != null) {
+                setCursor(targetId - 1);
+                instance.getLogger().info("[Map] selected bundled map id=" + targetId + " world=" + mapName);
+            }
+        } catch (Throwable failure) {
+            instance.getLogger().warning("[Map] bundled map setup failed: " + failure);
+            failure.printStackTrace();
+        }
+    }
+
+    private void extractZip(InputStream inputStream, File targetDir) throws IOException {
+        try (java.util.zip.ZipInputStream zip = new java.util.zip.ZipInputStream(inputStream)) {
+            java.util.zip.ZipEntry entry;
+            while ((entry = zip.getNextEntry()) != null) {
+                String name = entry.getName();
+                int slash = name.indexOf('/');
+                if (slash < 0) continue;
+                String relative = name.substring(slash + 1);
+                if (relative.isEmpty()) continue;
+                File target = new File(targetDir, relative);
+                if (entry.isDirectory()) {
+                    target.mkdirs();
+                } else {
+                    target.getParentFile().mkdirs();
+                    Files.copy(zip, target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
+        }
+    }
+
     public void copyWorld() {
         Path targetPath = ThePit.getInstance().getDataFolder().toPath().resolve("worlds/world.yml");
 

@@ -501,6 +501,7 @@ public class ThePit extends JavaPlugin implements PluginMessageListener {
         PitGlobalConfig pitWorldConfig = cfgMan.getGlobal();
         pitWorldConfig.load();
         this.globalConfig = pitWorldConfig;
+        cfgMan.ensureBundledMap();
         log.info("Loaded configuration!");
         DEBUG_SERVER = pitWorldConfig.isDebugServer();
         if (DEBUG_SERVER) {
