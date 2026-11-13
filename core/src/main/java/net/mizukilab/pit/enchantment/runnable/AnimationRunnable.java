@@ -79,14 +79,14 @@ public class AnimationRunnable extends BukkitRunnable {
                     }
 
                     // 只有在非附魔状态下且不在MythicWellMenu中时才移除
-                    if (!(Menu.currentlyOpenedMenus.get(animationData.getPlayer().getName()) instanceof MythicWellMenu)) {
+                    if (!(Menu.currentlyOpenedMenus.get(animationData.getPlayer().getUniqueId()) instanceof MythicWellMenu)) {
                         animations.remove(uuid);
                     }
                 });
             } else {
                 removeMap.forEach((uuid, animationData) -> {
                     if (!animationData.getPlayer().isOnline() ||
-                            !(Menu.currentlyOpenedMenus.get(animationData.getPlayer().getName()) instanceof MythicWellMenu)) {
+                            !(Menu.currentlyOpenedMenus.get(animationData.getPlayer().getUniqueId()) instanceof MythicWellMenu)) {
                         animations.remove(uuid);
                     }
                 });
@@ -94,7 +94,7 @@ public class AnimationRunnable extends BukkitRunnable {
 
             for (AnimationData data : animations.values()) {
                 data.animationGlobalTick++;
-                Menu menu = Menu.currentlyOpenedMenus.get(data.getPlayer().getName());
+                Menu menu = Menu.currentlyOpenedMenus.get(data.getPlayer().getUniqueId());
 
                 if (data.isFinished()) {
                     Player player = data.getPlayer();
@@ -223,7 +223,7 @@ public class AnimationRunnable extends BukkitRunnable {
 
                 Bukkit.getScheduler().runTask(ThePit.getInstance(), () -> {
                     if (player.isOnline()) {
-                        Menu currentMenu = Menu.currentlyOpenedMenus.get(player.getName());
+                        Menu currentMenu = Menu.currentlyOpenedMenus.get(player.getUniqueId());
                         if (currentMenu instanceof MythicWellMenu) {
                             currentMenu.openMenu(player);
                         }
@@ -235,7 +235,7 @@ public class AnimationRunnable extends BukkitRunnable {
         }
         Bukkit.getScheduler().runTask(ThePit.getInstance(), () -> {
             if (player.isOnline()) {
-                Menu currentMenu = Menu.currentlyOpenedMenus.get(player.getName());
+                Menu currentMenu = Menu.currentlyOpenedMenus.get(player.getUniqueId());
                 if (currentMenu instanceof MythicWellMenu) {
                     currentMenu.openMenu(player);
                 }
