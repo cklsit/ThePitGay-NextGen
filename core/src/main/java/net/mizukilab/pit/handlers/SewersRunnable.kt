@@ -65,15 +65,21 @@ object SewersRunnable : BukkitRunnable(), Listener {
         if (System.currentTimeMillis() - lastClaimed < 1000 * NewConfiguration.sewersSpawn) return
 
         var count = 0
-        locs.filter { it.block.type == Material.AIR }
-            .forEach { loc ->
-                loc.block.apply {
-                    type = Material.CHEST
-                    setMetadata("Sewers_Chest", FixedMetadataValue(ThePit.getInstance(), true))
-                    count++
-                }
-                CC.boardCast("&9§l下水道! &7箱子点位${count}已刷新: x: ${loc.block.location.x}, y: ${loc.block.location.y}, z: ${loc.block.location.z}")
+        locs.forEach { loc ->
+            val block = loc.block
+            if (block.type == Material.AIR) {
+                block.type = Material.CHEST
+                block.setMetadata("Sewers_Chest", FixedMetadataValue(ThePit.getInstance(), true))
+                count++
+                CC.boardCast("&9&l下水道! &7箱子点位${count}已刷新: x: ${loc.block.location.x}, y: ${loc.block.location.y}, z: ${loc.block.location.z}")
+            } else if (block.type == Material.CHEST && !block.hasMetadata("Sewers_Chest")) {
+                // 地图上已存在的箱子：清空物品并标记为下水道箱子，右键直接发奖励而不是打开箱子界面
+                (block.state as? org.bukkit.block.Chest)?.inventory?.clear()
+                block.setMetadata("Sewers_Chest", FixedMetadataValue(ThePit.getInstance(), true))
+                count++
+                CC.boardCast("&9&l下水道! &7箱子点位${count}已刷新: x: ${loc.block.location.x}, y: ${loc.block.location.y}, z: ${loc.block.location.z}")
             }
+        }
 
         existSewersChest = locs
     }
@@ -82,6 +88,7 @@ object SewersRunnable : BukkitRunnable(), Listener {
     fun onPlayerInteract(event: PlayerInteractEvent) {
         if (event.action == Action.RIGHT_CLICK_BLOCK && event.clickedBlock?.type == Material.CHEST) {
             if ((event.clickedBlock?.hasMetadata("Sewers_Chest") == true)) {
+                event.isCancelled = true
                 event.clickedBlock?.let { claim(event.player, it.location) }
             }
         }
