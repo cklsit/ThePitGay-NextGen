@@ -24,6 +24,7 @@
   ProtocolLib 仅在 PacketEvents 不可用时兜底。
 - **全息更新**：`PacketHologramRunnable` 由异步改主线程（内部要调用 `showEntity`，异步会触发
   `Asynchronous player tracker update`）。
+- **NPC 悬浮文字**：基准高度由 +0.5 修正为玩家 +2.2 / 村民 +2.35，两行文字实测落在头顶（dy 2.20 / 1.90）
 - **药水加成事件**：`net.mizukilab.pit.listener.PacketListener` 改用 PacketEvents 解析 `ENTITY_EFFECT`，
   取代越界的 ProtocolLib 结构修改器。
 
@@ -45,9 +46,8 @@
   `Powered by Irina, ShanguanLinG, MIYU` → `Done`，日志 0 ERROR
 - 本机 MongoDB：`storage.type: mongodb` → `Storage backend: MongoDB (connected)`，同一 jar
 - 机器人命令与 NPC 点击分发（`NPCInteractEvent` 触发）在冒烟环境验证通过
-## /pi 物品菜单（神话之锤）
+## 神话之锤：已移除
 
-- `/pi` → `AdminItemMenu` 第 6 行新增 `MythicHammerButton`（slot 52）
-  - 左键：获得一把空白神话之锤
-  - 右键：打开 `HammerEnchantMenu`，分页列出全部 `hammer_*` 附魔，点击获得带该附魔（3 级）的锤子
-- 冒烟验证：`/pi` 正常打开、slot 52 为金斧按钮、附魔菜单 27 格首页 18 个锤子附魔
+- 按要求已删除全部锤相关内容：/pi 的锤子按钮与附魔菜单、hammer 附魔包(112)、SeasonalOpenService、
+  HammerOnly、IMythicHammer、MythicHammerItem、ItemTypes.isMythicHammer、掉落池、WitherCraft 分支、
+  EnchantmentRarity.SEASONAL、seasonal-override 配置项
