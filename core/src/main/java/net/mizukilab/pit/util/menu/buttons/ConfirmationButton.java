@@ -63,7 +63,8 @@ public class ConfirmationButton extends Button {
 
     @Override
     public void clicked(Player player, int i, ClickType clickType, int hb, ItemStack currentItem) {
-        if (delaySec >= 0 && confirm) {
+        // 倒计时结束时 delaySec 停在 0，必须用 > 0 判断，否则确认键永远点不动
+        if (delaySec > 0 && confirm) {
             return;
         }
 
