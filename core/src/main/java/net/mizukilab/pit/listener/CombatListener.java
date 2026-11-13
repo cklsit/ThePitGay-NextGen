@@ -237,7 +237,7 @@ public class CombatListener implements Listener {
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         Location location = getRandomSpawnLocation(event.getPlayer());
         event.setRespawnLocation(location);
-        event.getPlayer().setBedSpawnLocation(location);
+        event.getPlayer().setBedSpawnLocation(null);
     }
 
     /**
@@ -756,7 +756,7 @@ public class CombatListener implements Listener {
             }
         }
         player.teleport(location);
-        player.setBedSpawnLocation(location);
+        player.setBedSpawnLocation(null);
 
         PlayerProfile.getPlayerProfileByUuid(player.getUniqueId()).setInArena(false);
 

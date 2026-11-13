@@ -88,7 +88,6 @@ public class MapSelector {
         }
         entity.teleport(randomLocation);
         if(entity instanceof Player){
-            ((Player) entity).setBedSpawnLocation(randomLocation);
         }
     }
     public void reTeleportEntities() {

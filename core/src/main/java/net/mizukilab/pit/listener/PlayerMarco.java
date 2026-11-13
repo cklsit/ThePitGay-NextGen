@@ -208,6 +208,8 @@ public class PlayerMarco implements Listener {
             event.getPlayer().kickPlayer("Didn't load completely");
             return;
         }
+        // 清理旧数据里无效的床/重生锚绑定，避免死亡重生时反复提示“床不存在或已被阻挡”
+        event.getPlayer().setBedSpawnLocation(null);
         event.getPlayer().setGameMode(GameMode.SPECTATOR);
         PlayerUtil.resetPlayer(player, true);
 
