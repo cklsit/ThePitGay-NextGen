@@ -87,6 +87,7 @@ import net.mizukilab.pit.perk.type.streak.highlander.GoldNanoFactoryKillStreak
 import net.mizukilab.pit.perk.type.streak.highlander.HighlanderMegaStreak
 import net.mizukilab.pit.perk.type.streak.highlander.KhanateKillStreak
 import net.mizukilab.pit.perk.type.streak.highlander.WitherCraftKillStreak
+import net.mizukilab.pit.perk.type.streak.king.Despot
 import net.mizukilab.pit.perk.type.streak.nonpurchased.*
 import net.mizukilab.pit.perk.type.streak.tothemoon.GoldStack
 import net.mizukilab.pit.perk.type.streak.tothemoon.SuperStreaker
@@ -682,11 +683,12 @@ private fun loadPerks() {
         SecondGappleKillStreak::class.java,
         SpongeSteveKillStreak::class.java,
         UberStreak::class.java,
+        UberSteakPlus::class.java,
         ToTheMoonMegaStreak::class.java,
         GoldStack::class.java,
         XPStack::class.java,
         SuperStreaker::class.java,
-//        Despot::class.java,
+        Despot::class.java,
     )
 
     perkFactory.init(classes as Collection<Class<*>>?)
