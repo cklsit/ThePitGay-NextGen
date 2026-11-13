@@ -43,7 +43,7 @@ object SewersRunnable : BukkitRunnable(), Listener {
     )
 
     override fun run() {
-        val locs = ThePit.getInstance().pitConfig.sewersChestsLocations
+        val locs = resolveChestLocations()
         if (locs.isEmpty()) return
 
         if (!isParticle || particleTask == null ) {
@@ -65,7 +65,7 @@ object SewersRunnable : BukkitRunnable(), Listener {
         if (System.currentTimeMillis() - lastClaimed < 1000 * NewConfiguration.sewersSpawn) return
 
         var count = 0
-        locs.filter { it.block.type == Material.AIR || !it.block.hasMetadata("Sewers_Chest") }
+        locs.filter { it.block.type == Material.AIR }
             .forEach { loc ->
                 loc.block.apply {
                     type = Material.CHEST
@@ -85,6 +85,71 @@ object SewersRunnable : BukkitRunnable(), Listener {
                 event.clickedBlock?.let { claim(event.player, it.location) }
             }
         }
+    }
+
+    private var autoChestLocations: List<Location>? = null
+    private var autoChestCenter: Location? = null
+
+    private fun resolveChestLocations(): List<Location> {
+        val configured = ThePit.getInstance().pitConfig.sewersChestsLocations
+            .filter { it != null && it.world != null && it.y > 0 }
+        if (configured.isNotEmpty()) return configured
+        val center = ThePit.getInstance().pitConfig.sewersLocation ?: return emptyList()
+        if (center.world == null || center.y <= 0) return emptyList()
+        val cachedCenter = autoChestCenter
+        val cached = autoChestLocations
+        if (cached != null && cachedCenter != null && cachedCenter.world == center.world && cachedCenter.distanceSquared(center) < 4.0) {
+            return cached
+        }
+        val generated = generateAutoChestLocations(center)
+        ThePit.getInstance().logger.info("[Sewers] auto chest points=" + generated.size + " center=" + center);
+        autoChestLocations = generated
+        autoChestCenter = center.clone()
+        return generated
+    }
+
+    private fun generateAutoChestLocations(center: Location): List<Location> {
+        val world = center.world ?: return emptyList()
+        val random = java.util.Random(center.blockX.toLong() * 31 + center.blockZ.toLong())
+        val points = mutableListOf<Location>()
+        var attempts = 0
+        while (points.size < 8 && attempts < 200) {
+            attempts++
+            val dx = random.nextInt(-14, 15)
+            val dz = random.nextInt(-14, 15)
+            if (dx * dx + dz * dz < 16) continue
+            val x = center.blockX + dx
+            val z = center.blockZ + dz
+            for (dy in -10..10) {
+                val y = center.blockY + dy
+                val ground = world.getBlockAt(x, y, z)
+                val above = world.getBlockAt(x, y + 1, z)
+                val above2 = world.getBlockAt(x, y + 2, z)
+                if (!ground.type.isAir && above.type.isAir && above2.type.isAir) {
+                    points.add(Location(world, x + 0.5, y + 1.0, z + 0.5))
+                    break
+                }
+            }
+        }
+        if (points.isEmpty()) {
+            for (dx in -3..3) {
+                for (dz in -3..3) {
+                    val x = center.blockX + dx
+                    val z = center.blockZ + dz
+                    for (dy in -10..10) {
+                        val y = center.blockY + dy
+                        val ground = world.getBlockAt(x, y, z)
+                        val above = world.getBlockAt(x, y + 1, z)
+                        val above2 = world.getBlockAt(x, y + 2, z)
+                        if (!ground.type.isAir && above.type.isAir && above2.type.isAir) {
+                            points.add(Location(world, x + 0.5, y + 1.0, z + 0.5))
+                            if (points.size >= 8) return points
+                        }
+                    }
+                }
+            }
+        }
+        return points
     }
 
     private fun generateRandomParticlesAroundChest(center: Location, effect: org.bukkit.Particle) {
