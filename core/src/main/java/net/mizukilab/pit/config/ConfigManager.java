@@ -157,6 +157,9 @@ public class ConfigManager {
                     instance.getLogger().info("[Map] bundled map extracted: " + worldDir.getAbsolutePath());
                 }
             }
+            // 地图是 world 的副本，uid.dat 里的 UUID 与 world 重复会被 Paper 拒绝加载
+            new File(worldDir, "uid.dat").delete();
+            new File(worldDir, "session.lock").delete();
             if (Bukkit.getWorld(mapName) == null) {
                 org.bukkit.World world = new org.bukkit.WorldCreator(mapName).createWorld();
                 instance.getLogger().info("[Map] bundled map loaded: " + (world != null ? world.getName() : "null"));
