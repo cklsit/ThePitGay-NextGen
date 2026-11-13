@@ -84,6 +84,8 @@ public class NameTagImpl implements NametagAdapter {
             } else {
                 displayName = CC.translate(profile.getFormattedLevelTagTabSpec() + " " + RankUtil.getPlayerRankColor(profile.getPlayerUuid()));
                 if (profile.getChosePerk().get(5) != null) {
+                    String steakPlusName = uberSteakPlusTabName(profile);
+                    if (steakPlusName != null) displayName = steakPlusName;
                     if (profile.getChosePerk().get(5).getPerkInternalName().equalsIgnoreCase("despot_streak") && profile.getStreakKills() >= 200) {
                         displayName = CC.translate("&c&l暴君" + " " + RankUtil.getPlayerRankColor(profile.getPlayerUuid()));
                     }
@@ -100,8 +102,6 @@ public class NameTagImpl implements NametagAdapter {
                         displayName = CC.translate("&9&l隐士" + " " + RankUtil.getPlayerRankColor(profile.getPlayerUuid()));
                     }
                     if (profile.getChosePerk().get(5).getPerkInternalName().equalsIgnoreCase("uber_streak") && profile.getStreakKills() >= 100) {
-                    String steakPlusName = uberSteakPlusTabName(profile);
-                    if (steakPlusName != null) displayName = steakPlusName;
                         final int level = Math.min(400, (((int) profile.getStreakKills()) / 100) * 100);
                         displayName = CC.translate("&d&l登峰造极" + " " + level + " " + RankUtil.getPlayerRankColor(profile.getPlayerUuid()));
                     }
