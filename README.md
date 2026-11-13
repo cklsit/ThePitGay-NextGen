@@ -28,6 +28,8 @@ ThePitGay-NextGen 的 Paper 1.21.8 维护分支。以 NextGen 为底座，整合
 - 地图打包在 jar 内：`maps/pit_arena.zip`（约 8.8 MB 压缩）。
 - 开服流程：缺少配置则安装 `worlds/pit_arena.yml` → 缺少世界目录则解压到服务器根目录 `pit_arena/` → 删除重复的 `uid.dat` / `session.lock` → 加载世界并切换到该地图。
 - 迁移或更换地图时可用 `/pit map` 系列命令；地图配置里记录了出生点、NPC、箱子等坐标。
+- 内置地图作为默认世界：`server.properties` 的 `level-name` 需设为 `pit_arena`（本分支部署时已切换），这样玩家与 NPC 在同一世界。
+- 如果 `worlds/` 下还有指向未加载世界（例如旧 `world`）的地图配置，请停服后把对应 `*.yml` 改名为 `*.yml.disabled`，否则启动时会出现 `unknown world` 警告。
 
 ## 本分支主要改动
 
