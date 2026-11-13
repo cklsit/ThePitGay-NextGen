@@ -427,6 +427,9 @@ public class PlayerMarco implements Listener {
             return;
         }
         Player player = e.getPlayer();
+        // Edit mode (/pit edit) must allow breaking these blocks; cancelling LEFT_CLICK_BLOCK prevents it
+        PlayerProfile editProfile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
+        if (editProfile != null && editProfile.isEditingMode()) return;
         if (e.getClickedBlock() != null && (e.getClickedBlock().getType() == Material.CRAFTING_TABLE
                 || e.getClickedBlock().getType() == Material.ANVIL || e.getClickedBlock().getType() == Material.CHEST || e.getClickedBlock().getType() == Material.TRAPPED_CHEST)) {
             e.setCancelled(true);
