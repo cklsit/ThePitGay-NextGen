@@ -1,55 +1,61 @@
 # ThePitGay-NextGen
 
-## What is ThePitGay-NextGen and why should I use it?
+ThePitGay-NextGen 的 Paper 1.21.8 维护分支。以 NextGen 为底座，整合 ThePitUltimate 的玩法与 ThePitAddon 扩展，修复 1.21.8 下的大量兼容问题，并内置地图与配套配置，开箱即用。
 
-ThePitGay-NextGen is a maintenance fork of [ThePitGay](https://github.com/Patcher0/ThePitGay), continuing the ThePitStudy / ThePitPremium codebase with core fixes, plugin compatibility improvements, and performance optimizations.
+- 上游：<https://github.com/ImMengXin0/ThePitGay-NextGen>
+- 本仓库：<https://github.com/cklsit/ThePitGay-NextGen>
+- 发行包：`core/build/libs/ThePitGay-V.jar`（Release 附带）
 
-* Configurable gameplay and menus
-* Compatibility fixes for ThePitAddon, ThePitRepairExTend, and NPCView
-* Improved item handling, trading, and player data persistence
-* Reduced repeated work in music playback, enchantment animations, and scoreboards
+## 环境要求
 
-Builds are available on [GitHub Releases](https://github.com/ImMengXin0/ThePitGay-NextGen/releases/latest). See the [changelog](CHANGELOG.md) for the accumulated fixes.
+| 项目 | 要求 |
+| --- | --- |
+| 服务端 | Paper 1.21.8 |
+| Java | 21 |
+| 必需插件 | LuckPerms（`depend`） |
+| 可选插件 | ProtocolLib、PlayerPoints、PlaceholderAPI、FastAsyncWorldEdit / WorldEdit、NPCView |
+| 存储 | SQLite（默认）或 MongoDB，`config.yml` 中 `storage.type` 切换 |
 
-To update, stop the server, replace the existing core with `ThePitGay-V.jar`, and restart fully. Keep your existing configuration and player data, and load only one copy of the core.
+## 快速开始
 
-## Features
+1. 把 `ThePitGay-V.jar` 放进 `plugins/`，启动服务器。
+2. 首次启动会自动解压并加载内置地图 `pit_arena`，地图配置 `plugins/ThePitUltimate/worlds/pit_arena.yml` 与地图坐标一一对应。
+3. 修改配置或地图后执行完整重启；插件停服时会把内存中的世界配置写回 `worlds/*.yml`，请先停服再改文件。
 
-* Unique equipment UUIDs and persistent custom item names
-* Trade session validation and pending item returns
-* Enchantment table viewing with membership-based privacy controls
-* Command completion, menu, scoreboard, and TAB improvements
-* A complete Angel armor set
-* Ten built-in humanoid NPC skins featuring Honkai: Star Rail characters
-* Embedded MythicNPCLib and MythicFramework Core/Bukkit; core NPCs work without Citizens
+## 内置地图
 
-Old default NPC skins migrate automatically, while custom skin configurations are preserved. Villager and silverfish NPCs retain their original entity models.
+- 地图打包在 jar 内：`maps/pit_arena.zip`（约 8.8 MB 压缩）。
+- 开服流程：缺少配置则安装 `worlds/pit_arena.yml` → 缺少世界目录则解压到服务器根目录 `pit_arena/` → 删除重复的 `uid.dat` / `session.lock` → 加载世界并切换到该地图。
+- 迁移或更换地图时可用 `/pit map` 系列命令；地图配置里记录了出生点、NPC、箱子等坐标。
 
-See the [NPC migration notes](docs/MYTHIC-NPC-MIGRATION.md) for embedded-library details and extension compatibility. The older NPCView plugin independently requires Citizens and must be updated or removed when uninstalling Citizens.
+## 本分支主要改动
 
-### Performance
+- NPC 交互改用 PacketEvents，修复 ProtocolLib 5.4.0 在 1.21.8 上异步包处理失效导致 NPC 无法点击的问题。
+- 神话之井：动画帧正常刷新，点击附魔后自动完成并展示结果，无需按 ESC 重新打开。
+- 确认菜单：取消按钮固定红色，确认按钮倒计时结束后可正常点击。
+- 下水道：鱼 NPC 与区域坐标可配置；箱子点位支持配置定点，右键直接发奖励且不会再打开箱子界面；玩家数据中无效的床/重生锚绑定会被清理。
+- TAB：超级连封造极（uber_steak_plus）激活时按紫色名称 + 当前连杀数显示。
+- DJ 附魔：修复音量为 0 导致无声、乐器音色全部回落到竖琴的问题。
+- 已移除旧版神话之锤相关功能与 `/lj` 命令。
+- 兼容内置的 ThePitAddon（`cn.irina.thepitaddon`）、NPCView；NPC 使用内置 MythicNPCLib，不依赖 Citizens。
 
-This fork reduces repeated item parsing, shares common scoreboard calculations, avoids unnecessary enchantment menu refreshes, and releases inactive music and NPC tasks. The current core and embedded-framework build passed 482 automated tests, with one legacy Addon test skipped because its retired class is absent from the supplied Addon build. Live-server CPU, memory, and TPS improvements have not been benchmarked.
+## 构建
 
-### Logging and Rollback
+```bash
+# JDK 21
+./gradlew :core:shadowJar
+# 产物：core/build/libs/ThePitGay-V.jar
+```
 
-Use `/rollback` to inspect and restore player inventory backups. Trade fixes improve session validation and item returns, but do not provide cross-player database transactions or automatic recovery from a forced shutdown.
+Windows：`gradlew.bat :core:shadowJar`。
 
-### Developer API
+仓库内 `libs/`、`packLib/` 已包含构建所需的本地依赖 jar，克隆仓库即可直接构建。
 
-Use the latest core build as a dependency when developing integrations. Compatibility bridges preserve legacy interfaces used by supported extensions. See the [build and test instructions](docs/BUILDING.md) for required dependencies and test fixtures.
+## GitHub Actions
 
-## Contributing
+- `.github/workflows/build.yml`：push 到 `main`、PR 或手动触发时构建 jar，并上传为 Actions 产物（Artifact）。
+- 推送 `v*` 标签（如 `v5.0.0`）时，构建完成后自动创建 GitHub Release 并附带 `ThePitGay-V.jar`。
 
-Want to add features or fix bugs? Clone this repository, follow the [build instructions](docs/BUILDING.md), and run the relevant regression tests before submitting a pull request.
+## 致谢
 
-The project uses a Java 17 compilation toolchain and targets Minecraft 1.8.8 R3 with PandaSpigot extensions. Full compatibility tests require the external plugin JARs documented in the build instructions.
-
-## Special thanks
-
-Thanks to the upstream ThePitGay, ThePitStudy, and ThePitPremium contributors, and to the community creators of the Minecraft character skins bundled with this fork.
-
-<a href="https://jb.gg/OpenSourceSupport"><img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.svg" width="150">
-</a>
-
-[JetBrains](https://jb.gg/OpenSourceSupport), creators of IntelliJ IDEA, supports open-source projects through its Open Source Licenses program.
+基于 ThePitGay / ThePitUltimate / ThePitAddon 及其作者的工作：MIYU、ShanguanLinG、Irina、EmptyIrony、Araykal 等。上游代码与玩法设定版权归原作者所有。
