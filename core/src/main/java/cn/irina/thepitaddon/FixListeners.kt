@@ -1,6 +1,8 @@
 package cn.irina.thepitaddon
 
 import cn.charlotte.pit.data.PlayerProfile
+import cn.charlotte.pit.ThePit
+import cn.charlotte.pit.perk.MegaStreak
 import cn.charlotte.pit.event.PitStreakKillChangeEvent
 import cn.irina.thepitaddon.manager.PitManager
 import net.mizukilab.pit.util.chat.CC
@@ -126,10 +128,14 @@ class FixListeners : Listener {
         if (profile.streakKills >= 50.0 && profile.bounty > 0) return
 
         // 按所选超级连杀天赋设定连杀数：登峰造极需 400、月球之旅需 100，否则默认 50
-        val targetStreak = when (profile.chosePerk[5]?.perkInternalName) {
-            "uber_streak" -> 400.0
-            "to_the_moon" -> 100.0
-            else -> 50.0
+        // 按所选超级连杀天赋的 getStreakNeed() 动态适配（暴君 200、超级登封造极 1000 等），无天赋时默认 50
+        val megaName = profile.chosePerk[5]?.perkInternalName
+        val megaPerk = megaName?.let { ThePit.getInstance().perkFactory.perkMap[it] }
+        // uber_streak 保留 400 的历史阈值（与 CombatListener 的促销保护判定一致），其余按天赋自身 getStreakNeed()
+        val targetStreak = if (megaName == "uber_streak") {
+            400.0
+        } else {
+            ((megaPerk as? MegaStreak)?.getStreakNeed()?.coerceAtLeast(50) ?: 50).toDouble()
         }
         profile.streakKills = targetStreak
         profile.bounty = 100
