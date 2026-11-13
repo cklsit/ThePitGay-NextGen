@@ -120,12 +120,17 @@ public class NPC_PacketEvents extends NPCBase {
         if (holo == null) {
             holo = new Hologram(
                     MinecraftVersion.V1_8_R3,
-                    location.clone().add(0, 0.5, 0),
+                    location.clone().add(0, hologramHeight(), 0),
                     getText(player)
             );
         }
         super.playerHologram.put(player.getUniqueId(), holo);
         return holo;
+    }
+
+    /** 悬浮文字基准高度：文字第一行落在实体头顶之上。 */
+    private double hologramHeight() {
+        return villagerProfession != null ? 2.35 : 2.2;
     }
 
     @Override
@@ -232,7 +237,7 @@ public class NPC_PacketEvents extends NPCBase {
         for (Map.Entry<UUID, Hologram> entry : playerHologram.entrySet()) {
             Hologram hologram = entry.getValue();
             if (hologram == null) continue;
-            List<Object> packets = hologram.move(this.location.clone().add(0, 0.5, 0));
+            List<Object> packets = hologram.move(this.location.clone().add(0, hologramHeight(), 0));
             Player viewer = Bukkit.getPlayer(entry.getKey());
             if (viewer != null && isShown(viewer)) hologram.update(viewer, packets);
         }

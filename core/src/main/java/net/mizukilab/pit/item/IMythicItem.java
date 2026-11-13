@@ -103,9 +103,6 @@ public abstract class IMythicItem extends AbstractPitItem {
             }
         } else if (this instanceof MythicSwordItem) {
             name = (tier >= 3 ? "&c" : "&e") + (tier > 0 ? RomanUtil.convert(tier) + " 阶" : "") + getItemDisplayName();
-        } else if (this instanceof net.mizukilab.pit.item.IMythicHammer) {
-            name = (tier >= 3 ? "&c" : "&6") + (tier > 0 ? RomanUtil.convert(tier) + " 阶" : "") + getItemDisplayName();
-        } else if (this instanceof MythicBowItem) {
             name = (tier >= 3 ? "&c" : "&b") + (tier > 0 ? RomanUtil.convert(tier) + " 阶" : "") + getItemDisplayName();
         } else if (this instanceof MagicFishingRod) {
             name = (tier >= 3 ? "&c" : "&a") + (tier > 0 ? RomanUtil.convert(tier) + " 阶" : "") + getItemDisplayName();
@@ -142,18 +139,16 @@ public abstract class IMythicItem extends AbstractPitItem {
         }
 
         if (this.maxLive >= 100) {
-            if (this instanceof net.mizukilab.pit.item.IMythicHammer) {
-                // 神话之锤本身就是高生命物品，「精制的」这类前缀对它是冗余信息
-            } else if (color == MythicColor.DARK) {
+            if (color == MythicColor.DARK) {
                 name = color.getChatColor() + (tier > 0 ? RomanUtil.convert(tier) + " 阶" : "") + "恶魔之甲";
             } else {
                 this.prefix = "精制的";
             }
         }
 
-        if (rareAmount >= 3 && this.maxLive >= 100 && !(this instanceof net.mizukilab.pit.item.IMythicHammer)) {
+        if (rareAmount >= 3 && this.maxLive >= 100) {
             this.prefix = "万里挑一的";
-        } else if (rareAmount == 2 && this.maxLive >= 100 && !(this instanceof net.mizukilab.pit.item.IMythicHammer)) {
+        } else if (rareAmount == 2 && this.maxLive >= 100) {
             this.prefix = "奇迹般的";
         } else if (rareAmount >= 3) {
             this.prefix = "不朽的";
@@ -161,7 +156,7 @@ public abstract class IMythicItem extends AbstractPitItem {
             this.prefix = "不凡的";
         }
 
-        if (enchantTotalLevel >= 7 && this.maxLive >= 100 && !(this instanceof net.mizukilab.pit.item.IMythicHammer)) {
+        if (enchantTotalLevel >= 7 && this.maxLive >= 100) {
             this.prefix = "强大的";
         }
 
@@ -244,8 +239,6 @@ public abstract class IMythicItem extends AbstractPitItem {
             lore.add("&8" + (equals ? "Refresh on table" : uuid.toString()));
         }
 
-        // 说明：神话之锤（hammer_*）专属属性汇总依赖 main 分支的 112 个 hammer 附魔类，
-        // NextGen 基线不含该特性，这里保持中性取值，等该特性迁回时再恢复。
         double atsScalar = 0.0D;
         double kbResistance = 0.0D;
         double reachBonus = 0.0D;

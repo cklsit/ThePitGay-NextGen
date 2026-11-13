@@ -261,16 +261,7 @@ public class EnchantButton extends Button {
         if (level > 0) {
             maxLive = mythicItem.getMaxLive();
         }
-        // 神话之锤：常驻高生命 100 / 120 / 135（按附魔后的物品阶 tier 决定），不随颜色随机
-        boolean hammerItem = mythicItem instanceof net.mizukilab.pit.item.IMythicHammer;
-        if (hammerItem) {
-            int newTier = Math.min(level + 1, 3);
-            int hammerLive = newTier <= 1 ? 100 : (newTier == 2 ? 120 : 135);
-            // 只改上限，live 由下方「按 maxLive 变化补差额」统一处理，
-            // 否则先补满再补差额会得到超过上限的数值（例如 135 + 15 = 150）
-            mythicItem.setMaxLive(hammerLive);
-            //根据附魔物品颜色的不同,maxLive也有所不同
-        } else if (color == MythicColor.DARK) {
+        if (color == MythicColor.DARK) {
             switch (level) {
                 case 0:
                     mythicItem.setMaxLive((Integer) RandomUtil.helpMeToChooseOne(20, 25, 30, 35));
@@ -311,8 +302,6 @@ public class EnchantButton extends Button {
         }
         if (level > 0) {
             mythicItem.setLive(mythicItem.getLive() + mythicItem.getMaxLive() - maxLive);
-            // 神话之锤「铸缝」（hammer_064）属于 main 分支的 hammer 特性，NextGen 基线不含，
-            // 待该特性迁回后在此恢复额外 live 保留逻辑。
         } else {
 
             mythicItem.setLive(mythicItem.getMaxLive());
@@ -361,8 +350,6 @@ public class EnchantButton extends Button {
         rareResults = rareResults.stream().filter(abstractEnchantment -> !isBlackList(player, abstractEnchantment)).collect(Collectors.toList());
         results = results.stream().filter(abstractEnchantment -> !isBlackList(player, abstractEnchantment)).collect(Collectors.toList());
 
-        // 神话之锤的季节性附魔与 hammer M1/M2 互斥属于 main 分支的 hammer 特性，
-        // NextGen 基线既没有 hammer 附魔也没有 SEASONAL 稀有度，这里跳过，等特性迁回时再补。
         //Enchant Start
         switch (color) {
             case DARK: {
@@ -514,17 +501,9 @@ public class EnchantButton extends Button {
     private boolean hasAvailableBookRareEnchantment(Player player, ItemStack item, IMythicItem mythicItem, MythicColor color, int level) {
         // 卷轴可产出稀有! 与当期开放的季节性! 两类
         List<AbstractEnchantment> pool = new ObjectArrayList<>(getBookRareResults(player, item, color, level));
-        pool.addAll(getBookSeasonalResults(player, item, player));
         return hasAvailableBookRareEnchantment(pool, new ObjectArrayList<>(mythicItem.getEnchantments().keySet()));
     }
 
-    /**
-     * 神话之锤的季节性词条：NextGen 基线没有 SEASONAL 稀有度与 hammer 附魔，恒为空池。
-     * 该特性从 main 迁回时替换这里的实现。
-     */
-    private List<AbstractEnchantment> getBookSeasonalResults(Player player, ItemStack item, Player ignored) {
-        return java.util.Collections.emptyList();
-    }
 
     private boolean hasAvailableBookRareEnchantment(List<AbstractEnchantment> rareResults, List<AbstractEnchantment> enchantments) {
         return rareResults.stream().anyMatch(rareEnchantment -> !hasEnchantment(enchantments, rareEnchantment));

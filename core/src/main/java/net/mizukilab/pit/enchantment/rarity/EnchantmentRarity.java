@@ -35,10 +35,7 @@ public enum EnchantmentRarity {
     UBER_LIMITED_RARE("&3登封!", RarityType.NORMAL, 2),
 
     NOSTALGIA("", RarityType.NORMAL, 14),
-    NOSTALGIA_RARE("&d稀有! ", RarityType.RARE, 14),
-
-    /** 季节性附魔：按季度轮换开放，前缀绿色。 */
-    SEASONAL("&a季节性! ", RarityType.LIMITED, 10);
+    NOSTALGIA_RARE("&d稀有! ", RarityType.RARE, 14);
 
     public final int itemColor;
     private final String prefix;

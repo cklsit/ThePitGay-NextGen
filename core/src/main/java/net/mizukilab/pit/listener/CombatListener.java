@@ -1037,12 +1037,10 @@ public class CombatListener implements Listener {
                     AbstractPitItem item;
                     if (enchantPerkLevel >= 4) {
                         item = (AbstractPitItem) RandomUtil.helpMeToChooseOne(
-                                new MythicBowItem(), new MythicSwordItem(), new MythicLeggingsItem(),
-                                new net.mizukilab.pit.item.type.mythic.MythicHammerItem());
+                                new MythicBowItem(), new MythicSwordItem(), new MythicLeggingsItem());
                     } else {
                         item = (AbstractPitItem) RandomUtil.helpMeToChooseOne(
-                                new MythicBowItem(), new MythicSwordItem(),
-                                new net.mizukilab.pit.item.type.mythic.MythicHammerItem());
+                                new MythicBowItem(), new MythicSwordItem());
                     }
 
                     ItemStack itemStack = item.toItemStack();

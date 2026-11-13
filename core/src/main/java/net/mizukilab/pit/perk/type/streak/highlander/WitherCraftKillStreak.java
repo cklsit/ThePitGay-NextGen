@@ -119,9 +119,7 @@ public class WitherCraftKillStreak extends AbstractPerk implements Listener {
                 return;
             }
 
-            if (cn.charlotte.pit.compat.item.ItemTypes.isMythicHammer(item)) {
-                mythicItem = new net.mizukilab.pit.item.type.mythic.MythicHammerItem();
-            } else if (cn.charlotte.pit.compat.item.ItemTypes.isSword(item)) {
+            if (cn.charlotte.pit.compat.item.ItemTypes.isSword(item)) {
                 mythicItem = new MythicSwordItem();
             } else if (cn.charlotte.pit.compat.item.ItemTypes.isBow(item)) {
                 mythicItem = new MythicBowItem();
