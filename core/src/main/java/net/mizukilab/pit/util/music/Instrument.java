@@ -172,12 +172,10 @@ public class Instrument {
         }
 
         public Sound getSound() {
+            // 1.21 只剩 BLOCK_NOTE_BLOCK_* 名字，旧版 NOTE_*/BLOCK_NOTE_* 会抛异常，优先用 latestName
             try {
-                if (this.legacyName == "") {
-                    return Sound.valueOf("NOTE_PIANO");
-                }
-                return Sound.valueOf(this.legacyName);
-            } catch (IllegalArgumentException ex3) {
+                return Sound.valueOf(this.latestName);
+            } catch (IllegalArgumentException ignored) {
                 return Sound.valueOf("BLOCK_NOTE_BLOCK_HARP");
             }
         }

@@ -16,7 +16,7 @@ object SongUtil {
             player.autoDestroy = false
             player.isLoop = true
             player.isPlaying = true
-            player.volume = 0.toByte()
+            player.volume = 100.toByte()
 
             playerMap[target.uniqueId] = player
         } else {
