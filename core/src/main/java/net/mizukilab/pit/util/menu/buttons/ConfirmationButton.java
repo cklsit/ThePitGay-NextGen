@@ -15,6 +15,10 @@ public class ConfirmationButton extends Button {
     private final boolean confirm;
     private final Callback<Boolean> callback;
     private final boolean closeAfterResponse;
+
+    /**
+     * 倒计时由确认键独占：取消键始终保持红色且不参与倒计时显示。
+     */
     private int delaySec;
 
     public ConfirmationButton(boolean confirm, Callback<Boolean> callback, boolean closeAfterResponse, int delaySec) {
@@ -26,23 +30,34 @@ public class ConfirmationButton extends Button {
 
     @Override
     public ItemStack getButtonItem(Player player) {
-        ItemStack itemStack;
-        if (delaySec <= 0) {
-            itemStack = new ItemStack(Material.LIME_TERRACOTTA, 1, this.confirm ? ((byte) 5) : ((byte) 14));
-            ItemMeta itemMeta = itemStack.getItemMeta();
-
-            itemMeta.setDisplayName(this.confirm ? CC.GREEN + "确认" : CC.RED + "取消");
-            itemStack.setItemMeta(itemMeta);
-
+        // 取消键固定红色；确认键倒计时期间为黄色，倒计时结束后变绿色
+        Material material;
+        if (!confirm) {
+            material = Material.RED_TERRACOTTA;
+        } else if (delaySec <= 0) {
+            material = Material.LIME_TERRACOTTA;
         } else {
-            itemStack = new ItemStack(Material.YELLOW_TERRACOTTA, 1, this.confirm ? ((byte) 4) : ((byte) 14));
-            ItemMeta itemMeta = itemStack.getItemMeta();
-
-            itemMeta.setDisplayName(CC.translate(this.confirm ? CC.GREEN + "你确定吗? &7(" + delaySec + ")" : CC.RED + "取消"));
-            itemStack.setItemMeta(itemMeta);
-
+            material = Material.YELLOW_TERRACOTTA;
         }
-        delaySec--;
+
+        ItemStack itemStack = new ItemStack(material);
+        ItemMeta itemMeta = itemStack.getItemMeta();
+
+        String name;
+        if (!confirm) {
+            name = CC.RED + "取消";
+        } else if (delaySec <= 0) {
+            name = CC.GREEN + "确认";
+        } else {
+            name = CC.translate(CC.GREEN + "你确定吗? &7(" + delaySec + ")");
+        }
+        itemMeta.setDisplayName(name);
+        itemStack.setItemMeta(itemMeta);
+
+        // 只有确认键需要倒计时，取消键的颜色与文字保持不变
+        if (confirm && delaySec > 0) {
+            delaySec--;
+        }
         return itemStack;
     }
 
