@@ -187,21 +187,27 @@ class Despot : AbstractPerk(), MegaStreak, Listener, IPlayerDamaged, IAttackEnti
     ) {
         val profile = PlayerProfile.getPlayerProfileByUuid(myself.uniqueId) ?: return
         if (profile.streakKills >= 200) {
-            Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), Runnable {
-                if (InventoryUtil.isInvFull(myself)) {
-                    myself.sendMessage(CC.translate("&c&l暴君! &7你的背包已满,死亡奖励并没有给予!"))
-                } else {
-                    myself.inventory.addItem(Sceptre().toItemStack())
-                    myself.sendMessage(CC.translate("&c&l暴君! &7获得&e权杖"))
-                }
-            }, 5L)
+            // 死亡后的 reset/respawn 会清空背包，改为重生时补发权杖
+            myself.setMetadata(
+                "DespotSceptrePending",
+                org.bukkit.metadata.FixedMetadataValue(ThePit.getInstance(), true)
+            )
         }
     }
 
     override fun handleRespawn(enchantLevel: Int, myself: Player?) {
-        if (myself != null) {
-            myself.maxHealth = PlayerProfile.getPlayerProfileByUuid(myself.uniqueId).maxHealth
+        if (myself == null) {
+            return
         }
-
+        myself.maxHealth = PlayerProfile.getPlayerProfileByUuid(myself.uniqueId).maxHealth
+        if (myself.hasMetadata("DespotSceptrePending")) {
+            myself.removeMetadata("DespotSceptrePending", ThePit.getInstance())
+            if (InventoryUtil.isInvFull(myself)) {
+                myself.sendMessage(CC.translate("&c&l暴君! &7你的背包已满,死亡奖励并没有给予!"))
+            } else {
+                myself.inventory.addItem(Sceptre().toItemStack())
+                myself.sendMessage(CC.translate("&c&l暴君! &7获得&e权杖"))
+            }
+        }
     }
 }
