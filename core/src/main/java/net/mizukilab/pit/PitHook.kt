@@ -61,6 +61,7 @@ import net.mizukilab.pit.item.type.sewers.Milk
 import net.mizukilab.pit.item.type.sewers.Rubbish
 import net.mizukilab.pit.listener.*
 import net.mizukilab.pit.map.kingsquests.KingsQuests
+import net.mizukilab.pit.menu.admin.item.button.RedPacketInputListener
 import net.mizukilab.pit.menu.shop.button.type.BowBundleShopButton
 import net.mizukilab.pit.menu.shop.button.type.CombatSpadeShopButton
 import net.mizukilab.pit.menu.shop.button.type.PantsBundleShopButton
@@ -804,6 +805,7 @@ private fun registerListeners() {
         WarehouseListener::class.java,
         iSpigot::class.java,
         HologramMarco::class.java,
+        RedPacketInputListener::class.java,
     )
     for (aClass in classes) {
         try {

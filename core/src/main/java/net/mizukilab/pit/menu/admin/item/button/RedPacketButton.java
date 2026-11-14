@@ -1,6 +1,6 @@
 package net.mizukilab.pit.menu.admin.item.button;
 
-import cn.charlotte.pit.ThePit;
+import net.mizukilab.pit.util.chat.CC;
 import net.mizukilab.pit.util.item.ItemBuilder;
 import net.mizukilab.pit.util.menu.Button;
 import org.bukkit.Material;
@@ -14,8 +14,6 @@ import org.bukkit.inventory.ItemStack;
  */
 public class RedPacketButton extends Button {
 
-    private int money;
-
     @Override
     public ItemStack getButtonItem(Player player) {
         return new ItemBuilder(Material.REDSTONE_BLOCK)
@@ -27,25 +25,17 @@ public class RedPacketButton extends Button {
 
     @Override
     public void clicked(Player player, int slot, ClickType clickType, int hotbarButton, ItemStack currentItem) {
-        ThePit.getInstance()
-                .getSignGui()
-                .open(player, new String[]{"", "~~~~~~~~~~~~~", "请在此输入", "红包金额"}, (receiver, lines) -> {
-                    player.closeInventory();
-                    int money;
-                    try {
-                        money = Integer.parseInt(lines[0]);
-                    } catch (Exception ignore) {
-                        return;
-                    }
-                    if (money <= 0) {
-                        return;
-                    }
-
-                    player.getInventory().addItem(new ItemBuilder(this.getButtonItem(player))
-                            .changeNbt("money", money)
-                            .changeNbt("sender", player.getUniqueId().toString())
-                            .build());
-
-                });
+        // 1.21.8 客户端在虚拟告示牌编辑器上会崩溃，改为聊天栏输入金额
+        player.closeInventory();
+        RedPacketInputListener.request(player, money -> {
+            if (money <= 0) {
+                return;
+            }
+            player.getInventory().addItem(new ItemBuilder(this.getButtonItem(player))
+                    .changeNbt("money", money)
+                    .changeNbt("sender", player.getUniqueId().toString())
+                    .build());
+            player.sendMessage(CC.translate("&c红包 &7已创建，金额 &e" + money + " &7金"));
+        });
     }
 }
