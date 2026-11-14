@@ -698,22 +698,21 @@ public class PlayerMarco implements Listener {
 
                 Collection<Player> players = PlayerUtil.getNearbyPlayers(location, radius);
                 Map<Player, Double> distanceMap = new HashMap<>();
-                double distanceSum = players.stream().mapToDouble(player -> {
-                    double distance = player.getLocation().distance(location);
-                    distanceMap.put(player, distance);
-                    return distance;
-                }).sum();
+                Map<UUID, Double> distanceByUuid = new HashMap<>();
+                for (Player nearby : players) {
+                    double distance = nearby.getLocation().distance(location);
+                    distanceMap.put(nearby, distance);
+                    distanceByUuid.put(nearby.getUniqueId(), distance);
+                }
 
                 int money = event.getEntity().getMetadata("money").get(0).asInt();
                 String shooter = event.getEntity().getMetadata("shooter").get(0).asString();
+                Map<UUID, Integer> shares = net.mizukilab.pit.util.misc.RedPacketMath.distribute(money, distanceByUuid);
 
                 for (Map.Entry<Player, Double> entry : distanceMap.entrySet()) {
-                    Double distance = entry.getValue();
                     Player player = entry.getKey();
-
-
-                    double value = 1 - (distance / (distanceSum));
-                    int given = (int) (money * value);
+                    int given = shares.getOrDefault(player.getUniqueId(), 0);
+                    double value = money <= 0 ? 0.0 : given / (double) money;
                     PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(UUID.fromString(shooter));
                     String name = profile.getPlayerName();
 
