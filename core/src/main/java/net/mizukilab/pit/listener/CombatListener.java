@@ -557,6 +557,14 @@ public class CombatListener implements Listener {
         }
         final Player finalKiller = killer;
 
+        // 暴君：无论被玩家、环境还是 /kill 击杀，只要激活连杀就标记为待发权杖，重生时补发
+        if (playerProfile.getStreakKills() >= 200) {
+            cn.charlotte.pit.data.sub.PerkData chosenMega = playerProfile.getChosePerk().get(5);
+            if (chosenMega != null && "despot_streak".equalsIgnoreCase(chosenMega.getPerkInternalName())) {
+                player.setMetadata("DespotSceptrePending", new FixedMetadataValue(ThePit.getInstance(), true));
+            }
+        }
+
         double respawnTime = playerProfile.getRespawnTime();
 
         PlayerUtil.resetPlayer(player, true, false);
