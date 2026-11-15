@@ -5,7 +5,7 @@ ThePitGay-NextGen 的 Paper 1.21.8 维护分支。以 NextGen 为底座，整合
 - 上游：<https://github.com/ImMengXin0/ThePitGay-NextGen>
 - 本仓库：<https://github.com/cklsit/ThePitGay-NextGen>
 - 发行包：[Releases](https://github.com/cklsit/ThePitGay-NextGen/releases) 中的 `ThePitGay-V.jar`（构建产物路径 `core/build/libs/ThePitGay-V.jar`）
-- 最新版本：v5.0.0（Paper 1.21.8）
+- 最新版本：[v5.0.5](https://github.com/cklsit/ThePitGay-NextGen/releases/tag/v5.0.5)（Paper 1.21.8）
 
 ## 环境要求
 
@@ -57,7 +57,7 @@ Windows：`gradlew.bat :core:shadowJar`。
 ## GitHub Actions
 
 - `.github/workflows/build.yml`：push 到 `main`、PR 或手动触发时构建 jar，并上传为 Actions 产物（Artifact）。
-- 推送 `v*` 标签（如 `v5.0.0`）时，构建完成后自动创建 GitHub Release 并附带 `ThePitGay-V.jar`。
+- 推送 `v*` 标签（如 `v5.0.5`）时，构建完成后自动创建 GitHub Release 并附带 `ThePitGay-V.jar`。
 
 ## 致谢
 
