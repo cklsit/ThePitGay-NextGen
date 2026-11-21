@@ -1,0 +1,38 @@
+# ThePitGay-NextGen 一键部署
+#
+#   docker compose up -d
+#
+# 数据保存在命名卷 thepit-data 中（世界、玩家数据、插件配置）。
+# 强制重建镜像：docker compose build --no-cache && docker compose up -d
+
+services:
+  thepit:
+    image: ghcr.io/cklsit/thepitgay-nextgen:latest
+    # 需要本地构建时取消下面这行注释（与 image 二选一）
+    # build: .
+    container_name: thepit
+    restart: unless-stopped
+    ports:
+      - "25565:25565"
+    environment:
+      # 内存上限（-Xms 与 -Xmx 同值）
+      MEMORY: "4G"
+      # 正版验证：false = 关闭（离线模式，可直连）
+      ONLINE_MODE: "false"
+      # 白名单：false = 关闭
+      WHITE_LIST: "false"
+      # 下界：false = 关闭（末地在镜像内固定关闭）
+      ALLOW_NETHER: "false"
+      LEVEL_NAME: "pit_arena"
+      MAX_PLAYERS: "100"
+      MOTD: "ThePitGay-NextGen (Paper 1.21.8)"
+      # 插件升级后设为 true 覆盖容器内旧插件（仅一次即可）
+      FORCE_PLUGIN_UPDATE: "false"
+    volumes:
+      - thepit-data:/data
+    stdin_open: true
+    tty: true
+    stop_grace_period: 60s
+
+volumes:
+  thepit-data:

@@ -249,6 +249,11 @@ public class ThePit extends JavaPlugin implements PluginMessageListener {
         npcViewCompatibility = new NpcViewCompatibility(this);
         npcViewCompatibility.start();
         loadEventPoller();
+        // 关闭下界与末地：延迟一 tick 执行，避免在世界初始化阶段卸载世界
+        org.bukkit.Bukkit.getScheduler().runTask(this, () -> {
+            int unloaded = net.mizukilab.pit.listener.DimensionLockListener.unloadBlockedWorlds();
+            getLogger().info("[Dimension] 下界/末地已关闭，已卸载世界数: " + unloaded);
+        });
     }
 
     private void preLoad(boolean whiteList) throws Exception {

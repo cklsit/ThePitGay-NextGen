@@ -1,0 +1,25 @@
+# 构建产物与缓存（镜像内会重新构建）
+**/build/
+**/.gradle/
+.gradle/
+**/.kotlin/
+.kotlin/
+out/
+**/out/
+
+# Git 与工具目录
+.git/
+.gitignore
+.github/
+
+# 本地测试/打包产物
+build-*.log
+*.log
+_cv/
+tools/
+.workbuddy/
+docs/
+
+# 系统文件
+.DS_Store
+Thumbs.db
