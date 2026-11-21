@@ -1,0 +1,6 @@
+# Shell 脚本与 Docker 相关文件必须保持 LF，否则 Linux 容器内无法执行
+docker/*.sh text eol=lf
+docker/*.py text eol=lf
+Dockerfile text eol=lf
+.dockerignore text eol=lf
+docker-compose.yml text eol=lf

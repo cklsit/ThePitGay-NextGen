@@ -49,8 +49,11 @@ fi
 # 允许用环境变量强制覆盖关键项（每次启动都会生效）
 set_prop() {
     local key="$1" value="$2"
+    # sed 替换串里的 & | / 需要转义，避免 MOTD 等含特殊字符时写坏配置
+    local escaped
+    escaped=$(printf '%s' "$value" | sed -e 's/[&|\\]/\\&/g')
     if grep -q "^${key}=" "$DATA_DIR/server.properties" 2>/dev/null; then
-        sed -i "s|^${key}=.*|${key}=${value}|" "$DATA_DIR/server.properties"
+        sed -i "s|^${key}=.*|${key}=${escaped}|" "$DATA_DIR/server.properties"
     else
         echo "${key}=${value}" >> "$DATA_DIR/server.properties"
     fi
