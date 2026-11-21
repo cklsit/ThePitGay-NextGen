@@ -3,8 +3,17 @@
 set -euo pipefail
 
 DATA_DIR="${DATA_DIR:-/data}"
-SERVER_JAR="/opt/server/paper.jar"
-PLUGIN_SRC="/opt/server/plugins-src"
+SERVER_JAR="${SERVER_JAR:-/opt/server/paper.jar}"
+PLUGIN_SRC="${PLUGIN_SRC:-/opt/server/plugins-src}"
+# 所有可覆盖项先给默认值，避免 set -u 下未传环境变量直接退出
+ONLINE_MODE="${ONLINE_MODE:-false}"
+WHITE_LIST="${WHITE_LIST:-false}"
+ALLOW_NETHER="${ALLOW_NETHER:-false}"
+LEVEL_NAME="${LEVEL_NAME:-pit_arena}"
+SERVER_PORT="${SERVER_PORT:-25565}"
+MAX_PLAYERS="${MAX_PLAYERS:-100}"
+MOTD="${MOTD:-ThePitGay-NextGen (Paper 1.21.8)}"
+FORCE_PLUGIN_UPDATE="${FORCE_PLUGIN_UPDATE:-false}"
 mkdir -p "$DATA_DIR"
 
 # ---------------------------------------------------------------------------
