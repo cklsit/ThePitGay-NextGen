@@ -1,9 +1,6 @@
 package net.mizukilab.pit.tab
 
 import cn.charlotte.pit.ThePit
-import com.comphenix.protocol.PacketType
-import com.comphenix.protocol.ProtocolLibrary
-import com.comphenix.protocol.wrappers.WrappedChatComponent
 import me.clip.placeholderapi.PlaceholderAPI
 import net.mizukilab.pit.config.TabConfiguration.animation
 import net.mizukilab.pit.config.TabConfiguration.delay
@@ -65,8 +62,11 @@ open class TabHandle {
     private fun updatePlayerTabList(player: Player, headerText: String, footerText: String) {
         try {
             val papiReady = org.bukkit.Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")
-            val header = if (papiReady && '%' in headerText) PlaceholderAPI.setPlaceholders(player, headerText) else headerText
-            val footer = if (papiReady && '%' in footerText) PlaceholderAPI.setPlaceholders(player, footerText) else footerText
+            var header = if (papiReady && '%' in headerText) PlaceholderAPI.setPlaceholders(player, headerText) else headerText
+            var footer = if (papiReady && '%' in footerText) PlaceholderAPI.setPlaceholders(player, footerText) else footerText
+            // 未装 PlaceholderAPI 时也要让 %pit_xxx% 生效，否则 TAB 会原样显示占位符
+            if ('%' in header) header = net.mizukilab.pit.hook.PitPlaceholders.apply(player, header)
+            if ('%' in footer) footer = net.mizukilab.pit.hook.PitPlaceholders.apply(player, footer)
             val previous = lastSent[player.uniqueId]
             if (previous?.player === player && previous.header == header && previous.footer == footer) return
 
@@ -80,11 +80,11 @@ open class TabHandle {
     }
 
     protected open fun sendTabPacket(player: Player, header: String, footer: String) {
-        val manager = ProtocolLibrary.getProtocolManager()
-        val packet = manager.createPacket(PacketType.Play.Server.PLAYER_LIST_HEADER_FOOTER)
-        packet.chatComponents.write(0, WrappedChatComponent.fromText(header))
-        packet.chatComponents.write(1, WrappedChatComponent.fromText(footer))
-        manager.sendServerPacket(player, packet)
+        // 用 Bukkit/Adventure 直发，避免依赖 ProtocolLib（未安装时本类会加载失败）
+        player.sendPlayerListHeaderAndFooter(
+            net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(header),
+            net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(footer)
+        )
     }
 
     private fun replaceVariables(lines: List<String>, variables: Map<String, String>): String {

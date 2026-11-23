@@ -5,34 +5,30 @@ import cn.mythicland.npclib.NPCLib;
 import cn.mythicland.npclib.api.events.NPCInteractEvent;
 import cn.mythicland.npclib.internal.NPCBase;
 import cn.mythicland.npclib.internal.NPCManager;
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.ProtocolManager;
-import com.comphenix.protocol.events.*;
-import com.comphenix.protocol.wrappers.EnumWrappers;
 import com.github.retrooper.packetevents.event.PacketListenerAbstract;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
-import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientInteractEntity;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import java.util.*;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
  * NPC 点击检测。
  *
- * <p>原生实现只走 ProtocolLib 的 {@code USE_ENTITY} 包；1.21.8 上 ProtocolLib 5.4.0
- * 在 Paper 上不可用（异步监听直接抛错），会导致所有数据包 NPC 点不动。
- * 现在优先用插件内置的 PacketEvents 监听同一个客户端包，ProtocolLib 仅作兜底。</p>
+ * <p>只依赖插件内置（并已重定位）的 PacketEvents，监听客户端 {@code INTERACT_ENTITY} 包。
+ * 早先实现引用了 ProtocolLib 类，未安装 ProtocolLib 时本类会 NoClassDefFoundError，
+ * 连带 NPCLib 构造失败、整个插件被禁用，因此这里彻底移除 ProtocolLib 引用。</p>
  */
 public class PacketListener {
     private final Set<UUID> pending = ConcurrentHashMap.newKeySet();
     private final Map<UUID, Long> lastClick = new HashMap<>();
     private NPCLib instance;
-    private ProtocolManager protocol;
-    private PacketAdapter adapter;
     private PacketListenerAbstract packetEventsListener;
     private volatile boolean active;
 
@@ -42,12 +38,9 @@ public class PacketListener {
         if (startPacketEvents()) {
             return;
         }
-        startProtocolLib();
+        instance.getLogger().warning("PacketEvents 未就绪，NPC 点击检测不可用");
     }
 
-    /**
-     * @return true 表示 PacketEvents 已接管点击检测
-     */
     private boolean startPacketEvents() {
         try {
             com.github.retrooper.packetevents.PacketEventsAPI api =
@@ -74,26 +67,6 @@ public class PacketListener {
         } catch (Throwable throwable) {
             packetEventsListener = null;
             return false;
-        }
-    }
-
-    private void startProtocolLib() {
-        try {
-            this.protocol = ProtocolLibrary.getProtocolManager();
-            adapter = new PacketAdapter(instance.getPlugin(), PacketType.Play.Client.USE_ENTITY) {
-                @Override public void onPacketReceiving(PacketEvent event) {
-                    if (event.isCancelled() || !active) return;
-                    Integer id = event.getPacket().getIntegers().readSafely(0);
-                    EnumWrappers.EntityUseAction action = event.getPacket().getEntityUseActions().readSafely(0);
-                    if (id == null || action == null) return;
-                    handleInteract(event.getPlayer(), id, action == EnumWrappers.EntityUseAction.ATTACK);
-                }
-            };
-            protocol.addPacketListener(adapter);
-        } catch (Throwable throwable) {
-            // ProtocolLib 不存在或版本不兼容：NPC 点击已由 PacketEvents 处理
-            adapter = null;
-            protocol = null;
         }
     }
 
@@ -142,11 +115,6 @@ public class PacketListener {
             }
             packetEventsListener = null;
         }
-        if (adapter != null && protocol != null) {
-            try { protocol.removePacketListener(adapter); } catch (Throwable ignored) { }
-        }
-        adapter = null;
-        protocol = null;
         pending.clear();
         lastClick.clear();
     }

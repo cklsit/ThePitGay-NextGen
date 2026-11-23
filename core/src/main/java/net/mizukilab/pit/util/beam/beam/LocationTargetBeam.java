@@ -18,83 +18,75 @@
 package net.mizukilab.pit.util.beam.beam;
 
 import com.google.common.base.Preconditions;
-import net.mizukilab.pit.util.beam.protocol.PacketFactory;
-import net.mizukilab.pit.util.beam.protocol.WrappedBeamPacket;
 import org.bukkit.Location;
+import org.bukkit.Particle;
 import org.bukkit.entity.Player;
 
 /**
- * Creates a guardian beam between two locations.
- * This uses ProtocolLib to send two entities: A guardian and a squid.
- * The guardian is then set to target the squid.
- * Be sure to run #cleanup for any players you #start.
+ * 两点之间的光束。
+ *
+ * <p>原实现依赖 ProtocolLib 伪造守卫者/鱿鱼实体，未安装 ProtocolLib 时会导致类加载失败；
+ * 现在改用 Bukkit 原生粒子绘制，零外部依赖。</p>
  *
  * @author Jaxon A Brown
  */
 public class LocationTargetBeam {
 
-    private final WrappedBeamPacket packetSquidSpawn;
-    private final WrappedBeamPacket packetSquidMove;
-    private final WrappedBeamPacket packetGuardianSpawn;
-    private final WrappedBeamPacket packetGuardianMove;
-    private final WrappedBeamPacket packetRemoveEntities;
+    /** 每米采样的粒子数，越大越密。 */
+    private static final double PARTICLES_PER_BLOCK = 2.0;
+    private static final int MAX_PARTICLES = 120;
 
-    /**
-     * Create a guardian beam. This sets up the packets.
-     *
-     * @param startingPosition Position to start the beam, or the position which the effect 'moves towards'.
-     * @param endingPosition   Position to stop the beam, or the position which the effect 'moves away from'.
-     */
+    private Location startingPosition;
+    private Location endingPosition;
+
     public LocationTargetBeam(Location startingPosition, Location endingPosition) {
         Preconditions.checkNotNull(startingPosition, "startingPosition cannot be null");
         Preconditions.checkNotNull(endingPosition, "endingPosition cannot be null");
-        Preconditions.checkState(startingPosition.getWorld().equals(endingPosition.getWorld()), "startingPosition and endingPosition must be in the same world");
-
-        this.packetSquidSpawn = PacketFactory.createPacketSquidSpawn(startingPosition);
-        this.packetSquidMove = PacketFactory.createPacketEntityMove(this.packetSquidSpawn);
-        this.packetGuardianSpawn = PacketFactory.createPacketGuardianSpawn(endingPosition, this.packetSquidSpawn);
-        this.packetGuardianMove = PacketFactory.createPacketEntityMove(this.packetGuardianSpawn);
-        this.packetRemoveEntities = PacketFactory.createPacketRemoveEntities(this.packetSquidSpawn, this.packetGuardianSpawn);
+        Preconditions.checkState(startingPosition.getWorld().equals(endingPosition.getWorld()),
+                "startingPosition and endingPosition must be in the same world");
+        this.startingPosition = startingPosition.clone();
+        this.endingPosition = endingPosition.clone();
     }
 
-    /**
-     * Send the packets to create the beam to the player.
-     *
-     * @param player player to whom the beam will be sent.
-     */
+    /** 向该玩家显示光束（粒子即时绘制，无需后续维护）。 */
     public void start(Player player) {
-        this.packetSquidSpawn.send(player);
-        this.packetGuardianSpawn.send(player);
+        draw(player);
     }
 
-    /**
-     * Sets the position of the beam which the effect 'moves away from'.
-     *
-     * @param player   player who should receive the update. They MUST have been showed the beam already.
-     * @param location location of the new position.
-     */
     public void setStartingPosition(Player player, Location location) {
-        PacketFactory.modifyPacketEntitySpawn(this.packetSquidSpawn, location);
-        PacketFactory.modifyPacketEntityMove(this.packetSquidMove, location).send(player);
+        this.startingPosition = location.clone();
+        draw(player);
     }
 
-    /**
-     * Sets the position of the beam which the effect 'moves towards'.
-     *
-     * @param player   player who should receive the update. They MUST have been showed the beam already.
-     * @param location location of the new position.
-     */
     public void setEndingPosition(Player player, Location location) {
-        PacketFactory.modifyPacketEntitySpawn(this.packetGuardianSpawn, location);
-        PacketFactory.modifyPacketEntityMove(this.packetGuardianMove, location).send(player);
+        this.endingPosition = location.clone();
+        draw(player);
     }
 
-    /**
-     * Cleans up the entities on the player's side.
-     *
-     * @param player player who needs the cleanup.
-     */
+    /** 当前是按帧重绘的粒子，没有客户端实体需要清理。 */
     public void cleanup(Player player) {
-        this.packetRemoveEntities.send(player);
+        // no-op
+    }
+
+    private void draw(Player player) {
+        if (player == null || !player.isOnline()) return;
+        Location from = startingPosition;
+        Location to = endingPosition;
+        if (from.getWorld() == null || !from.getWorld().equals(player.getWorld())) return;
+
+        double distance = from.distance(to);
+        int count = (int) Math.min(MAX_PARTICLES, Math.max(2, Math.ceil(distance * PARTICLES_PER_BLOCK)));
+        double stepX = (to.getX() - from.getX()) / count;
+        double stepY = (to.getY() - from.getY()) / count;
+        double stepZ = (to.getZ() - from.getZ()) / count;
+
+        for (int i = 0; i <= count; i++) {
+            player.spawnParticle(Particle.DUST,
+                    from.getX() + stepX * i,
+                    from.getY() + stepY * i + 1.0,
+                    from.getZ() + stepZ * i,
+                    1, 0, 0, 0, 0,
+                    new Particle.DustOptions(org.bukkit.Color.fromRGB(0, 200, 255), 1.0f));
+        }
     }
 }

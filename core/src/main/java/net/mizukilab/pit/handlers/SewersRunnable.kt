@@ -81,7 +81,10 @@ object SewersRunnable : BukkitRunnable(), Listener {
             }
         }
 
-        ThePit.getInstance().logger.info("[Sewers] chest points=" + locs.size + " spawned=" + count)
+        // 仅在本次真的刷出箱子时记一行，避免每 10 tick 刷屏
+        if (count > 0) {
+            ThePit.getInstance().logger.info("[Sewers] chest points=" + locs.size + " spawned=" + count)
+        }
         existSewersChest = locs
     }
 
@@ -100,17 +103,23 @@ object SewersRunnable : BukkitRunnable(), Listener {
 
     private fun resolveChestLocations(): List<Location> {
         val configured = ThePit.getInstance().pitConfig.sewersChestsLocations
-            .filter { it != null && it.world != null && it.y > 0 }
+            .filter { it != null && it.world != null && it.y > 0 && net.mizukilab.pit.util.RegionUtil.isPlayableLocation(it) }
         if (configured.isNotEmpty()) return configured
         val center = ThePit.getInstance().pitConfig.sewersLocation ?: return emptyList()
         if (center.world == null || center.y <= 0) return emptyList()
+        // 下水道坐标常常就在出生点/保护区附近，周围不能凭空刷箱子
+        if (net.mizukilab.pit.util.RegionUtil.isInSpawnRegion(center)) {
+            return emptyList()
+        }
         val cachedCenter = autoChestCenter
         val cached = autoChestLocations
         if (cached != null && cachedCenter != null && cachedCenter.world == center.world && cachedCenter.distanceSquared(center) < 4.0) {
             return cached
         }
         val generated = generateAutoChestLocations(center)
-        ThePit.getInstance().logger.info("[Sewers] auto chest points=" + generated.size + " center=" + center);
+        if (generated.isNotEmpty()) {
+            ThePit.getInstance().logger.info("[Sewers] auto chest points=" + generated.size + " center=" + center)
+        }
         autoChestLocations = generated
         autoChestCenter = center.clone()
         return generated
@@ -134,7 +143,11 @@ object SewersRunnable : BukkitRunnable(), Listener {
                 val above = world.getBlockAt(x, y + 1, z)
                 val above2 = world.getBlockAt(x, y + 2, z)
                 if (!ground.type.isAir && above.type.isAir && above2.type.isAir) {
-                    points.add(Location(world, x + 0.5, y + 1.0, z + 0.5))
+                    val candidate = Location(world, x + 0.5, y + 1.0, z + 0.5)
+                    // 只允许生成在战斗区域内，保护区和出生点周围不刷箱子
+                    if (net.mizukilab.pit.util.RegionUtil.isPlayableLocation(candidate)) {
+                        points.add(candidate)
+                    }
                     break
                 }
             }
@@ -150,7 +163,11 @@ object SewersRunnable : BukkitRunnable(), Listener {
                         val above = world.getBlockAt(x, y + 1, z)
                         val above2 = world.getBlockAt(x, y + 2, z)
                         if (!ground.type.isAir && above.type.isAir && above2.type.isAir) {
-                            points.add(Location(world, x + 0.5, y + 1.0, z + 0.5))
+                            val candidate = Location(world, x + 0.5, y + 1.0, z + 0.5)
+                            if (net.mizukilab.pit.util.RegionUtil.isInSpawnRegion(candidate)) {
+                                continue
+                            }
+                            points.add(candidate)
                             if (points.size >= 8) return points
                         }
                     }

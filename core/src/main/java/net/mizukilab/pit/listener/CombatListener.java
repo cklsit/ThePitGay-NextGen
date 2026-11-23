@@ -946,14 +946,16 @@ public class CombatListener implements Listener {
                     assistProfile.setStreakKills(assistProfile.getStreakKills() + Math.floor(100 * percentage) * 0.01);
                 }
                 assistProfile.setAssists(assistProfile.getAssists() + 1);
+                // 加成必须在写入玩家数据之前生效，否则只改了提示文字
+                if (eventBoost > 0 && eventBoost != 1.0) {
+                    totalCoins = eventBoost * totalCoins;
+                    totalXp = eventBoost * totalXp;
+                }
                 assistProfile.setExperience(assistProfile.getExperience() + totalXp);
                 assistProfile.setCoins(assistProfile.getCoins() + totalCoins);
                 assistProfile.grindCoins(totalCoins);
                 assistProfile.applyExperienceToPlayer(assistPlayer);
 
-
-                totalCoins = eventBoost * totalCoins;
-                totalXp = eventBoost * totalXp;
                 assistPlayer.playSound(assistPlayer.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1.7F);
                 CC.send(MessageType.COMBAT, assistPlayer, CC.translate("&a&l助攻! &7" + numFormat.format(percentage * 100) + "% 的伤害在 " + playerProfile.getFormattedName() + " &6+" + numFormat.format(totalCoins) + "硬币 " + (assistProfile.getLevel() < 120 ? "&b+" + numFormat.format(totalXp) + "经验值" : "") + (eventBoost > 1 ? boostString : "")));
             }
