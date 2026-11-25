@@ -340,52 +340,11 @@ public class GameEffectListener implements Listener {
                         ThePit.getInstance(), damager.getUniqueId().toString()));
             }
 
-            if (player.getHealth() < finalDamage.get()) {
-                // 添加安全检查，避免机器人死亡时的NullPointerException
-                try {
-                    player.damage(500000.0);
-                } catch (Exception e) {
-                    // 如果damage方法出错，直接设置生命值为0
-                    try {
-                        player.setHealth(0);
-                    } catch (Exception ex) {
-                        // 如果setHealth也失败，尝试使用更底层的方式
-                        try {
-                            ((org.bukkit.entity.Player) player).setHealth(0.0f);
-                        } catch (Exception ignored) {
-                            // 最后的安全网，静默忽略
-                        }
-                    }
-                }
-                event.setCancelled(true);
-            } else { //TODO 修正 一击毙命, 但是event不cancel
-                double v = player.getHealth() - finalDamage.get();
-                if (v > 0) {
-                    // 确保生命值不超过最大生命值上限
-                    try {
-                        player.setHealth(Math.min(v, player.getMaxHealth()));
-                    } catch (Exception e) {
-                        // 如果setHealth失败，尝试直接设置为当前生命值（不改变）
-                        try {
-                            player.setHealth(player.getHealth());
-                        } catch (Exception ignored) {
-                            // 静默忽略
-                        }
-                    }
-                } else {
-                    try {
-                        player.setHealth(0);
-                    } catch (Exception e) {
-                        // 如果setHealth失败，尝试使用底层API
-                        try {
-                            ((org.bukkit.entity.Player) player).setHealth(0.0f);
-                        } catch (Exception ignored) {
-                            // 最后的安全网，静默忽略
-                        }
-                    }
-                }
+            // Native bots use the original Bukkit hit so death and retaliation retain the attacking entity.
+            if (!net.mizukilab.pit.npc.NpcIdentity.isMythicBot(player)
+                    && !net.mizukilab.pit.npc.NpcIdentity.isMythicBot(damager)) {
+                applyLegacyPlayerHealth(player, event, finalDamage.get());
             }
-            //we need to ensure the final damage is pushed into the event
             event.setDamage(finalDamage.get() * Einstein.clamp(boostDamage.get(), 0, 100));
         }
 
@@ -399,6 +358,54 @@ public class GameEffectListener implements Listener {
             return;
         }
         debug(event, damagerEntity, cancel);
+    }
+
+    private static void applyLegacyPlayerHealth(Player player, EntityDamageByEntityEvent event, double damage) {
+        if (player.getHealth() < damage) {
+            // 添加安全检查，避免机器人死亡时的NullPointerException
+            try {
+                player.damage(500000.0);
+            } catch (Exception e) {
+                // 如果damage方法出错，直接设置生命值为0
+                try {
+                    player.setHealth(0);
+                } catch (Exception ex) {
+                    // 如果setHealth也失败，尝试使用更底层的方式
+                    try {
+                        ((org.bukkit.entity.Player) player).setHealth(0.0f);
+                    } catch (Exception ignored) {
+                        // 最后的安全网，静默忽略
+                    }
+                }
+            }
+            event.setCancelled(true);
+        } else { //TODO 修正 一击毙命, 但是event不cancel
+            double v = player.getHealth() - damage;
+            if (v > 0) {
+                // 确保生命值不超过最大生命值上限
+                try {
+                    player.setHealth(Math.min(v, player.getMaxHealth()));
+                } catch (Exception e) {
+                    // 如果setHealth失败，尝试直接设置为当前生命值（不改变）
+                    try {
+                        player.setHealth(player.getHealth());
+                    } catch (Exception ignored) {
+                        // 静默忽略
+                    }
+                }
+            } else {
+                try {
+                    player.setHealth(0);
+                } catch (Exception e) {
+                    // 如果setHealth失败，尝试使用底层API
+                    try {
+                        ((org.bukkit.entity.Player) player).setHealth(0.0f);
+                    } catch (Exception ignored) {
+                        // 最后的安全网，静默忽略
+                    }
+                }
+            }
+        }
     }
 
     static Vector ZERO = new Vector();

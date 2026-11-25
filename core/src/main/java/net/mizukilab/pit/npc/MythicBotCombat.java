@@ -156,8 +156,13 @@ public final class MythicBotCombat implements Listener, AutoCloseable {
     }
 
     private static final class BotProfile extends PlayerProfile {
+        private final String formattedName;
+
         BotProfile(Player player) {
             super(player.getUniqueId(), player.getName());
+            formattedName = player instanceof org.bukkit.craftbukkit.entity.CraftPlayer craft
+                    && craft.getHandle() instanceof cn.mythicland.npclib.bot.v1_8_R3.BotEntity bot && bot.isManaged()
+                    ? player.getDisplayName() : "§7" + getPlayerName();
             prestige = 0;
             setExperience(0);
             setCoins(0);
@@ -165,7 +170,7 @@ public final class MythicBotCombat implements Listener, AutoCloseable {
             setInArena(true);
             // Remains unloaded: no persistence, player-only rewards or login hooks.
         }
-        @Override public String getFormattedName() { return "§7" + getPlayerName(); }
+        @Override public String getFormattedName() { return formattedName; }
         @Override public String getFormattedNameWithRoman() { return getFormattedName(); }
     }
 }

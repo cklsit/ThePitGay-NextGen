@@ -23,6 +23,9 @@ import net.minecraft.world.phys.Vec3;
 import org.bukkit.Location;
 import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.craftbukkit.entity.CraftEntity;
+import org.bukkit.entity.Display;
+import org.bukkit.entity.TextDisplay;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 import java.util.Objects;
 import java.util.UUID;
@@ -36,9 +39,12 @@ public class BotEntity extends ServerPlayer {
     private final boolean walking;
     private final String sourceName;
     private final String displayName;
+    private final Location spawnLocation;
     private final BiConsumer<BotEntity, DamageSource> deathHandler;
     private final BiConsumer<BotEntity, Runnable> stepHandler;
     private BotConnection connectionHandle;
+    private boolean managed;
+    private TextDisplay nameplate;
 
     public record Options(
             String name,
@@ -57,9 +63,23 @@ public class BotEntity extends ServerPlayer {
     }
 
     public static BotEntity create(Location location, Options options) {
+        return create(location, options, false);
+    }
+
+    public static BotEntity create(Location location, Options options, boolean managed) {
         BotEntity entity = new BotEntity(location, profile(options.skin()), options);
-        entity.spawn();
-        return entity;
+        entity.managed = managed;
+        if (managed) {
+            entity.getBukkitEntity().setAffectsSpawning(false);
+            entity.getBukkitEntity().setVisibleByDefault(false);
+        }
+        try {
+            entity.spawn();
+            return entity;
+        } catch (RuntimeException failure) {
+            entity.destroy();
+            throw failure;
+        }
     }
 
     private static GameProfile profile(Skin skin) {
@@ -79,18 +99,45 @@ public class BotEntity extends ServerPlayer {
         this.walking = options.walking();
         this.sourceName = options.name();
         this.displayName = options.displayName();
+        this.spawnLocation = location.clone();
         this.deathHandler = options.deathHandler();
         this.stepHandler = options.stepHandler();
         // 机器人不落盘：否则每只 bot 都会留下 playerdata / stats / advancements 文件。
         this.persist = false;
         this.setPos(location.getX(), location.getY(), location.getZ());
-        this.setYRot(0.0F);
-        this.setXRot(0.0F);
-        this.setYHeadRot(0.0F);
-        this.setYBodyRot(0.0F);
+        this.setYRot(location.getYaw());
+        this.setXRot(location.getPitch());
+        this.setYHeadRot(location.getYaw());
+        this.setYBodyRot(location.getYaw());
         this.setDeltaMovement(Vec3.ZERO);
-        this.getBukkitEntity().setDisplayName(options.displayName());
-        this.getBukkitEntity().setPlayerListName(options.displayName());
+        this.getBukkitEntity().displayName(LegacyComponentSerializer.legacySection().deserialize(options.displayName()));
+        this.getBukkitEntity().playerListName(this.getBukkitEntity().displayName());
+    }
+
+    public boolean isManaged() { return this.managed; }
+    public Location spawnLocation() { return this.spawnLocation.clone(); }
+    TextDisplay nameplate() { return this.nameplate; }
+
+    public void createNameplate() {
+        Location location = this.getBukkitEntity().getLocation().add(0, 2.15, 0);
+        this.nameplate = location.getWorld().spawn(location, TextDisplay.class, display -> {
+            display.setPersistent(false);
+            display.setVisibleByDefault(false);
+            display.setBillboard(Display.Billboard.CENTER);
+            display.setShadowed(true);
+            display.setDefaultBackground(false);
+            display.setTeleportDuration(1);
+            display.text(this.getBukkitEntity().displayName());
+        });
+    }
+
+    public void updateNameplate() {
+        if (this.nameplate == null) return;
+        Location position = this.getBukkitEntity().getLocation().add(0, 2.15, 0);
+        Location previous = this.nameplate.getLocation();
+        if (!position.getWorld().equals(previous.getWorld()) || position.distanceSquared(previous) > .001) {
+            this.nameplate.teleport(position);
+        }
     }
 
     protected final void spawn() {
@@ -105,6 +152,8 @@ public class BotEntity extends ServerPlayer {
         server.getPlayerList().placeNewPlayer(
                 connection, this, CommonListenerCookie.createInitial(this.getGameProfile(), false)
         );
+        // The embedded connection has no client to acknowledge world loading.
+        this.setClientLoaded(true);
     }
 
     private void registerPacketEventsChannel(io.netty.channel.Channel channel) {
@@ -223,7 +272,7 @@ public class BotEntity extends ServerPlayer {
     public void die(DamageSource source) {
         // 先走原版死亡流程（PlayerDeathEvent、统计、死亡消息），再交给 Bot 模块回收并重生。
         super.die(source);
-        this.deathHandler.accept(this, source);
+        if (this.getHealth() <= 0) this.deathHandler.accept(this, source);
     }
 
     @Override
@@ -240,7 +289,7 @@ public class BotEntity extends ServerPlayer {
     @Override
     public net.minecraft.network.chat.Component getDisplayName() {
         return this.displayName == null ? super.getDisplayName()
-                : net.minecraft.network.chat.Component.literal(this.displayName);
+                : org.bukkit.craftbukkit.util.CraftChatMessage.fromStringOrNull(this.displayName);
     }
 
     /**
@@ -267,8 +316,11 @@ public class BotEntity extends ServerPlayer {
      */
     public void destroy() {
         MinecraftServer server = this.getServer();
-        if (this.isRemoved()) return;
-        server.getPlayerList().remove(this);
+        if (this.nameplate != null) {
+            this.nameplate.remove();
+            this.nameplate = null;
+        }
+        if (!this.isRemoved() && this.connection != null) server.getPlayerList().remove(this);
         BotConnection connection = this.connectionHandle;
         if (connection != null && connection.channel != null) {
             connection.channel.close();

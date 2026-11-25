@@ -1,9 +1,11 @@
 package cn.mythicland.npclib.bot.v1_8_R3;
 
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
 import net.minecraft.world.InteractionHand;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
@@ -192,6 +194,7 @@ public class BotVisibility {
         double dz = location.getZ() - eye.getZ();
         double distanceSquared = dx * dx + dy * dy + dz * dz;
         if (distanceSquared > config.viewDistance() * config.viewDistance()) return false;
+        if (bot instanceof CraftPlayer craft && craft.getHandle() instanceof BotEntity entity && entity.isManaged()) return true;
         if (fighting) return true;
         Activity current = activity.get(player.getUniqueId());
         if (eye.getY() > config.maxViewerY()) return false;
@@ -252,6 +255,12 @@ public class BotVisibility {
         if (display.spawned) return;
         display.spawned = true;
         player.showPlayer(this.plugin, bot);
+        if (bot instanceof CraftPlayer craft && craft.getHandle() instanceof BotEntity entity && entity.isManaged()) {
+            if (player instanceof CraftPlayer viewer) {
+                viewer.getHandle().connection.send(ClientboundPlayerInfoUpdatePacket.updateListed(bot.getUniqueId(), false));
+            }
+            if (entity.nameplate() != null) player.showEntity(this.plugin, entity.nameplate());
+        }
     }
 
     /**
@@ -262,6 +271,9 @@ public class BotVisibility {
         viewer.pending.remove(bot.getUniqueId());
         if (display == null || !display.spawned) return;
         player.hidePlayer(this.plugin, bot);
+        if (bot instanceof CraftPlayer craft && craft.getHandle() instanceof BotEntity entity && entity.nameplate() != null) {
+            player.hideEntity(this.plugin, entity.nameplate());
+        }
     }
 
     private record Reveal(

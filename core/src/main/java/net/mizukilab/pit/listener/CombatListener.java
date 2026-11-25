@@ -227,10 +227,12 @@ public class CombatListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onKilled(PlayerDeathEvent event) {
         event.setDeathMessage(null);
-        if (event.getEntity().hasMetadata(DEATH_HANDLED_METADATA)) {
-            return;
-        }
-        handlePlayerDeath(event.getEntity(), event.getEntity().getKiller(), true);
+        Player victim = event.getEntity();
+        if (victim.hasMetadata(DEATH_HANDLED_METADATA)) return;
+        Player killer = victim.getKiller();
+        // MythicBotCombat resolves damage sources after damage if Bukkit has no killer yet.
+        if (killer == null && net.mizukilab.pit.npc.NpcIdentity.isMythicBot(victim)) return;
+        handlePlayerDeath(victim, killer, true);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -507,7 +509,7 @@ public class CombatListener implements Listener {
     }
 
     public void handlePlayerDeath(Player player, Player killer, boolean shouldRespawn) {
-        if (player.hasMetadata(DEATH_HANDLED_METADATA)) {
+        if (player.hasMetadata(DEATH_HANDLED_METADATA) || !net.mizukilab.pit.npc.MythicBotCombat.claimDeath(player)) {
             return;
         }
         player.setMetadata(DEATH_HANDLED_METADATA, new FixedMetadataValue(ThePit.getInstance(), System.currentTimeMillis()));
@@ -517,7 +519,7 @@ public class CombatListener implements Listener {
         if (killer != null) {
             //what
             Player reallyKiller = Bukkit.getPlayer(killer.getUniqueId());
-            if (reallyKiller != null || npc) {
+            if ((reallyKiller != null || npc) && !net.mizukilab.pit.npc.NpcIdentity.isMythicBot(killer)) {
                 PlayerProfile killerProfile = PlayerProfile.getPlayerProfileByUuid(killer.getUniqueId());
                 this.handleKill(killer, killerProfile, player, playerProfile, npc);
             }

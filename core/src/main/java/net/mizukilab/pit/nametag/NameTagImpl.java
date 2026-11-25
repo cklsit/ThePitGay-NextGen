@@ -37,6 +37,11 @@ public class NameTagImpl implements NametagAdapter {
         List<PlayerProfile> profiles = new ObjectArrayList<>();
 
         for (Player target : Bukkit.getOnlinePlayers()) {
+            if (target instanceof org.bukkit.craftbukkit.entity.CraftPlayer craft
+                    && craft.getHandle() instanceof cn.mythicland.npclib.bot.v1_8_R3.BotEntity bot && bot.isManaged()) {
+                tags.add(new BufferedNametag("pit_bots", "", "", false, target, true));
+                continue;
+            }
             profiles.add(PlayerProfile.getPlayerProfileByUuid(target.getUniqueId()));
         }
 

@@ -2,9 +2,12 @@ package cn.mythicland.npclib.bot;
 
 import cn.mythicland.npclib.api.skin.Skin;
 import cn.mythicland.npclib.bot.v1_8_R3.BotEntity;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
+import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 public final class FighterRobotOptions {
@@ -16,6 +19,25 @@ public final class FighterRobotOptions {
     private int respawnDelay = -1;
     private Runnable deathHandler;
     private BotEntity.Options externalControl;
+    private RosterBehavior rosterBehavior;
+
+    public enum CombatMode { PATROL, FIGHT_BACK, AGGRESSIVE }
+
+    public record RosterBehavior(List<Location> waypoints, CombatMode mode, double reach, int attackTicks,
+                                 String displayName, boolean showNameplate, Consumer<Player> initialize) {
+        public RosterBehavior {
+            waypoints = waypoints.stream().map(Location::clone).toList();
+            Objects.requireNonNull(mode);
+            Objects.requireNonNull(displayName);
+            Objects.requireNonNull(initialize);
+            if (!Double.isFinite(reach) || reach <= 0 || attackTicks < 1) {
+                throw new IllegalArgumentException("Invalid bot attack settings");
+            }
+        }
+    }
+
+    public void rosterBehavior(RosterBehavior behavior) { this.rosterBehavior = Objects.requireNonNull(behavior); }
+    public RosterBehavior rosterBehavior() { return this.rosterBehavior; }
 
     public void name(String name) { this.name = Objects.requireNonNull(name, "name"); }
     public void skin(Skin skin) { this.skin = skin; }

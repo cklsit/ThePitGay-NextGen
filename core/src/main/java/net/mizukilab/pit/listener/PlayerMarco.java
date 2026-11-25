@@ -186,6 +186,12 @@ public class PlayerMarco implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerSpawnLocation(PlayerSpawnLocationEvent event) {
+        if (event.getPlayer() instanceof org.bukkit.craftbukkit.entity.CraftPlayer craft
+                && craft.getHandle() instanceof cn.mythicland.npclib.bot.v1_8_R3.BotEntity bot) {
+            event.setSpawnLocation(bot.spawnLocation());
+            return;
+        }
+        if (net.mizukilab.pit.npc.NpcIdentity.isMythicBot(event.getPlayer())) return;
         if (!PitInternalImpl.getLoaded()) {
             return;
         }
@@ -204,6 +210,7 @@ public class PlayerMarco implements Listener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+        if (net.mizukilab.pit.npc.NpcIdentity.isMythicBot(player)) return;
         if(!PitInternalImpl.getLoaded()){
             event.getPlayer().kickPlayer("Didn't load completely");
             return;

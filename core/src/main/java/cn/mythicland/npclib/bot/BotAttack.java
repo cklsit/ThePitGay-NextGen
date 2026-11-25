@@ -32,6 +32,13 @@ public final class BotAttack {
             int maximumTicks,
             RandomGenerator random
     ) {
+        return attack(entity, opponent, tick, distance, angle, minimumTicks, maximumTicks, random, false);
+    }
+
+    public boolean attack(
+            BotEntity entity, Player opponent, long tick, double distance, double angle,
+            int minimumTicks, int maximumTicks, RandomGenerator random, boolean fixedInterval
+    ) {
         Player player = entity.getBukkitEntity();
         if (!this.ready(tick)) return false;
         if (player.getLocation().distanceSquared(opponent.getLocation()) > distance * distance) return false;
@@ -41,6 +48,11 @@ public final class BotAttack {
                 angle
         )) return false;
         if (!player.hasLineOfSight(opponent)) return false;
+        if (fixedInterval) {
+            this.nextAttack = tick + minimumTicks;
+            entity.hit(opponent);
+            return true;
+        }
         if (tick - this.lastClick > 10) {
             this.clicksRemaining = 0;
         }

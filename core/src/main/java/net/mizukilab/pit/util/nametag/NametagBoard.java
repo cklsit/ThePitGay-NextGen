@@ -140,6 +140,9 @@ public class NametagBoard {
 
             if (!prefix.equals(team.getPrefix())) team.setPrefix(prefix);
             if (!suffix.equals(team.getSuffix())) team.setSuffix(suffix);
+            if (bufferedNametag.isHideNameTag() && team.getOption(Team.Option.NAME_TAG_VISIBILITY) != Team.OptionStatus.NEVER) {
+                team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
+            }
 
             if (bufferedNametag.getPlayer() != null) {
                 String name = bufferedNametag.getPlayer().getName();

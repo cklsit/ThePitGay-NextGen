@@ -28,6 +28,7 @@ import net.luckperms.api.LuckPermsProvider;
 import net.mizukilab.pit.Loader;
 import net.mizukilab.pit.actionbar.IActionBarManager;
 import net.mizukilab.pit.compat.NpcViewCompatibility;
+import net.mizukilab.pit.npc.PitBotRoster;
 import net.mizukilab.pit.config.ConfigManager;
 import net.mizukilab.pit.config.PitGlobalConfig;
 import net.mizukilab.pit.config.PitWorldConfig;
@@ -158,6 +159,8 @@ public class ThePit extends JavaPlugin implements PluginMessageListener {
     private LuckPerms luckPerms;
     private NpcViewCompatibility npcViewCompatibility;
     private net.mizukilab.pit.npc.MythicBotCombat mythicBotCombat;
+    @Getter
+    private PitBotRoster botRoster;
 
     @Setter
     @Getter
@@ -246,6 +249,8 @@ public class ThePit extends JavaPlugin implements PluginMessageListener {
     private void postLoad() {
         mythicBotCombat = new net.mizukilab.pit.npc.MythicBotCombat(this);
         mythicBotCombat.start();
+        botRoster = new PitBotRoster(this);
+        botRoster.start();
         npcViewCompatibility = new NpcViewCompatibility(this);
         npcViewCompatibility.start();
         loadEventPoller();
@@ -340,6 +345,7 @@ public class ThePit extends JavaPlugin implements PluginMessageListener {
 
     @Override
     public void onDisable() {
+        if (botRoster != null) botRoster.close();
         try {
             PacketEvents.getAPI().terminate();
         } catch (Throwable ignored) {

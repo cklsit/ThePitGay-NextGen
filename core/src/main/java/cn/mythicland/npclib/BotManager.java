@@ -3,13 +3,17 @@ package cn.mythicland.npclib;
 import cn.mythicland.framework.path.CyclicPathCursor;
 import cn.mythicland.npclib.api.skin.Skin;
 import cn.mythicland.npclib.bot.*;
+import cn.mythicland.npclib.bot.FighterRobotOptions.CombatMode;
+import cn.mythicland.npclib.bot.FighterRobotOptions.RosterBehavior;
 import cn.mythicland.npclib.bot.v1_8_R3.BotEntity;
 import cn.mythicland.npclib.bot.v1_8_R3.BotVisibility;
 import cn.mythicland.npclib.bot.v1_8_R3.BotVisibilitySettings;
+import com.destroystokyo.paper.event.server.PaperServerListPingEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
@@ -104,7 +108,7 @@ final class BotManager implements Listener, AutoCloseable {
             }
             points.add(waypoint.clone());
         }
-        return create(location, name, skin, false, points, player -> false, 8, speed, -1);
+        return create(location, name, skin, false, points, player -> false, 8, speed, -1, null);
     }
 
     public PatrolRobot createPatrolRobot(Location location, PatrolRobotOptions options) {
@@ -119,8 +123,10 @@ final class BotManager implements Listener, AutoCloseable {
 
     public FighterRobot createFighterRobot(Location location, FighterRobotOptions options) {
         Objects.requireNonNull(options, "options");
-        Bot bot = create(location, options.name(), options.skin(), true, List.of(), options.targets(),
-                options.radius(), options.movementSpeed(), options.respawnDelay());
+        RosterBehavior behavior = options.rosterBehavior();
+        Bot bot = create(location, options.name(), options.skin(), true,
+                behavior == null ? List.of() : behavior.waypoints(), options.targets(),
+                options.radius(), options.movementSpeed(), options.respawnDelay(), behavior);
         Runnable handler = options.deathHandler();
         if (handler != null) {
             bot.onDeath(ignored -> handler.run());
@@ -137,19 +143,18 @@ final class BotManager implements Listener, AutoCloseable {
             Predicate<Player> targets,
             double radius,
             double speed,
-            int respawnDelay
+            int respawnDelay,
+            RosterBehavior behavior
     ) {
         if (this.closed) throw new IllegalStateException("Bot manager is closed");
         Objects.requireNonNull(location, "location");
         Objects.requireNonNull(location.getWorld(), "location world");
         Objects.requireNonNull(name, "name");
-        BotEntity entity = BotEntity.create(location, new BotEntity.Options(
-                name, name, skin, !battle, (bot, damage) -> died(bot.getUUID()), (bot, sound) -> sound.run()
-        ));
+        BotEntity entity = spawnEntity(location, name, skin, battle, behavior);
         try {
             Bot bot;
             if (battle) {
-                bot = new Fighter(entity, name, skin, location, points, targets, radius, speed, respawnDelay);
+                bot = new Fighter(entity, name, skin, location, points, targets, radius, speed, respawnDelay, behavior);
             } else {
                 bot = new Patrol(entity, name, skin, location, points, targets, radius, speed, respawnDelay);
             }
@@ -162,10 +167,29 @@ final class BotManager implements Listener, AutoCloseable {
         }
     }
 
+    private BotEntity spawnEntity(Location location, String name, Skin skin, boolean combat, RosterBehavior behavior) {
+        boolean managed = behavior != null;
+        String displayName = managed ? behavior.displayName() : name;
+        BotEntity entity = BotEntity.create(location, new BotEntity.Options(name, displayName, skin,
+                !combat || managed, (bot, damage) -> died(bot.getUUID()), (bot, sound) -> sound.run()), managed);
+        try {
+            if (managed) {
+                behavior.initialize().accept(entity.getBukkitEntity());
+                if (behavior.showNameplate()) entity.createNameplate();
+            }
+            return entity;
+        } catch (RuntimeException failure) {
+            entity.destroy();
+            throw failure;
+        }
+    }
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDamage(EntityDamageByEntityEvent event) {
         Bot bot = this.bots.get(event.getEntity().getUniqueId());
-        if (bot == null || !(event.getDamager() instanceof Player attacker)) return;
+        if (bot == null) return;
+        var source = event.getDamager() instanceof Projectile projectile ? projectile.getShooter() : event.getDamager();
+        if (!(source instanceof Player attacker)) return;
         bot.attacker = attacker.getUniqueId();
         bot.damageTick = this.tick + 1;
     }
@@ -181,12 +205,21 @@ final class BotManager implements Listener, AutoCloseable {
         }
     }
 
+    @EventHandler
+    public void onServerPing(PaperServerListPingEvent event) {
+        var players = event.iterator();
+        while (players.hasNext()) {
+            if (players.next() instanceof org.bukkit.craftbukkit.entity.CraftPlayer craft
+                    && craft.getHandle() instanceof BotEntity bot && bot.isManaged()) players.remove();
+        }
+    }
+
     private void tick() {
         this.tick++;
         spawnRespawns();
         // 机器人自身也在在线玩家列表里，但它们不该作为“观察者”参与可见性裁剪与目标选择。
         List<Player> players = Bukkit.getOnlinePlayers().stream()
-                .filter(player -> !this.bots.containsKey(player.getUniqueId()))
+                .filter(player -> !net.mizukilab.pit.npc.NpcIdentity.isNpc(player))
                 .collect(java.util.stream.Collectors.toList());
         this.visibility.activity(players, this.tick);
         if (this.tick % 10 == 1) {
@@ -212,6 +245,7 @@ final class BotManager implements Listener, AutoCloseable {
                     && player.getLocation().distanceSquared(location) <= 32 * 32);
             if (awake) {
                 bot.tick(location);
+                entity.updateNameplate();
             }
             if (!this.bots.containsKey(entity.getUUID())) continue;
             this.visibility.update(entity, players, this.tick, bot.target, Set.of(), VISIBILITY, bot.name, true);
@@ -260,10 +294,7 @@ final class BotManager implements Listener, AutoCloseable {
             this.respawns.remove(bot);
             BotEntity entity = null;
             try {
-                entity = BotEntity.create(location, new BotEntity.Options(
-                        bot.name, bot.name, bot.skin, !bot.settings.battle(),
-                        (next, damage) -> died(next.getUUID()), (next, sound) -> sound.run()
-                ));
+                entity = spawnEntity(location, bot.name, bot.skin, bot instanceof Fighter, bot.behavior);
                 bot.reset(entity);
                 this.bots.put(entity.getUUID(), bot);
                 this.snapshot = List.copyOf(this.bots.values());
@@ -273,6 +304,7 @@ final class BotManager implements Listener, AutoCloseable {
                     entity.destroy();
                 }
                 this.plugin.getLogger().log(Level.SEVERE, "Cannot respawn bot " + bot.name, failure);
+                this.respawns.put(bot, this.tick + 100);
             }
         }
     }
@@ -298,6 +330,7 @@ final class BotManager implements Listener, AutoCloseable {
         private final Location spawn;
         private final int respawnDelay;
         private final Settings settings;
+        private final RosterBehavior behavior;
         private final Predicate<Player> targets;
         private final List<BotPatrol.Waypoint> waypoints;
         private final BotPatrol patrol = new BotPatrol(new CyclicPathCursor());
@@ -322,14 +355,18 @@ final class BotManager implements Listener, AutoCloseable {
                 Predicate<Player> targets,
                 double radius,
                 double speed,
-                int respawnDelay
+                int respawnDelay,
+                RosterBehavior behavior
         ) {
             this.entity = entity;
             this.name = name;
             this.skin = skin;
             this.spawn = location.clone();
             this.respawnDelay = respawnDelay;
-            this.settings = new Settings(location.getX(), location.getY(), location.getZ(), combat, radius, speed);
+            this.behavior = behavior;
+            boolean fighting = combat && (behavior == null || behavior.mode() != CombatMode.PATROL);
+            this.settings = new Settings(location.getX(), location.getY(), location.getZ(), fighting, radius, speed,
+                    behavior == null ? 2.8 : behavior.reach());
             this.targets = targets;
             this.waypoints = points.stream().<BotPatrol.Waypoint>map(point -> world -> point.clone()).toList();
             reset(entity);
@@ -380,12 +417,13 @@ final class BotManager implements Listener, AutoCloseable {
         }
 
         private void tick(Location location) {
-            Location goal;
+            Location goal = null;
             Player opponent = null;
             boolean chase = false, returning = false, near = false;
             if (this.settings.battle()) {
                 BotBattle.Decision decision = this.battle.decide(this.settings, this.entity.getBukkitEntity(), location,
-                        false, BotManager.this.tick, this.damageTick, this.attacker, this.battleContext);
+                        false, BotManager.this.tick, this.damageTick, this.attacker, this.battleContext,
+                        this.behavior == null || (this.waypoints.isEmpty() && this.behavior.mode() == CombatMode.AGGRESSIVE));
                 if (this.battle.takePathChange()) {
                     this.navigator.reset(BotManager.this.tick);
                 }
@@ -394,7 +432,8 @@ final class BotManager implements Listener, AutoCloseable {
                 chase = decision.chase();
                 returning = decision.returning();
                 near = decision.near();
-            } else {
+            }
+            if (opponent == null && !this.waypoints.isEmpty()) {
                 goal = this.patrol.update(this.waypoints, null, 0, 0, BotManager.this.tick, this.entity.getId(),
                         location, BotManager.this.pathfinder::isWalkable);
                 if (this.patrol.takePathChange()) {
@@ -408,8 +447,9 @@ final class BotManager implements Listener, AutoCloseable {
                         BotManager.this.tick, false, chase, near, path.direct(), false);
             }
             if (opponent != null && BotManager.this.tick >= this.reactionUntil && valid(opponent)
-                    && this.attack.attack(this.entity, opponent, BotManager.this.tick, 2.8, 30, 10, 16,
-                    ThreadLocalRandom.current())) {
+                    && this.attack.attack(this.entity, opponent, BotManager.this.tick, this.settings.attackDistance(),
+                    30, this.behavior == null ? 10 : this.behavior.attackTicks(), 16, ThreadLocalRandom.current(),
+                    this.behavior != null)) {
                 BotManager.this.visibility.action(this.entity, 0);
             }
         }
@@ -439,11 +479,15 @@ final class BotManager implements Listener, AutoCloseable {
                     return Bukkit.getPlayer(id);
                 }
                 @Override
-                public boolean valid(Player player) { return Bot.this.valid(player); }
+                public boolean valid(Player player) {
+                    return Bot.this.valid(player) && (Bot.this.behavior == null
+                            || player.getLocation().distanceSquared(Bot.this.spawn) <= Bot.this.settings.radius() * Bot.this.settings.radius());
+                }
                 @Override
                 public Player search() {
+                    if (Bot.this.behavior != null && Bot.this.behavior.mode() == CombatMode.FIGHT_BACK) return null;
                     return BotManager.this.selector.search(Bot.this.settings::radius, Bot.this.entity.getBukkitEntity(),
-                            Bot.this::valid, id -> false, player -> 0);
+                            this::valid, id -> false, player -> 0);
                 }
                 @Override
                 public int pressure(UUID id) { return BotManager.this.selector.pressure(id); }
@@ -489,7 +533,7 @@ final class BotManager implements Listener, AutoCloseable {
                 double speed,
                 int respawnDelay
         ) {
-            super(entity, name, skin, location, false, points, targets, radius, speed, respawnDelay);
+            super(entity, name, skin, location, false, points, targets, radius, speed, respawnDelay, null);
         }
     }
 
@@ -503,9 +547,10 @@ final class BotManager implements Listener, AutoCloseable {
                 Predicate<Player> targets,
                 double radius,
                 double speed,
-                int respawnDelay
+                int respawnDelay,
+                RosterBehavior behavior
         ) {
-            super(entity, name, skin, location, true, points, targets, radius, speed, respawnDelay);
+            super(entity, name, skin, location, true, points, targets, radius, speed, respawnDelay, behavior);
         }
     }
 
@@ -515,7 +560,8 @@ final class BotManager implements Listener, AutoCloseable {
             double z,
             boolean battle,
             double radius,
-            double movementSpeed
+            double movementSpeed,
+            double attackDistance
     ) implements BotNavigator.Settings, BotMotion.Settings {
         @Override
         public double spawnHeight() { return 0; }
@@ -523,8 +569,6 @@ final class BotManager implements Listener, AutoCloseable {
         public double spawnRadius() { return 0; }
         @Override
         public double centerAttraction() { return .8; }
-        @Override
-        public double attackDistance() { return 2.8; }
         @Override
         public double wanderMinDistance() { return Math.min(2, this.radius); }
         @Override

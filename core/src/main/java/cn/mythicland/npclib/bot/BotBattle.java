@@ -43,6 +43,13 @@ public final class BotBattle {
             UUID attacker,
             Context context
     ) {
+        return decide(config, bot, location, descending, tick, damageTime, attacker, context, true);
+    }
+
+    public Decision decide(
+            BotMovement.Settings config, Player bot, Location location, boolean descending,
+            long tick, long damageTime, UUID attacker, Context context, boolean wander
+    ) {
         if (damageTime > this.lastDamage && (context.target() == null || this.state.canChangeTarget(tick))
                 && context.valid(context.resolve(attacker))) {
             this.lastDamage = damageTime;
@@ -89,7 +96,7 @@ public final class BotBattle {
             }
         } else if (returning) {
             goal = context.separate(BotMovement.returnGoal(config, location, bot.getUniqueId()));
-        } else if (!descending) {
+        } else if (!descending && wander) {
             if (this.wanderGoal == null || horizontal(location, this.wanderGoal) < .6 * .6) {
                 this.wanderGoal = BotMovement.wander(config, location, this.random);
                 this.pathChanged = true;

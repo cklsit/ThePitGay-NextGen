@@ -131,6 +131,18 @@ docker build -t thepitgay-nextgen:local .
 - 已移除旧版神话之锤相关功能与 `/lj` 命令。
 - 兼容内置的 ThePitAddon（`cn.irina.thepitaddon`）、NPCView；NPC 使用内置 MythicNPCLib，不依赖 Citizens。
 
+## Bot 管理
+
+插件内置 Bot，无需安装 Citizens 或 Sentinel。`plugins/ThePitUltimate/bots.yml` 默认使用 2026-11-07 旧服保存的路线、出生点、皮肤、装备和 10 刻重生设置。旧世界 `world` 通过 `world-aliases` 映射到 `pit_arena`。旧档中的 Bot `279` 出生高度在世界边界外，已禁用，可用 `/bot move 279` 修正后再启用。
+
+- `/bot list [页码]` 查看名单和运行状态，`/bot info <ID>` 查看单只 Bot 的配置。
+- `/bot spawn <ID>` 手动生成，`/bot despawn <ID>` 暂时收回。`/bot enable <ID>` 与 `/bot disable <ID>` 保存启用状态。
+- `/bot add <ID>` 在脚下添加 Bot，`/bot move <ID>` 修改出生点。路线、皮肤、装备和重生时间可在 `bots.yml` 中编辑，再执行 `/bot reload`。
+- `/bot mode <ID> <patrol|fight-back|aggressive>` 保存巡逻、受击反击或主动对战模式。旧名单默认巡逻，Bot 可被玩家击杀并参与天坑结算。
+- `/bot stop`（`/botclear`）收回全部 Bot 并暂停自动生成，`/bot start` 恢复。`/botspawn [数量]` 仍可生成临时对战 Bot，原有临时出生点会自动迁移到 `spawn-points`。
+
+以上命令需要 `pit.admin`。默认在真人玩家靠近时分批生成 Bot，附近没有真人 30 秒后收回。`spawn-near-players: false` 可让 Bot 在世界加载后常驻，`auto-spawn: false` 可关闭自动生成。
+
 ## 构建
 
 ```bash

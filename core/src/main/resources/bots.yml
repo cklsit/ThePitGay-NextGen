@@ -1,0 +1,134 @@
+# 天坑 Bot。名单、路线和皮肤来自 2026-11-07 的 Citizens 保存档。
+# 世界别名用于把旧地图 world 映射到当前服务器的 pit_arena。
+version: 1
+auto-spawn: true
+spawn-near-players: true
+world-aliases:
+  world: pit_arena
+
+# 单只 Bot 可以覆盖此处的设置。时间单位为游戏刻。
+defaults:
+  name: '&cBot'
+  mode: patrol
+  respawn-ticks: 10
+  speed: 1.0
+  radius: 8.0
+  health: 20.0
+  reach: 2.5
+  attack-ticks: 30
+  show-nameplate: true
+
+skins:
+  legacy:
+    value: 'ewogICJ0aW1lc3RhbXAiIDogMTc3Mjk1ODUwMDAwOCwKICAicHJvZmlsZUlkIiA6ICI0OWU5NjQ2NGFhMTc0NmIzYjVjNjg3NTc0YjZiNDhiNCIsCiAgInByb2ZpbGVOYW1lIiA6ICJCb3QiLAogICJzaWduYXR1cmVSZXF1aXJlZCIgOiB0cnVlLAogICJ0ZXh0dXJlcyIgOiB7CiAgICAiU0tJTiIgOiB7CiAgICAgICJ1cmwiIDogImh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMWRiOGZjZjQ3YmM4MDM0MTFlMzM4ZDNjMzUyZmZkOWMyMmVlOWNlNmI2ODJhNjE4M2NjNDkxYTllN2ExMjUiCiAgICB9CiAgfQp9'
+    signature: 'gQIXZ1vIJoKPeUEOyW+RbcyZ9XRIPDT79gtD6hzeOHgyRG+6xsK3kq/hF6jBJq+oFt9J7ZzjOtV9YCksUeExI5STY7S5E9Dp7Md/o/EbV2Cq3SgZ4JnzjM2Hq79ywTOSy9QsuOu11CYgURQVAicuF74Rp1hvQQjGB786WYqt41GM6XMl3/3sCrofQSpj+h1qWysbqnPj65/GDuigaknj+sym+B3KTH88hx7+437b+sHatD6gHiQYGcnYWJPgBtjH9ZnpzOUrQGr9NUV4/r/+0IlNZ3v+/In2qe/fu86Pl0oNFa3Kp32HXWgHE0Gf6LzVnpW1QwPxIjmkTA6AokPWSLWp83VCXMYa6fXutMN+RrF2zTQpH5ijEDWBW7ZtizdsTaN4jLjCRQ9vI0oBk23x3Z73zKcwecDzaJXYViLCKh+yRa5YSmuskzCXPJThcDEq4qdlhJ8WUib7qYp4orHpcmJ3YoH51t2BTZgez724n+uYstZrAmoCXXvUNsKFyITEzfFvLFTPmMjfyYR9EKuOOdYEcGgt0cCluelIa/DSSYW8T5M545fXFZGUzdsYsTmCL7ecdZZzPrqtvMS7JpYgkWweQRxxe5cMTInNQxyTSv0PtzUVk+yU+Ra5JqukLPJnngbtBV5r5nhxCdlMJ884W2C/zb6GONjebX7AKr09kW0='
+  legacy-armed:
+    value: 'ewogICJ0aW1lc3RhbXAiIDogMTc3Mjk1ODg0MDY1NywKICAicHJvZmlsZUlkIiA6ICI0OWU5NjQ2NGFhMTc0NmIzYjVjNjg3NTc0YjZiNDhiNCIsCiAgInByb2ZpbGVOYW1lIiA6ICJCb3QiLAogICJzaWduYXR1cmVSZXF1aXJlZCIgOiB0cnVlLAogICJ0ZXh0dXJlcyIgOiB7CiAgICAiU0tJTiIgOiB7CiAgICAgICJ1cmwiIDogImh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMWRiOGZjZjQ3YmM4MDM0MTFlMzM4ZDNjMzUyZmZkOWMyMmVlOWNlNmI2ODJhNjE4M2NjNDkxYTllN2ExMjUiCiAgICB9CiAgfQp9'
+    signature: 'plwgvSEIygKWqVsBNX2skb+47iWpgO54HEU3Fo55uJgF+l81O636VEa/OK8b0RNSNIBoOuab/bhCo+aURZYczZNaZanHPF60dResCsNb0G29yi3AROW6hDVGtqz71GOOl1heUxjQ2zoVv9QC09e5HDadzNBpLggmCOsE78+pbTOL55LU9ooGCo6Wr4e8C8sZD1hshFNY6Zewg/NRgk77M8XnrXRDm30hgc4xMLnMsxXEOB6Y0yl37onX1i2KEg3lM9Cmma28K+C8ZPx/dJ9vPDBeD18KUrXRzQ61Q7n4NW1/39RGp2CgKF653qQipsqz9P5VgySCos/cGxq2HHEpi9OYiR3DyUF4iTjnUvordNs2oh6H/Ko8pqEc5EueS9KAv4I6BL+E6Cb8AF59xk+OjxJcDlA/x9AF0+8MeZw+MNF0klBMK0ruGGGnj7CPh8ncvt67Snv+/bp1anjtEvIqESsjtpVXJ9n4Pcc9BuaJ1R4JQeX3cQnPm2jqyVJXHMSc9qGCBZZyEY0wHqpXmhqioEGldQ39XQ19J0ut7WQpmUJNLAC+FfkbSMvucDHsAvvZI3jrXfM20G9jUrJD2/emVcK0Uh6ba4M5p4zznvQhY2ailXXkFBhyg8aPPotyVn0d9C/AGLpImVWIwf921Zrw58YixsQwlltQeFGzat1A5EA='
+
+routes:
+  route-214:
+    world: world
+    points:
+      - {x: -27.0, y: 85.0, z: 67.0}
+      - {x: -27.0, y: 85.0, z: 71.0}
+      - {x: -31.0, y: 85.0, z: 71.0}
+      - {x: -31.0, y: 85.0, z: 67.0}
+  route-224:
+    world: world
+    points:
+      - {x: -59.0, y: 87.0, z: -47.0}
+      - {x: -55.0, y: 87.0, z: -47.0}
+      - {x: -55.0, y: 87.0, z: -43.0}
+      - {x: -59.0, y: 87.0, z: -43.0}
+  route-234:
+    world: world
+    points:
+      - {x: 8.0, y: 85.0, z: -92.0}
+      - {x: 12.0, y: 85.0, z: -92.0}
+      - {x: 12.0, y: 85.0, z: -88.0}
+      - {x: 8.0, y: 85.0, z: -88.0}
+  route-244:
+    world: world
+    points:
+      - {x: 42.0, y: 98.0, z: 85.0}
+      - {x: 42.0, y: 98.0, z: 80.0}
+      - {x: 47.0, y: 98.0, z: 80.0}
+      - {x: 47.0, y: 98.0, z: 85.0}
+  route-316:
+    world: world
+    points:
+      - {x: -5.0, y: 82.0, z: 0.0}
+      - {x: 0.0, y: 82.0, z: -5.0}
+      - {x: 5.0, y: 82.0, z: 0.0}
+      - {x: 0.0, y: 82.0, z: 5.0}
+  route-349:
+    world: world
+    points:
+      - {x: -3.0, y: 67.0, z: -188.0}
+      - {x: -3.0, y: 67.0, z: -184.0}
+      - {x: -7.0, y: 67.0, z: -184.0}
+      - {x: -7.0, y: 67.0, z: -188.0}
+
+# 279 保存于虚空外，修复坐标后才可启用。
+bots:
+  '214': {world: world, x: -27.7791, y: 85.0, z: 68.8471, yaw: 334.2588, pitch: 0.0, skin: legacy, route: route-214}
+  '216': {world: world, x: -28.5526, y: 85.0, z: 71.2537, yaw: 82.7907, pitch: 0.0, skin: legacy, route: route-214}
+  '217': {world: world, x: -27.1943, y: 85.0, z: 69.7951, yaw: 62.7177, pitch: 0.0, skin: legacy, route: route-214}
+  '218': {world: world, x: -29.6225, y: 85.0, z: 69.2379, yaw: 153.2105, pitch: 0.0, skin: legacy, route: route-214}
+  '219': {world: world, x: -29.4923, y: 85.0, z: 70.4338, yaw: 161.0434, pitch: 0.0, skin: legacy, route: route-214}
+  '220': {world: world, x: -29.0222, y: 85.0, z: 68.4765, yaw: 248.8363, pitch: 0.0, skin: legacy, route: route-214}
+  '221': {world: world, x: -28.059, y: 85.0, z: 67.6607, yaw: 337.8997, pitch: 0.0, skin: legacy, route: route-214}
+  '222': {world: world, x: -27.5137, y: 85.0, z: 70.7107, yaw: 75.1951, pitch: 0.0, skin: legacy, route: route-214}
+  '223': {world: world, x: -30.3949, y: 85.0, z: 69.3296, yaw: 176.711, pitch: 0.0, skin: legacy, route: route-214}
+  '224': {world: world, x: -57.3315, y: 87.0, z: -45.8804, yaw: 257.6563, pitch: 0.0, skin: legacy, route: route-224}
+  '225': {world: world, x: -55.9028, y: 87.0, z: -46.1738, yaw: 339.1005, pitch: 0.0, skin: legacy, route: route-224}
+  '226': {world: world, x: -54.9856, y: 87.0, z: -44.4766, yaw: 346.197, pitch: 0.0, skin: legacy, route: route-224}
+  '227': {world: world, x: -55.9451, y: 87.0, z: -45.1868, yaw: 331.7261, pitch: 0.0, skin: legacy, route: route-224}
+  '229': {world: world, x: -57.6187, y: 87.0, z: -43.3911, yaw: 164.1728, pitch: 0.0, skin: legacy, route: route-224}
+  '230': {world: world, x: -55.5539, y: 87.0, z: -43.732, yaw: 67.307, pitch: 0.0, skin: legacy, route: route-224}
+  '231': {world: world, x: -57.8451, y: 87.0, z: -44.9637, yaw: 245.3315, pitch: 0.0, skin: legacy, route: route-224}
+  '232': {world: world, x: -57.1112, y: 87.0, z: -44.3969, yaw: 146.5609, pitch: 0.0, skin: legacy, route: route-224}
+  '234': {world: world, x: 11.0109, y: 85.0, z: -91.3798, yaw: 339.0026, pitch: 0.0, skin: legacy, route: route-234}
+  '235': {world: world, x: 9.9313, y: 85.0, z: -87.8237, yaw: 158.7268, pitch: 0.0, skin: legacy, route: route-234}
+  '236': {world: world, x: 11.3444, y: 85.0, z: -89.0154, yaw: 61.9528, pitch: 0.0, skin: legacy, route: route-234}
+  '237': {world: world, x: 9.3796, y: 85.0, z: -90.7466, yaw: 256.4259, pitch: 0.0, skin: legacy, route: route-234}
+  '238': {world: world, x: 10.2541, y: 85.0, z: -88.5742, yaw: 58.5171, pitch: 0.0, skin: legacy, route: route-234}
+  '239': {world: world, x: 9.0935, y: 85.0, z: -89.0286, yaw: 166.495, pitch: 0.0, skin: legacy, route: route-234}
+  '240': {world: world, x: 12.0479, y: 85.0, z: -88.5903, yaw: 72.917, pitch: 0.0, skin: legacy, route: route-234}
+  '241': {world: world, x: 11.0161, y: 85.0, z: -90.513, yaw: 333.7801, pitch: 0.0, skin: legacy, route: route-234}
+  '242': {world: world, x: 9.4091, y: 85.0, z: -89.948, yaw: 240.8675, pitch: 0.0, skin: legacy, route: route-234}
+  '243': {world: world, x: 12.0006, y: 85.0, z: -89.7988, yaw: 347.7422, pitch: 0.0, skin: legacy, route: route-234}
+  '244': {world: world, x: 45.1812, y: 98.0, z: 81.2325, yaw: 252.4693, pitch: 0.0, skin: legacy, route: route-244}
+  '245': {world: world, x: 44.1656, y: 98.0, z: 85.5656, yaw: 161.7994, pitch: 0.0, skin: legacy, route: route-244}
+  '246': {world: world, x: 46.1281, y: 98.0, z: 84.4021, yaw: 73.1642, pitch: 0.0, skin: legacy, route: route-244}
+  '247': {world: world, x: 44.5251, y: 98.0, z: 84.7603, yaw: 69.9342, pitch: 0.0, skin: legacy, route: route-244}
+  '248': {world: world, x: 46.0847, y: 98.0, z: 81.1544, yaw: 341.9602, pitch: 0.0, skin: legacy, route: route-244}
+  '249': {world: world, x: 47.4769, y: 98.0, z: 83.7766, yaw: 70.9006, pitch: 0.0, skin: legacy, route: route-244}
+  '250': {world: world, x: 43.174, y: 98.0, z: 81.5786, yaw: 256.0002, pitch: 0.0, skin: legacy, route: route-244}
+  '251': {world: world, x: 43.2605, y: 98.0, z: 82.3414, yaw: 157.5601, pitch: 0.0, skin: legacy, route: route-244}
+  '252': {world: world, x: 46.7024, y: 98.0, z: 83.0421, yaw: 342.0227, pitch: 3.2517, skin: legacy, route: route-244, show-nameplate: false}
+  '253': {world: world, x: 43.6196, y: 98.0, z: 83.7833, yaw: 161.1711, pitch: 0.0, skin: legacy, route: route-244}
+  '279': {world: world, x: -82.7, y: -14806799.7004, z: -11.3585, yaw: 9.8513, pitch: 9.8705, skin: legacy, enabled: false}
+  '294': {world: world, x: -56.5949, y: 87.0, z: -42.8613, yaw: 79.262, pitch: 0.0, skin: legacy, route: route-224}
+  '316': {world: world, x: 0.5012, y: 82.0, z: -2.5933, yaw: 301.7495, pitch: 0.0, skin: legacy, route: route-316}
+  '330': {world: world, x: 4.0064, y: 82.0, z: 0.1242, yaw: 33.1143, pitch: 0.0, skin: legacy, route: route-316}
+  '331': {world: world, x: -2.9927, y: 82.0, z: 1.4437, yaw: 210.44, pitch: 0.0, skin: legacy, route: route-316}
+  '332': {world: world, x: 1.9659, y: 82.0, z: -1.6896, yaw: 301.781, pitch: 0.0, skin: legacy, route: route-316}
+  '333': {world: world, x: -1.6924, y: 82.0, z: -1.3053, yaw: 214.4607, pitch: 0.0, skin: legacy, route: route-316}
+  '334': {world: world, x: 2.0835, y: 82.0, z: 3.2487, yaw: 35.1214, pitch: 0.0, skin: legacy, route: route-316}
+  '335': {world: world, x: -2.5525, y: 82.0, z: -0.0583, yaw: 214.4979, pitch: 0.0, skin: legacy, route: route-316}
+  '339': {world: world, x: 3.1988, y: 82.0, z: 1.6584, yaw: 35.0888, pitch: 0.0, skin: legacy, route: route-316}
+  '340': {world: world, x: -0.4162, y: 82.0, z: 3.0308, yaw: 121.7873, pitch: 0.0, skin: legacy, route: route-316}
+  '341': {world: world, x: -1.8803, y: 82.0, z: 2.1195, yaw: 121.7234, pitch: 0.0, skin: legacy, route: route-316}
+  '342': {world: world, x: 1.0345, y: 82.0, z: 3.9034, yaw: 121.5895, pitch: 0.0, skin: legacy, route: route-316}
+  '343': {world: world, x: -0.5777, y: 82.0, z: -2.9615, yaw: 215.0092, pitch: 0.0, skin: legacy, route: route-316}
+  '344': {world: world, x: 3.3478, y: 82.0, z: -0.8557, yaw: 302.2076, pitch: 0.0, skin: legacy, route: route-316}
+  '349': {world: world, x: -4.7952, y: 67.0, z: -184.6321, yaw: 56.4148, pitch: -0.3646, skin: legacy-armed, route: route-349, inventory: {'0': IRON_SWORD, '1': BOW}}
+  '355': {world: world, x: -5.361, y: 67.0, z: -183.9594, yaw: 162.1678, pitch: 0.0, skin: legacy-armed, route: route-349, inventory: {'0': IRON_SWORD, '1': BOW}}
+  '356': {world: world, x: -3.3097, y: 67.0, z: -185.9271, yaw: 341.5502, pitch: 0.0, skin: legacy-armed, route: route-349, inventory: {'0': IRON_SWORD, '1': BOW}}
+  '357': {world: world, x: -5.8522, y: 67.0, z: -185.6847, yaw: 160.361, pitch: 4.5855, skin: legacy-armed, route: route-349, inventory: {'0': IRON_SWORD, '1': BOW}}
+  '358': {world: world, x: -3.878, y: 67.0, z: -184.3025, yaw: 72.9819, pitch: 4.5855, skin: legacy-armed, route: route-349, inventory: {'0': IRON_SWORD, '1': BOW}}
+  '359': {world: world, x: -4.0088, y: 67.0, z: -187.0874, yaw: 337.1898, pitch: 4.5855, skin: legacy-armed, route: route-349, inventory: {'0': IRON_SWORD, '1': BOW}}
+  '360': {world: world, x: -4.8019, y: 67.0, z: -186.3285, yaw: 243.0282, pitch: 4.5855, skin: legacy-armed, route: route-349, inventory: {'0': IRON_SWORD, '1': BOW}}
+  '361': {world: world, x: -2.7287, y: 67.0, z: -185.0912, yaw: 67.1238, pitch: 4.5855, skin: legacy-armed, route: route-349, inventory: {'0': IRON_SWORD, '1': BOW}}

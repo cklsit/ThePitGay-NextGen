@@ -91,7 +91,8 @@ public class MapSelector {
         }
     }
     public void reTeleportEntities() {
-        Bukkit.getOnlinePlayers().forEach(this::teleportIntoSpawn);
+        Bukkit.getOnlinePlayers().stream().filter(player -> !net.mizukilab.pit.npc.NpcIdentity.isMythicBot(player))
+                .forEach(this::teleportIntoSpawn);
     }
     public void reInitNpc(){
         thePit.getNpcFactory().reload();
