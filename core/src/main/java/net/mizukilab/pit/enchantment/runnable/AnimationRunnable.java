@@ -17,7 +17,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
-import org.bukkit.block.Block;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -29,12 +29,26 @@ import java.util.concurrent.ConcurrentHashMap;
  * @Author: EmptyIrony
  * @Date: 2021/2/11 21:10
  */
-@Getter
-
 public class AnimationRunnable extends BukkitRunnable {
 
+    private static final Material[] GLASS_BY_COLOR = {
+            Material.WHITE_STAINED_GLASS, Material.ORANGE_STAINED_GLASS,
+            Material.MAGENTA_STAINED_GLASS, Material.LIGHT_BLUE_STAINED_GLASS,
+            Material.YELLOW_STAINED_GLASS, Material.LIME_STAINED_GLASS,
+            Material.PINK_STAINED_GLASS, Material.GRAY_STAINED_GLASS,
+            Material.LIGHT_GRAY_STAINED_GLASS, Material.CYAN_STAINED_GLASS,
+            Material.PURPLE_STAINED_GLASS, Material.BLUE_STAINED_GLASS,
+            Material.BROWN_STAINED_GLASS, Material.GREEN_STAINED_GLASS,
+            Material.RED_STAINED_GLASS, Material.BLACK_STAINED_GLASS
+    };
+
+    @Getter
     private final Map<UUID, AnimationData> animations = new ConcurrentHashMap<>();
+    @Getter
     private final List<Location> animationLocations;
+    private final BlockData[] animationGlass = Arrays.stream(GLASS_BY_COLOR)
+            .map(Material::createBlockData)
+            .toArray(BlockData[]::new);
 
     public AnimationRunnable() {
         final PitWorldConfig pitWorldConfig = ThePit.getInstance().getPitConfig();
@@ -112,7 +126,7 @@ public class AnimationRunnable extends BukkitRunnable {
                     }
 
                     for (Location location : animationLocations) {
-                        player.sendBlockChange(location, Material.WHITE_STAINED_GLASS, foundColor.getColorByte());
+                        player.sendBlockChange(location, animationGlass[foundColor.getColorByte()]);
                     }
                     continue;
                 }
@@ -146,11 +160,11 @@ public class AnimationRunnable extends BukkitRunnable {
 
                     if (data.animationTick > 0) {
                         int prevIndex = (realTick - 1 + 8) % 8;
-                        data.player.sendBlockChange(animationLocations.get(prevIndex), Material.WHITE_STAINED_GLASS, (byte) 0);
+                        data.player.sendBlockChange(animationLocations.get(prevIndex), animationGlass[0]);
                     }
 
                     Location location = animationLocations.get(realTick);
-                    data.player.sendBlockChange(location, Material.WHITE_STAINED_GLASS, data.color);
+                    data.player.sendBlockChange(location, animationGlass[data.color]);
                 }
                 data.animationTick++;
             }
@@ -164,7 +178,7 @@ public class AnimationRunnable extends BukkitRunnable {
             byte currentColor = colors[tick % colors.length];
 
             for (Location location : animationLocations) {
-                player.sendBlockChange(location, Material.WHITE_STAINED_GLASS, currentColor);
+                player.sendBlockChange(location, animationGlass[currentColor]);
             }
             if (tick % 3 == 0) {
                 player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1.5F + (tick / 3) * 0.1F);
@@ -173,9 +187,9 @@ public class AnimationRunnable extends BukkitRunnable {
         } else if (tick <= 35) {
             int rotationIndex = ((tick - 12) / 3) % 8;
             for (Location location : animationLocations) {
-                player.sendBlockChange(location, Material.WHITE_STAINED_GLASS, (byte) 0);
+                player.sendBlockChange(location, animationGlass[0]);
             }
-            player.sendBlockChange(animationLocations.get(rotationIndex), Material.WHITE_STAINED_GLASS, foundColor.getColorByte());
+            player.sendBlockChange(animationLocations.get(rotationIndex), animationGlass[foundColor.getColorByte()]);
 
             if ((tick - 12) % 3 == 0) {
                 float pitch = 0.5F + ((tick - 12) / 3) * 0.15F;
@@ -186,7 +200,7 @@ public class AnimationRunnable extends BukkitRunnable {
             int burstIndex = ((tick - 36) / 3) % 8;
 
             for (int i = 0; i <= burstIndex; i++) {
-                player.sendBlockChange(animationLocations.get(i), Material.WHITE_STAINED_GLASS, foundColor.getColorByte());
+                player.sendBlockChange(animationLocations.get(i), animationGlass[foundColor.getColorByte()]);
             }
 
             if ((tick - 36) % 3 == 0) {
@@ -205,7 +219,7 @@ public class AnimationRunnable extends BukkitRunnable {
                 data.finished = true;
 
                 for (Location location : animationLocations) {
-                    player.sendBlockChange(location, Material.WHITE_STAINED_GLASS, foundColor.getColorByte());
+                    player.sendBlockChange(location, animationGlass[foundColor.getColorByte()]);
                 }
 
                 player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1, 1.0F);
@@ -286,14 +300,13 @@ public class AnimationRunnable extends BukkitRunnable {
 
     public void sendReset(Player player) {
         for (Location location : animationLocations) {
-            Block block = location.getBlock();
-            player.sendBlockChange(location, block.getType(), block.getData());
+            player.sendBlockChange(location, location.getBlock().getBlockData());
         }
     }
 
     public void sendStart(Player player) {
         for (Location location : animationLocations) {
-            player.sendBlockChange(location, Material.WHITE_STAINED_GLASS, (byte) 0);
+            player.sendBlockChange(location, animationGlass[0]);
         }
     }
 
