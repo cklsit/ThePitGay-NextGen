@@ -314,8 +314,9 @@ public class ProtectListener implements Listener {
                     }
                 }
             }
-            boolean cancel = damagerInArena || entityInArena;
-            event.setCancelled(cancel);
+            if (damagerInArena || entityInArena) {
+                event.setCancelled(true);
+            }
         }
 
     }

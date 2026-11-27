@@ -25,6 +25,8 @@ import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.craftbukkit.entity.CraftEntity;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.TextDisplay;
+import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.plugin.Plugin;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 import java.util.Objects;
@@ -36,12 +38,15 @@ import java.util.function.BiConsumer;
  * 可见性另行由 {@code BotVisibility} 按玩家裁剪。移动与攻击由 Bot 模块逐 tick 驱动。
  */
 public class BotEntity extends ServerPlayer {
+    private static final String NPC_METADATA = "NPC";
+
     private final boolean walking;
     private final String sourceName;
     private final String displayName;
     private final Location spawnLocation;
     private final BiConsumer<BotEntity, DamageSource> deathHandler;
     private final BiConsumer<BotEntity, Runnable> stepHandler;
+    private final Plugin npcMetadataOwner;
     private BotConnection connectionHandle;
     private boolean managed;
     private TextDisplay nameplate;
@@ -67,13 +72,21 @@ public class BotEntity extends ServerPlayer {
     }
 
     public static BotEntity create(Location location, Options options, boolean managed) {
-        BotEntity entity = new BotEntity(location, profile(options.skin()), options);
+        return create(location, options, managed, null);
+    }
+
+    public static BotEntity create(Location location, Options options, boolean managed, Plugin npcMetadataOwner) {
+        BotEntity entity = new BotEntity(location, profile(options.skin()), options, npcMetadataOwner);
         entity.managed = managed;
         if (managed) {
             entity.getBukkitEntity().setAffectsSpawning(false);
             entity.getBukkitEntity().setVisibleByDefault(false);
         }
         try {
+            if (npcMetadataOwner != null) {
+                // AuthMe and other Bukkit listeners identify server-created NPCs by this metadata.
+                entity.getBukkitEntity().setMetadata(NPC_METADATA, new FixedMetadataValue(npcMetadataOwner, true));
+            }
             entity.spawn();
             return entity;
         } catch (RuntimeException failure) {
@@ -91,7 +104,7 @@ public class BotEntity extends ServerPlayer {
         return profile;
     }
 
-    private BotEntity(Location location, GameProfile profile, Options options) {
+    private BotEntity(Location location, GameProfile profile, Options options, Plugin npcMetadataOwner) {
         super(
                 MinecraftServer.getServer(), ((CraftWorld) location.getWorld()).getHandle(),
                 profile, ClientInformation.createDefault()
@@ -102,6 +115,7 @@ public class BotEntity extends ServerPlayer {
         this.spawnLocation = location.clone();
         this.deathHandler = options.deathHandler();
         this.stepHandler = options.stepHandler();
+        this.npcMetadataOwner = npcMetadataOwner;
         // 机器人不落盘：否则每只 bot 都会留下 playerdata / stats / advancements 文件。
         this.persist = false;
         this.setPos(location.getX(), location.getY(), location.getZ());
@@ -320,7 +334,13 @@ public class BotEntity extends ServerPlayer {
             this.nameplate.remove();
             this.nameplate = null;
         }
-        if (!this.isRemoved() && this.connection != null) server.getPlayerList().remove(this);
+        try {
+            if (!this.isRemoved() && this.connection != null) server.getPlayerList().remove(this);
+        } finally {
+            if (this.npcMetadataOwner != null) {
+                this.getBukkitEntity().removeMetadata(NPC_METADATA, this.npcMetadataOwner);
+            }
+        }
         BotConnection connection = this.connectionHandle;
         if (connection != null && connection.channel != null) {
             connection.channel.close();

@@ -171,7 +171,7 @@ final class BotManager implements Listener, AutoCloseable {
         boolean managed = behavior != null;
         String displayName = managed ? behavior.displayName() : name;
         BotEntity entity = BotEntity.create(location, new BotEntity.Options(name, displayName, skin,
-                !combat || managed, (bot, damage) -> died(bot.getUUID()), (bot, sound) -> sound.run()), managed);
+                !combat || managed, (bot, damage) -> died(bot.getUUID()), (bot, sound) -> sound.run()), managed, plugin);
         try {
             if (managed) {
                 behavior.initialize().accept(entity.getBukkitEntity());
