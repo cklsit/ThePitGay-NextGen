@@ -29,6 +29,7 @@ import net.mizukilab.pit.Loader;
 import net.mizukilab.pit.actionbar.IActionBarManager;
 import net.mizukilab.pit.compat.NpcViewCompatibility;
 import net.mizukilab.pit.npc.PitBotRoster;
+import net.mizukilab.pit.config.BundledLobbyChestCleanup;
 import net.mizukilab.pit.config.ConfigManager;
 import net.mizukilab.pit.config.PitGlobalConfig;
 import net.mizukilab.pit.config.PitWorldConfig;
@@ -513,6 +514,7 @@ public class ThePit extends JavaPlugin implements PluginMessageListener {
         pitWorldConfig.load();
         this.globalConfig = pitWorldConfig;
         cfgMan.ensureBundledMap();
+        BundledLobbyChestCleanup.register(this);
         log.info("Loaded configuration!");
         DEBUG_SERVER = pitWorldConfig.isDebugServer();
         if (DEBUG_SERVER) {

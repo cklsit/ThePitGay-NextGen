@@ -157,12 +157,11 @@ public class ConfigManager {
                     instance.getLogger().info("[Map] bundled map extracted: " + worldDir.getAbsolutePath());
                 }
             }
-            org.bukkit.World world = Bukkit.getWorld(mapName);
-            if (world == null) {
+            if (Bukkit.getWorld(mapName) == null) {
                 // 地图是 world 的副本，uid.dat 里的 UUID 与 world 重复会被 Paper 拒绝加载（仅世界未加载时处理）
                 new File(worldDir, "uid.dat").delete();
                 new File(worldDir, "session.lock").delete();
-                world = new org.bukkit.WorldCreator(mapName).createWorld();
+                org.bukkit.World world = new org.bukkit.WorldCreator(mapName).createWorld();
                 instance.getLogger().info("[Map] bundled map loaded: " + (world != null ? world.getName() : "null"));
             }
             int targetId = 2;
@@ -177,9 +176,6 @@ public class ConfigManager {
             if (getGlobal() != null) {
                 setCursor(targetId - 1);
                 instance.getLogger().info("[Map] selected bundled map id=" + targetId + " world=" + mapName);
-            }
-            if (world != null) {
-                BundledLobbyChestCleanup.removeFrom(world, instance);
             }
         } catch (Throwable failure) {
             instance.getLogger().warning("[Map] bundled map setup failed: " + failure);
