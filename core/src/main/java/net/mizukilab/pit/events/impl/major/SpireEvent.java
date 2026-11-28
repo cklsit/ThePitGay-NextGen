@@ -18,15 +18,14 @@ import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardReader;
 import com.sk89q.worldedit.function.mask.BlockMask;
-import com.sk89q.worldedit.function.operation.Operation;
 import com.sk89q.worldedit.function.operation.Operations;
 import com.sk89q.worldedit.function.pattern.BlockPattern;
-import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.CuboidRegion;
 import com.sk89q.worldedit.session.ClipboardHolder;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import cn.charlotte.pit.compat.math.MathHelper;
 import net.mizukilab.pit.config.NewConfiguration;
+import net.mizukilab.pit.config.PitWorldConfig;
 import net.mizukilab.pit.item.type.SpireArmor;
 import net.mizukilab.pit.item.type.SpireSword;
 import net.mizukilab.pit.item.type.mythic.MythicLeggingsItem;
@@ -49,9 +48,8 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.player.PlayerPortalEvent;
+import org.bukkit.event.entity.EntityPortalEnterEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -65,6 +63,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @Date: 2021/3/21 11:02
  */
 public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, IPreparative, ISortable, IScoreBoardInsert {
+    public static final int FLOOR_COUNT = 9;
 
     private final Map<UUID, PlayerSpireData> dataMap;
     private final Map<UUID, Integer> rankMap = new HashMap<>();
@@ -72,6 +71,9 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
     private Cooldown timer;
     private BukkitRunnable runnable;
     private EditSession session;
+    private List<Location> floorLocations;
+    private World portalWorld;
+    private CuboidRegion portalRegion;
 
     /** 解析 legacy .schematic 读取器，优先按别名查找，找不到时退回内置 MCEdit 格式。 */
     private static ClipboardFormat resolveSchematicFormat() {
@@ -105,6 +107,17 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
 
     @Override
     public void onActive() {
+        PitWorldConfig config = ThePit.getInstance().getPitConfig();
+        floorLocations = List.copyOf(config.getSpireFloorLoc().subList(0, FLOOR_COUNT));
+        Location portalA = config.getPortalPosA();
+        World entranceWorld = portalA.getWorld();
+        CuboidRegion entrance = new CuboidRegion(BukkitAdapter.asBlockVector(portalA),
+                BukkitAdapter.asBlockVector(config.getPortalPosB()));
+        portalWorld = entranceWorld;
+        portalRegion = entrance;
+        dataMap.clear();
+        rankMap.clear();
+        cooldownList.clear();
         this.timer = new Cooldown(5, TimeUnit.MINUTES);
         this.runnable = new BukkitRunnable() {
             @Override
@@ -131,7 +144,7 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
             }
         };
 
-        this.runnable.runTaskTimerAsynchronously(ThePit.getInstance(), 20, 20);
+        this.runnable.runTaskTimer(ThePit.getInstance(), 20, 20);
 
         Bukkit.getPluginManager().registerEvents(this, ThePit.getInstance());
 
@@ -139,118 +152,80 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
             player.setMaxHealth(player.getMaxHealth());
             player.setHealth(player.getMaxHealth());
 
-            Location location = ThePit.getInstance().getPitConfig()
-                    .getSpawnLocations()
-                    .get(RandomUtil.random.nextInt(ThePit.getInstance().getPitConfig().getSpawnLocations().size()));
+            List<Location> spawns = config.getSpawnLocations();
+            Location location = spawns.get(RandomUtil.random.nextInt(spawns.size()));
             player.teleport(location);
             player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1, 0.5F);
         }
 
-        Bukkit.getScheduler().runTaskAsynchronously(ThePit.getInstance(), () -> {
-            if (this.session != null) {
-                this.session.undo(this.session);
-                this.session.flushQueue();
-            }
-
-            final Location location = ThePit.getInstance().getPitConfig().getSpireLoc();
-
-            try {
-                final InputStream inputStream = ThePit.getInstance().getClass().getClassLoader().getResourceAsStream("spire.schematic");
-                if (inputStream == null) {
-                    throw new IllegalStateException("缺少 spire.schematic 资源");
-                }
-
-                final ClipboardFormat format = resolveSchematicFormat();
-                if (format == null) {
-                    throw new IllegalStateException("当前 WorldEdit 未注册 schematic 读取器");
-                }
-
-                final Clipboard clipboard;
-                try (ClipboardReader reader = format.getReader(inputStream)) {
-                    clipboard = reader.read();
-                }
-
-                session = WorldEdit.getInstance().newEditSession(BukkitAdapter.adapt(location.getWorld()));
-                try {
-                    final Operation operation = new ClipboardHolder(clipboard)
-                            .createPaste(session)
-                            .to(BlockVector3.at(location.getBlockX(), location.getBlockY(), location.getBlockZ()))
-                            .ignoreAirBlocks(false)
-                            .build();
-                    Operations.complete(operation);
-                } finally {
-                    session.flushSession();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-            // 狂怒之坑玻璃墙
-            final Location middle = ThePit.getInstance().getPitConfig().getRagePitMiddle();
-            wall = WorldEdit.getInstance().newEditSession(BukkitAdapter.adapt(middle.getWorld()));
-            try {
-                wall.makeCylinder(
-                        BlockVector3.at(middle.getBlockX(), middle.getBlockY(), middle.getBlockZ()),
-                        new BlockPattern(BlockTypes.GLASS.getDefaultState()),
-                        ThePit.getInstance().getPitConfig().getRagePitRadius(),
-                        ThePit.getInstance().getPitConfig().getRagePitHeight(),
-                        false);
-                wall.flushQueue();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-            if (teleport == null) {
-                final Location portalA = ThePit.getInstance().getPitConfig().getPortalPosA();
-                final Location portalB = ThePit.getInstance().getPitConfig().getPortalPosB();
-
-                teleport = WorldEdit.getInstance().newEditSession(BukkitAdapter.adapt(portalA.getWorld()));
-                try {
-                    final CuboidRegion region = new CuboidRegion(
-                            BlockVector3.at(portalA.getBlockX(), portalA.getBlockY(), portalA.getBlockZ()),
-                            BlockVector3.at(portalB.getBlockX(), portalB.getBlockY(), portalB.getBlockZ()));
-                    final BlockMask airMask = new BlockMask(
-                            teleport.getExtent(), BlockTypes.AIR.getDefaultState().toBaseBlock());
-                    teleport.replaceBlocks(region, airMask, new BlockPattern(BlockTypes.END_PORTAL.getDefaultState()));
-                    teleport.flushQueue();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+        EventWorldEdits.build(this, () -> buildArena(config, entranceWorld, entrance));
     }
 
-    @EventHandler
-    public void onJoinArea(PlayerPortalEvent event) {
-        if (event.getCause() == PlayerTeleportEvent.TeleportCause.END_PORTAL) {
-            event.setCancelled(true);
-
-            final Player player = event.getPlayer();
-
-            if (!dataMap.containsKey(player.getUniqueId())) {
-
-                final PlayerSpireData data = new PlayerSpireData();
-                data.uuid = player.getUniqueId();
-                data.name = player.getName();
-
-                dataMap.put(player.getUniqueId(), data);
+    private void buildArena(PitWorldConfig config, World entranceWorld, CuboidRegion entrance) {
+        Location location = config.getSpireLoc();
+        try (InputStream input = ThePit.getInstance().getResource("spire.schematic")) {
+            if (input == null) {
+                throw new IllegalStateException("Missing spire.schematic");
             }
+            Clipboard clipboard;
+            try (ClipboardReader reader = resolveSchematicFormat().getReader(input)) {
+                clipboard = reader.read();
+            }
+            session = WorldEdit.getInstance().newEditSession(BukkitAdapter.adapt(location.getWorld()));
+            Operations.complete(new ClipboardHolder(clipboard).createPaste(session)
+                    .to(BukkitAdapter.asBlockVector(location)).ignoreAirBlocks(false).build());
+            EventWorldEdits.flush(session);
 
-            final PlayerSpireData data = dataMap.get(player.getUniqueId());
+            Location middle = config.getRagePitMiddle();
+            wall = WorldEdit.getInstance().newEditSession(BukkitAdapter.adapt(middle.getWorld()));
+            wall.makeCylinder(BukkitAdapter.asBlockVector(middle), new BlockPattern(BlockTypes.GLASS.getDefaultState()),
+                    config.getRagePitRadius(), config.getRagePitHeight(), false);
+            EventWorldEdits.flush(wall);
 
-            data.floor = 0;
-            data.inArea = true;
-            data.soul = 0;
-
-            player.closeInventory();
-            final PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
-            profile.setInventory(PlayerInv.fromPlayerInventory(player.getInventory()));
-            profile.setTempInvUsing(true);
-
-            PlayerUtil.resetPlayer(player, true, true);
-            this.giveInvSets(player);
-            this.teleportPlayer(player, data);
+            teleport = WorldEdit.getInstance().newEditSession(BukkitAdapter.adapt(entranceWorld));
+            BlockMask airMask = new BlockMask(teleport.getExtent(), BlockTypes.AIR.getDefaultState().toBaseBlock());
+            teleport.replaceBlocks(entrance, airMask, new BlockPattern(BlockTypes.END_PORTAL.getDefaultState()));
+            EventWorldEdits.flush(teleport);
+        } catch (Exception failure) {
+            throw new IllegalStateException("Could not build the Spire arena", failure);
         }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onJoinArea(EntityPortalEnterEvent event) {
+        if (event.getPortalType() != PortalType.ENDER || !(event.getEntity() instanceof Player player)) {
+            return;
+        }
+        Location portal = event.getLocation();
+        if (!portalWorld.equals(portal.getWorld()) || !portalRegion.contains(BukkitAdapter.asBlockVector(portal))) {
+            return;
+        }
+
+        // Detect portal contact before Minecraft looks for the disabled End dimension.
+        event.setCancelled(true);
+        runEventTask(() -> joinArea(player));
+    }
+
+    private void joinArea(Player player) {
+        UUID playerId = player.getUniqueId();
+        if (!player.isOnline() || !portalWorld.equals(player.getWorld()) || dataMap.containsKey(playerId)) {
+            return;
+        }
+
+        PlayerSpireData data = new PlayerSpireData();
+        data.uuid = playerId;
+        data.name = player.getName();
+        data.inArea = true;
+        dataMap.put(playerId, data);
+
+        player.closeInventory();
+        PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(playerId);
+        profile.setInventory(PlayerInv.fromPlayerInventory(player.getInventory()));
+        profile.setTempInvUsing(true);
+
+        PlayerUtil.resetPlayer(player, true, true);
+        giveInvSets(player);
+        teleportPlayer(player, data);
     }
 
     @EventHandler
@@ -331,18 +306,19 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
             }
 
             //玩家升级，给予新的物品以及传送至新的一层
-            if (data.floor < 9) {
+            if (data.floor < FLOOR_COUNT - 1) {
                 data.lastFloorChange = System.currentTimeMillis();
                 data.floor++;
-            } else {
-                new SpireFloorMedal().setProgress(PlayerProfile.getPlayerProfileByUuid(event.getKiller().getUniqueId()), 1);
+                if (data.floor == FLOOR_COUNT - 1) {
+                    new SpireFloorMedal().setProgress(PlayerProfile.getPlayerProfileByUuid(killer.getUniqueId()), 1);
+                }
             }
             data.soul = data.soul + this.getKillRewardSouls(data);
             data.kills++;
             TitleUtil.sendTitle(killer, CC.translate("&a击杀!"), this.getFloorColor(data.floor) + "第" + (data.floor + 1) + "层", 5, 20, 10);
             killer.playSound(killer.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1, 1.5F);
 
-            Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), () -> {
+            runEventTaskLater(() -> {
                 int amount = InventoryUtil.getAmountOfItem(killer, "broken_soul");
 
                 this.handleUpdate(killer, data);
@@ -394,9 +370,9 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
 
                 TitleUtil.sendTitle(target, CC.translate("&c被击杀"), this.getFloorColor(data.floor) + "第" + (data.floor + 1) + "层", 5, 10, 20);
             }
-            Bukkit.getScheduler().scheduleSyncDelayedTask(ThePit.getInstance(), () -> this.handleUpdate(target, targetData), 2L);
+            runEventTaskLater(() -> this.handleUpdate(target, targetData), 2L);
 
-            Bukkit.getScheduler().runTaskAsynchronously(ThePit.getInstance(), this::refreshRank);
+            refreshRank();
         } catch (Exception e) {
             CC.printErrorWithCode(event.getKiller(), e);
         }
@@ -431,11 +407,7 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
     }
 
     private void teleportPlayer(Player player, PlayerSpireData data) {
-        final List<Location> loc = ThePit.getInstance()
-                .getPitConfig()
-                .getSpireFloorLoc();
-
-        final Location center = loc.get(data.floor);
+        final Location center = floorLocations.get(data.floor);
 
         int radius = 32 - data.floor * 3;
         //x取值范围为[-radius,radius],但是因为要平方计算，所以只取正数
@@ -460,7 +432,7 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
     private void handleUpdate(Player player, PlayerSpireData data) {
         PlayerUtil.resetPlayer(player, true, true);
         this.giveInvSets(player);
-        Bukkit.getScheduler().runTask(ThePit.getInstance(), () -> {
+        runEventTask(() -> {
             this.teleportPlayer(player, data);
 
             if (data.floor >= 4) {
@@ -494,7 +466,25 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
 
     @Override
     public void onInactive() {
-        Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), () -> {
+        HandlerList.unregisterAll(this);
+        if (runnable != null) runnable.cancel();
+        EventWorldEdits.undo(() -> {
+            // Restore in reverse order, including sessions created before a partial failure.
+            for (EditSession edit : new EditSession[]{teleport, wall, session}) {
+                if (edit == null) continue;
+                try {
+                    EventWorldEdits.restore(edit);
+                } catch (RuntimeException failure) {
+                    ThePit.getInstance().getLogger().log(java.util.logging.Level.SEVERE,
+                            "Could not restore part of the Spire arena", failure);
+                }
+            }
+            teleport = null;
+            wall = null;
+            session = null;
+        });
+
+        Runnable restorePlayers = () -> {
             Bukkit.getOnlinePlayers().forEach(player -> {
                 final PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
                 if (profile.isTempInvUsing()) {
@@ -508,31 +498,15 @@ public class SpireEvent extends AbstractEvent implements IEpicEvent, Listener, I
 
                 player.teleport(location);
             });
-        }, 1L);
-
-        HandlerList.unregisterAll(this);
-
-        this.runnable.cancel();
-
-        Bukkit.getScheduler().runTaskAsynchronously(ThePit.getInstance(), () -> {
-            try {
-                session.undo(session);
-
-                teleport.undo(teleport);
-
-                wall.undo(wall);
-
-                teleport.flushQueue();
-
-                session.flushQueue();
-
-                wall.flushQueue();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
+        };
+        if (ThePit.getInstance().isEnabled()) {
+            Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), restorePlayers, 1L);
+        } else {
+            restorePlayers.run();
+        }
 
         refreshCooldownPlayer();
+        if (isAborting()) return;
 
         CC.boardCast(CC.CHAT_BAR);
         CC.boardCast("&6&l天坑事件结束: " + this.getEventName() + "&6&l!");

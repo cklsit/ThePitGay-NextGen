@@ -2,6 +2,7 @@ package cn.charlotte.pit.events;
 
 import cn.charlotte.pit.ThePit;
 import net.mizukilab.pit.config.PitWorldConfig;
+import net.mizukilab.pit.events.impl.major.SpireEvent;
 import org.bukkit.Location;
 import java.util.List;
 
@@ -14,7 +15,7 @@ final class EventLocations {
         switch (name) {
             case "spire" -> {
                 locations(config.getSpawnLocations(), 1);
-                locations(config.getSpireFloorLoc(), 10);
+                locations(config.getSpireFloorLoc(), SpireEvent.FLOOR_COUNT);
                 location(config.getSpireLoc());
                 location(config.getRagePitMiddle());
                 location(config.getPortalPosA());

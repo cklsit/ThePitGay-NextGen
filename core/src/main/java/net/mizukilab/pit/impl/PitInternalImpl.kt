@@ -216,6 +216,8 @@ object PitInternalImpl : PitInternalHook {
             } else {
                 factory.pushEvent(event, true)
             }
+            // The factory defers off-thread requests to the server thread.
+            return !Bukkit.isPrimaryThread() || factory.nextEpicEvent === event || factory.activeEpicEvent === event
         } else {
             if (factory.activeNormalEvent != null) {
                 factory.inactiveEvent(factory.activeNormalEvent)

@@ -5,7 +5,10 @@ import cn.charlotte.pit.events.trigger.type.*;
 import cn.charlotte.pit.events.trigger.type.addon.IPreparative;
 import net.mizukilab.pit.OnlineServerTestContext;
 import net.mizukilab.pit.config.PitGlobalConfig;
+import net.mizukilab.pit.events.impl.major.SpireEvent;
 import net.mizukilab.pit.util.cooldown.Cooldown;
+import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.scheduler.*;
 import org.junit.*;
@@ -112,6 +115,30 @@ public class EventLifecycleTest {
         callbacks.get(1).run(); callbacks.get(1).run();
         assertEquals(1, major.starts); assertSame(major, factory.getActiveEpicEvent());
         verify(scheduler).runTaskTimer(eq(plugin), any(Runnable.class), eq(10L), eq(1L));
+    }
+    @Test public void spireAcceptsNineConfiguredFloorsAndRejectsAnIncompleteTower() {
+        var config = plugin.getPitConfig();
+        World world = mock(World.class);
+        Location base = new Location(world, -35, 68, 75);
+        List<Location> floors = new ArrayList<>();
+        for (int floor = 0; floor < 9; floor++) {
+            floors.add(base.clone().add(0, 2 + floor * 15, 0));
+        }
+        when(config.getSpawnLocations()).thenReturn(List.of(new Location(world, 0, 114, 0)));
+        when(config.getSpireLoc()).thenReturn(base);
+        when(config.getRagePitMiddle()).thenReturn(new Location(world, 0, 43, 0));
+        when(config.getPortalPosA()).thenReturn(new Location(world, -8, 82, -8));
+        when(config.getPortalPosB()).thenReturn(new Location(world, 8, 82, 8));
+        when(config.getSpireFloorLoc()).thenReturn(floors.subList(0, 8));
+        factory.readyEpicEvent(new SpireEvent());
+        assertNull(factory.getNextEpicEvent());
+        assertTrue(callbacks.isEmpty());
+
+        when(config.getSpireFloorLoc()).thenReturn(floors);
+        SpireEvent event = new SpireEvent();
+        factory.readyEpicEvent(event);
+        assertSame(event, factory.getNextEpicEvent());
+        assertNotNull(factory.getNextEpicEventTimer());
     }
     @Test public void staleDelayedWorkDoesNotAffectNextRunOfSameObject() {
         Minor event = new Minor(); int[] executed = {0};

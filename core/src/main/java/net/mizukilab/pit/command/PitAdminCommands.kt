@@ -3,6 +3,7 @@ package net.mizukilab.pit.command
 import cn.charlotte.pit.ThePit
 import cn.charlotte.pit.data.PlayerProfile
 import cn.charlotte.pit.data.TradeData
+import cn.charlotte.pit.events.AbstractEvent
 import com.mongodb.client.model.Filters
 import dev.rollczi.litecommands.annotations.argument.Arg
 import dev.rollczi.litecommands.annotations.argument.Key
@@ -462,12 +463,16 @@ class PitAdminCommands {
     @Execute(name = "event")
     @Shortcut("event")
     fun event(@Context player: Player, @Arg("action") @Key("pit.event") action: String): String? {
-        val success = ThePit.api.openEvent(player, action)
-        return if (success) {
-            CC.translate("&a成功!")
-        } else {
-            CC.translate("&c失败, 错误的参数")
+        if (!ThePit.api.openEvent(player, action)) {
+            return CC.translate("&c活动未启动，请检查活动名称、地图配置或是否已有大型活动。")
         }
+        val pending = ThePit.getInstance().eventFactory.nextEpicEvent as? AbstractEvent
+        if (pending != null && pending.eventInternalName.equals(action, ignoreCase = true)) {
+            val remaining = ThePit.getInstance().eventFactory.nextEpicEventTimer.remaining
+            val seconds = (remaining + 999) / 1000
+            return CC.translate("&a已安排 ${pending.eventName}&a，将在 &e${seconds / 60} 分 ${seconds % 60} 秒 &a后开始。")
+        }
+        return CC.translate("&a成功!")
     }
 
     @Execute(name = "testSound")
