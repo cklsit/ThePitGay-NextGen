@@ -78,17 +78,17 @@ loc:
       height: 256
     cake:
       a:
-        posA: pit_arena|29.5|49.0|-36.5|0.0|0.0
-        posB: pit_arena|37.5|40.0|-28.5|0.0|0.0
+        posA: pit_arena|18|83|-20|0.0|0.0
+        posB: pit_arena|26|92|-12|0.0|0.0
       b:
-        posA: pit_arena|-62.5|50.0|63.5|0.0|0.0
-        posB: pit_arena|-52.29999923706055|40.0|53.5|0.0|0.0
+        posA: pit_arena|30|85|33|0.0|0.0
+        posB: pit_arena|40|95|43|0.0|0.0
       c:
-        posA: pit_arena|91.5|38.0|18.5|0.0|0.0
-        posB: pit_arena|81.5|46.0|8.5|0.0|0.0
+        posA: pit_arena|-60|85|-20|0.0|0.0
+        posB: pit_arena|-50|93|-10|0.0|0.0
       d:
-        posA: pit_arena|72.5|40.0|-25.5|0.0|0.0
-        posB: pit_arena|58.5|48.0|-13.5|0.0|0.0
+        posA: pit_arena|-26|84|-36|0.0|0.0
+        posB: pit_arena|-12|92|-24|0.0|0.0
     blockHead:
       buffs:
       - pit_arena|15.154580116271973|70.30780792236328|7.804780960083008|-234.58954|16.525494
